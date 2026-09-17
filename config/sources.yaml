@@ -8,18 +8,34 @@
 #   agenda_csv_since  从这次会议号起，Agenda/ 目录下确认存在 agenda.csv（实测边界，见下）；
 #                      早于此值的会议一律退到 title_re 锚定，fetch 层也不应尝试拉取 agenda.csv
 #   artifacts         每次会议固定抓取的产物种类
+#                     ⚠️ minutes_docx 不等于"目录里一定有 .docx"：2026-09-17 实测 RAN1 #112–#122 的纪要
+#                        全部以 zip 包裹分发（Final_Minutes_report_RAN1#<n>_v100.zip），#126 才是裸 .docx。
+#                        fetch 层必须"先找 .docx，找不到退到含 minutes 的 .zip 再解包"（见 scripts/recon.py
+#                        的 unwrap_docx()）。切换的确切会议号未测（#123–#125 未探）。
 #
 # ⚠️ RAN1 之外的四组，仅 path/dir_re/最新会议号 为 Task 1 实测确认；
 #    hard_floor 与 agenda_csv_since 沿用设计文档 §4 的推测值，尚未实测，
 #    标记 verified: false，需要在后续任务（结合各组 features.yaml 血统段落地时）用同样的
 #    "读目录列表" 方法核实，不得直接采信。
+#
+# ⚠️ 403 的含义（2026-09-17 实测更正，证据见 task-1-report.md §4.2）：
+#    这台服务器对 *不存在的路径* 返回的就是 403，不是 404。实测三条：
+#      GET .../WG1_RL1/TSGR1_121/              -> 200，列表里只有 Docs/Inbox/Invitation/LS/Report，无 Agenda
+#      GET .../WG1_RL1/TSGR1_999/Agenda/       -> 403（#999 这次会议根本不存在）
+#      GET .../WG1_RL1/TSGR1_121/NoSuchDir_zzz/-> 403（随手编的目录名）
+#    同一会话同一 UA 下 #123/#124/#125 的 Agenda/ 全部 200，#121/#122 连续三次 403。
+#    => 探测 Agenda/ 时应先 GET 会议根目录、看列表里有没有 Agenda 条目；直接吃到 403
+#       应判为"该目录不存在"而不是退避重试。
+#    但这只证明"403 覆盖了不存在的路径"，并未证明"403 一定不是限流"——本次没有制造过载，
+#    高频下是否另有一类 403 无数据。故下面四组仍按"未实测"对待。
 
 sources:
   RAN1:
     path: tsg_ran/WG1_RL1
     dir_re: 'TSGR1_(\d+)([a-z]*(-e)?|_e)?'
     hard_floor: 112
-    agenda_csv_since: 124
+    agenda_csv_since: 124            # 2026-09-17 逐会实测坐实：#120 无 / #123 无 / #124 有 / #125 有 / #126 有
+                                      # （#121、#122 这两次会议压根没有 Agenda 子目录，见上面 403 说明）
     verified: true
     latest_meeting_seen: 127          # 实测于 2026-09-17；TSGR1_127 已在目录列表中（内容未必齐全）
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
@@ -28,8 +44,9 @@ sources:
     path: tsg_ran/WG2_RL2
     dir_re: 'TSGR2_(\d+)((bis)?(-e|_e)?)?'
     hard_floor: 121                   # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测：最新会议 TSGR2_137 的 Agenda/ 目录列表探测持续 403（3次退避后仍失败），
-                                       # 无法判定是限流还是该会议尚未开幕/目录未建立；不得据此判定为空
+    agenda_csv_since: null            # 未实测：TSGR2_137 的 Agenda/ 持续 403。按上面更正后的 403 语义，
+                                       # 最可能是该会议没有 Agenda 子目录，但尚未用"先读会议根目录"的方法复核；
+                                       # 不得据此判定为空，也不得据此判定不存在
     verified: false
     latest_meeting_seen: 137          # 实测于 2026-09-17（目录名存在，内容未验证）
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
@@ -38,7 +55,7 @@ sources:
     path: tsg_ran/WG3_Iu
     dir_re: 'TSGR3_(\d+)((-?bis)?(_e|-e)?)?'
     hard_floor: 118                   # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR3_135 Agenda/ 持续 403）
+    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR3_135 Agenda/ 持续 403，403 语义见文件头）
     verified: false
     latest_meeting_seen: 135
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
@@ -47,7 +64,7 @@ sources:
     path: tsg_ran/WG4_Radio
     dir_re: 'TSGR4_(\d+)((-?[Bb]is)?(_e|-e)?)?'
     hard_floor: 106                   # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR4_122 Agenda/ 持续 403）
+    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR4_122 Agenda/ 持续 403，403 语义见文件头）
     verified: false
     latest_meeting_seen: 122
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
@@ -56,7 +73,7 @@ sources:
     path: tsg_ran/TSG_RAN
     dir_re: 'TSGR_(\d+)(e)?'
     hard_floor: 99                    # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR_114 Agenda/ 持续 403）；
+    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR_114 Agenda/ 持续 403，403 语义见文件头）；
                                        # 另注：plenary 的核心产物是批准的 WID/SID 与状态表而非 agreement，
                                        # artifacts 清单需在后续任务单独确认，此处先沿用同构占位
     verified: false

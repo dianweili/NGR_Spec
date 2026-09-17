@@ -71,8 +71,27 @@ def entries(html: bytes, prefix: str) -> list[str]:
     return sorted(set(re.findall(pat, html.decode("utf-8", "ignore"))))
 
 
+def unwrap_docx(data: bytes) -> bytes:
+    """老会议的纪要以 zip 包裹 docx 分发（如 Final_Minutes_report_RAN1%23112_v100.zip）；
+    #124 起改为直接发布 .docx。统一在这里剥掉外层 zip，返回真正的 docx 字节。"""
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        names = z.namelist()
+        if "word/document.xml" in names:
+            return data  # 本身就是 docx
+        inner = [n for n in names if n.lower().endswith((".docx", ".doc"))]
+        if not inner:
+            raise ValueError(f"zip 内未找到 docx/doc，条目: {names[:10]}")
+        # 多个候选时取版本号最高的
+        def ver(fn: str) -> str:
+            m = re.search(r"v(\d{3})", fn, re.I)
+            return m.group(1) if m else "000"
+        inner.sort(key=ver)
+        return z.read(inner[-1])
+
+
 def extract_headings(docx_bytes: bytes) -> list[tuple[str, str]]:
     """(w:pStyle val, heading 文本) 列表，方法见 spec §5。"""
+    docx_bytes = unwrap_docx(docx_bytes)
     with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
         xml_bytes = z.read("word/document.xml")
     root = ET.fromstring(xml_bytes)
@@ -146,21 +165,26 @@ def phase_headings(wg_path: str = "tsg_ran/WG1_RL1", prefix: str = "TSGR1_",
             time.sleep(5)
             continue
         ents = entries(html, report_path)
-        # 挑纪要 docx：优先 Draft_Minutes*report*RAN1*，取版本号最高的一个
-        cands = [e for e in ents if e.lower().endswith(".docx") and "minutes" in e.lower()]
-        if not cands:
-            summary[n] = {"status": "NO_MINUTES_DOCX", "entries_sample": ents[:20]}
-            time.sleep(5)
-            continue
-
+        # 挑纪要文件：直接 .docx 优先（#124 起的新格式）；否则退到 zip 包裹的老格式
+        # （Final_Minutes_report_RAN1%23<n>_v100.zip / Draft_Minutes_report_..._v030.zip）。
+        # 取版本号最高的一个。
         def ver(fn: str) -> str:
             m = re.search(r"v(\d{3})", fn, re.I)
             return m.group(1) if m else "000"
 
+        docx_cands = [e for e in ents if e.lower().endswith(".docx") and "minutes" in e.lower()]
+        zip_cands = [e for e in ents if e.lower().endswith(".zip") and "minutes" in e.lower()]
+        cands = docx_cands or zip_cands
+        if not cands:
+            summary[n] = {"status": "NO_MINUTES_FILE", "entries_sample": ents[:20]}
+            time.sleep(5)
+            continue
+
         cands.sort(key=ver)
         chosen = cands[-1]
+        cache_ext = "docx" if chosen.lower().endswith(".docx") else "zip"
         docx_path = report_path + chosen
-        data = get_cached(docx_path, f"minutes_{mdir}.docx", label=f"[minutes {n}]")
+        data = get_cached(docx_path, f"minutes_{mdir}.{cache_ext}", label=f"[minutes {n}]")
         if data is None:
             summary[n] = {"status": "FAILED_DOWNLOAD", "chosen": chosen}
             time.sleep(5)

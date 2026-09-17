@@ -1,0 +1,4698 @@
+{
+ "captured_utc": "2026-09-17",
+ "method": "zipfile -> word/document.xml -> ET -> w:pPr/w:pStyle w:val ~ (?i)^heading(\\d+)$ -> join w:t",
+ "source_root": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/",
+ "meetings": {
+  "112": {
+   "source_file": "Final_Minutes_report_RAN1#112_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#112_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_112/Report/Final_Minutes_report_RAN1%23112_v100.zip",
+   "bytes": 1986460,
+   "heading_count": 123,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Releases 8 – 16 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Releases 15 – 16 NR Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Releases 15"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Releases 16"
+    },
+    {
+     "level": 1,
+     "text": "Release 17 Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Further enhancements on MIMO for NR"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Supporting NR from 52.6GHz to 71 GHz"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Enhanced Industrial Internet of Things (IoT) and URLLC"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Solutions for NR to support non-terrestrial networks (NTN)"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Positioning Enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Support of Reduced Capability NR Devices"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on UE Power Saving Enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR coverage enhancement"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Rel-17 enhancements for NB-IoT and LTE-MTC"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Enhancements to Integrated Access and Backhaul"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Sidelink enhancement"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Multicast and Broadcast Services"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Dynamic spectrum sharing (DSS)"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NB-IoT/eMTC support for Non-Terrestrial Network"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on New Bands and Bandwidth Allocation for LTE based 5G Terrestrial Broadcast"
+    },
+    {
+     "level": 2,
+     "text": "Rel-17 UE features"
+    },
+    {
+     "level": 3,
+     "text": "UE features topics 1"
+    },
+    {
+     "level": 3,
+     "text": "UE features topics 2"
+    },
+    {
+     "level": 3,
+     "text": "Other"
+    },
+    {
+     "level": 2,
+     "text": "Other"
+    },
+    {
+     "level": 1,
+     "text": "Release 18"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO evolution for downlink and uplink"
+    },
+    {
+     "level": 3,
+     "text": "Multi-TRP enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Unified TCI framework extension for multi-TRP"
+    },
+    {
+     "level": 4,
+     "text": "Two TAs for multi-DCI"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Reference signal enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Increased number of orthogonal DMRS ports"
+    },
+    {
+     "level": 4,
+     "text": "SRS enhancement targeting TDD CJT and 8 TX operation"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced uplink transmission"
+    },
+    {
+     "level": 4,
+     "text": "UL precoding indication for multi-panel transmission"
+    },
+    {
+     "level": 4,
+     "text": "SRI/TPMI enhancement for enabling 8 TX UL transmission"
+    },
+    {
+     "level": 2,
+     "text": "Study on Artificial Intelligence (AI)/Machine Learning (ML) for NR air interface"
+    },
+    {
+     "level": 3,
+     "text": "General aspects of AI/ML framework"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for beam management"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for beam management"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for beam management"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 2,
+     "text": "Study on evolution of NR duplex operation"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on NR duplex evolution"
+    },
+    {
+     "level": 3,
+     "text": "Subband non-overlapping full duplex"
+    },
+    {
+     "level": 3,
+     "text": "Potential enhancements on dynamic/flexible TDD"
+    },
+    {
+     "level": 2,
+     "text": "NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "Support of sidelink on unlicensed spectrum"
+    },
+    {
+     "level": 4,
+     "text": "Channel access mechanism"
+    },
+    {
+     "level": 4,
+     "text": "Physical channel design framework"
+    },
+    {
+     "level": 3,
+     "text": "Co-channel coexistence for LTE sidelink and NR sidelink"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced sidelink operation on FR2 licensed spectrum"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink CA operation"
+    },
+    {
+     "level": 2,
+     "text": "Expanded and Improved NR Positioning"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink positioning"
+    },
+    {
+     "level": 4,
+     "text": "SL positioning reference signal"
+    },
+    {
+     "level": 4,
+     "text": "Measurements and reporting for SL positioning"
+    },
+    {
+     "level": 4,
+     "text": "Resource allocation for SL positioning reference signal"
+    },
+    {
+     "level": 3,
+     "text": "NR DL and UL carrier phase positioning"
+    },
+    {
+     "level": 3,
+     "text": "LPHAP (Low Power High Accuracy Positioning)"
+    },
+    {
+     "level": 3,
+     "text": "Bandwidth aggregation for positioning measurements"
+    },
+    {
+     "level": 3,
+     "text": "Positioning for RedCap UEs"
+    },
+    {
+     "level": 2,
+     "text": "Enhanced support of reduced capability NR device"
+    },
+    {
+     "level": 3,
+     "text": "UE complexity reduction"
+    },
+    {
+     "level": 2,
+     "text": "Network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "Techniques in spatial and power domains"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements on cell DTX/DRX mechanism"
+    },
+    {
+     "level": 2,
+     "text": "NR network-controlled repeaters"
+    },
+    {
+     "level": 3,
+     "text": "Side control information and NCR behaviour"
+    },
+    {
+     "level": 3,
+     "text": "Other aspects including control plane signalling and procedures relevant to RAN1"
+    },
+    {
+     "level": 2,
+     "text": "Multi-carrier enhancements for NR"
+    },
+    {
+     "level": 3,
+     "text": "Multi-cell PUSCH/PDSCH scheduling with a single DCI"
+    },
+    {
+     "level": 3,
+     "text": "Multi-carrier UL Tx switching scheme"
+    },
+    {
+     "level": 2,
+     "text": "XR Enhancements for NR"
+    },
+    {
+     "level": 3,
+     "text": "XR-specific capacity enhancements"
+    },
+    {
+     "level": 2,
+     "text": "NTN (Non-Terrestrial Networks) enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Coverage enhancement for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Network verified UE location for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Disabling of HARQ feedback for IoT NTN"
+    },
+    {
+     "level": 3,
+     "text": "Improved GNSS operations for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "Further NR mobility enhancements"
+    },
+    {
+     "level": 3,
+     "text": "L1 enhancements for inter-cell beam management"
+    },
+    {
+     "level": 3,
+     "text": "Timing advance management to reduce latency"
+    },
+    {
+     "level": 2,
+     "text": "Study on low-power wake-up signal and receiver for NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on low power WUS"
+    },
+    {
+     "level": 3,
+     "text": "Low power WUS receiver architectures"
+    },
+    {
+     "level": 3,
+     "text": "L1 signal design and procedure for low power WUS"
+    },
+    {
+     "level": 2,
+     "text": "Further NR coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "PRACH coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Power domain enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Dynamic switching between DFT-S-OFDM and CP-OFDM"
+    },
+    {
+     "level": 2,
+     "text": "NR support for UAV (Uncrewed Aerial Vehicles)"
+    },
+    {
+     "level": 3,
+     "text": "UE capability and RRC signaling for UAV beamforming"
+    },
+    {
+     "level": 2,
+     "text": "NR support for dedicated spectrum less than 5MHz for FR1"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements to operate NR on dedicated spectrum less than 5 MHz"
+    },
+    {
+     "level": 2,
+     "text": "Other"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #112"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 1RAN1 MainAnnex A-2:RAN1#112 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #112"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #112"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #112"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #112"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #112"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2023 – 2024"
+    }
+   ]
+  },
+  "113": {
+   "source_file": "Final_Minutes_report_RAN1#113_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#113_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_113/Report/Final_Minutes_report_RAN1%23113_v100.zip",
+   "bytes": 1370579,
+   "heading_count": 120,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "E-UTRA Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on E-UTRA Releases 8 – 16"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on E-UTRA Release 17"
+    },
+    {
+     "level": 1,
+     "text": "NR Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Releases 15 – 16"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Release 17"
+    },
+    {
+     "level": 1,
+     "text": "Void"
+    },
+    {
+     "level": 1,
+     "text": "Release 18"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO evolution for downlink and uplink"
+    },
+    {
+     "level": 3,
+     "text": "Multi-TRP enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Unified TCI framework extension for multi-TRP"
+    },
+    {
+     "level": 4,
+     "text": "Two TAs for multi-DCI"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Reference signal enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Increased number of orthogonal DMRS ports"
+    },
+    {
+     "level": 4,
+     "text": "SRS enhancement targeting TDD CJT and 8 TX operation"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced uplink transmission"
+    },
+    {
+     "level": 4,
+     "text": "UL precoding indication for multi-panel transmission"
+    },
+    {
+     "level": 4,
+     "text": "SRI/TPMI enhancement for enabling 8 TX UL transmission"
+    },
+    {
+     "level": 2,
+     "text": "Study on Artificial Intelligence (AI)/Machine Learning (ML) for NR air interface"
+    },
+    {
+     "level": 3,
+     "text": "General aspects of AI/ML framework"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for beam management"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for beam management"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for beam management"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 2,
+     "text": "Study on evolution of NR duplex operation"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on NR duplex evolution"
+    },
+    {
+     "level": 3,
+     "text": "Subband non-overlapping full duplex"
+    },
+    {
+     "level": 3,
+     "text": "Potential enhancements on dynamic/flexible TDD"
+    },
+    {
+     "level": 2,
+     "text": "NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "Support of sidelink on unlicensed spectrum"
+    },
+    {
+     "level": 4,
+     "text": "Channel access mechanism"
+    },
+    {
+     "level": 4,
+     "text": "Physical channel design framework"
+    },
+    {
+     "level": 3,
+     "text": "Co-channel coexistence for LTE sidelink and NR sidelink"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced sidelink operation on FR2 licensed spectrum"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink CA operation"
+    },
+    {
+     "level": 2,
+     "text": "Expanded and Improved NR Positioning"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink positioning"
+    },
+    {
+     "level": 4,
+     "text": "SL positioning reference signal"
+    },
+    {
+     "level": 4,
+     "text": "Measurements and reporting for SL positioning"
+    },
+    {
+     "level": 4,
+     "text": "Resource allocation for SL positioning reference signal"
+    },
+    {
+     "level": 3,
+     "text": "NR DL and UL carrier phase positioning"
+    },
+    {
+     "level": 3,
+     "text": "LPHAP (Low Power High Accuracy Positioning)"
+    },
+    {
+     "level": 3,
+     "text": "Bandwidth aggregation for positioning measurements"
+    },
+    {
+     "level": 3,
+     "text": "Positioning for RedCap UEs"
+    },
+    {
+     "level": 2,
+     "text": "Enhanced support of reduced capability NR device"
+    },
+    {
+     "level": 3,
+     "text": "UE complexity reduction"
+    },
+    {
+     "level": 2,
+     "text": "Network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "Techniques in spatial and power domains"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements on cell DTX/DRX mechanism"
+    },
+    {
+     "level": 2,
+     "text": "XR Enhancements for NR"
+    },
+    {
+     "level": 3,
+     "text": "XR-specific capacity enhancements"
+    },
+    {
+     "level": 2,
+     "text": "NTN (Non-Terrestrial Networks) enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Coverage enhancement for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Network verified UE location for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Disabling of HARQ feedback for IoT NTN"
+    },
+    {
+     "level": 3,
+     "text": "Improved GNSS operations for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "Further NR mobility enhancements"
+    },
+    {
+     "level": 3,
+     "text": "L1 enhancements for inter-cell beam management"
+    },
+    {
+     "level": 3,
+     "text": "Timing advance management to reduce latency"
+    },
+    {
+     "level": 2,
+     "text": "Study on low-power wake-up signal and receiver for NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on low power WUS"
+    },
+    {
+     "level": 3,
+     "text": "Low power WUS receiver architectures"
+    },
+    {
+     "level": 3,
+     "text": "L1 signal design and procedure for low power WUS"
+    },
+    {
+     "level": 2,
+     "text": "Further NR coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "PRACH coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Power domain enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Dynamic switching between DFT-S-OFDM and CP-OFDM"
+    },
+    {
+     "level": 2,
+     "text": "NR support for dedicated spectrum less than 5MHz for FR1"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements to operate NR on dedicated spectrum less than 5 MHz"
+    },
+    {
+     "level": 2,
+     "text": "Study on Self-Evaluation towards the 3GPP submission of a IMT-2020 Satellite Radio Interface Technology"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation methodology"
+    },
+    {
+     "level": 3,
+     "text": "Self-evaluation results for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Self-evaluation results for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "TEIs"
+    },
+    {
+     "level": 2,
+     "text": "UE features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for expanded and improved NR positioning"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR network energy savings"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR NCR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR NTN enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR mobility enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for eRedCap"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MC enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for XR enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for IoT NTN enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for dedicated spectrum less than 5MHz"
+    },
+    {
+     "level": 3,
+     "text": "UE features for eDSS"
+    },
+    {
+     "level": 3,
+     "text": "UE features for BWP without restriction"
+    },
+    {
+     "level": 3,
+     "text": "UE features for coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Other"
+    },
+    {
+     "level": 2,
+     "text": "Other"
+    },
+    {
+     "level": 1,
+     "text": "Elections"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #113"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 1RAN1 MainAnnex A-2:RAN1#113 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #113"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #113"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #113"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #113"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #113"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2023 – 2024"
+    }
+   ]
+  },
+  "114": {
+   "source_file": "Draft_Minutes_report_RAN1#114_v030.zip",
+   "inner_docx": "Draft_Minutes_report_RAN1#114_v030.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_114/Report/Draft_Minutes_report_RAN1%23114_v030.zip",
+   "bytes": 1238923,
+   "heading_count": 119,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "E-UTRA Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on E-UTRA Releases 8 – 16"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on E-UTRA Release 17"
+    },
+    {
+     "level": 1,
+     "text": "NR Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Releases 15 – 16"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Release 17"
+    },
+    {
+     "level": 1,
+     "text": "Void"
+    },
+    {
+     "level": 1,
+     "text": "Release 18"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO evolution for downlink and uplink"
+    },
+    {
+     "level": 3,
+     "text": "Multi-TRP enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Unified TCI framework extension for multi-TRP"
+    },
+    {
+     "level": 4,
+     "text": "Two TAs for multi-DCI"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Reference signal enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Increased number of orthogonal DMRS ports"
+    },
+    {
+     "level": 4,
+     "text": "SRS enhancement targeting TDD CJT and 8 TX operation"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced uplink transmission"
+    },
+    {
+     "level": 4,
+     "text": "UL precoding indication for multi-panel transmission"
+    },
+    {
+     "level": 4,
+     "text": "SRI/TPMI enhancement for enabling 8 TX UL transmission"
+    },
+    {
+     "level": 2,
+     "text": "Study on Artificial Intelligence (AI)/Machine Learning (ML) for NR air interface"
+    },
+    {
+     "level": 3,
+     "text": "General aspects of AI/ML framework"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for beam management"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for beam management"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for beam management"
+    },
+    {
+     "level": 3,
+     "text": "AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation on AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects on AI/ML for positioning accuracy enhancement"
+    },
+    {
+     "level": 2,
+     "text": "Study on evolution of NR duplex operation"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on NR duplex evolution"
+    },
+    {
+     "level": 3,
+     "text": "Subband non-overlapping full duplex"
+    },
+    {
+     "level": 3,
+     "text": "Potential enhancements on dynamic/flexible TDD"
+    },
+    {
+     "level": 2,
+     "text": "NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "Support of sidelink on unlicensed spectrum"
+    },
+    {
+     "level": 4,
+     "text": "Channel access mechanism"
+    },
+    {
+     "level": 4,
+     "text": "Physical channel design framework"
+    },
+    {
+     "level": 3,
+     "text": "Co-channel coexistence for LTE sidelink and NR sidelink"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced sidelink operation on FR2 licensed spectrum"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink CA operation"
+    },
+    {
+     "level": 2,
+     "text": "Expanded and Improved NR Positioning"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink positioning"
+    },
+    {
+     "level": 4,
+     "text": "SL positioning reference signal"
+    },
+    {
+     "level": 4,
+     "text": "Measurements and reporting for SL positioning"
+    },
+    {
+     "level": 4,
+     "text": "Resource allocation for SL positioning reference signal"
+    },
+    {
+     "level": 3,
+     "text": "NR DL and UL carrier phase positioning"
+    },
+    {
+     "level": 3,
+     "text": "LPHAP (Low Power High Accuracy Positioning)"
+    },
+    {
+     "level": 3,
+     "text": "Bandwidth aggregation for positioning measurements"
+    },
+    {
+     "level": 3,
+     "text": "Positioning for RedCap UEs"
+    },
+    {
+     "level": 2,
+     "text": "Enhanced support of reduced capability NR device"
+    },
+    {
+     "level": 3,
+     "text": "UE complexity reduction"
+    },
+    {
+     "level": 2,
+     "text": "Network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "Techniques in spatial and power domains"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements on cell DTX/DRX mechanism"
+    },
+    {
+     "level": 2,
+     "text": "XR Enhancements for NR"
+    },
+    {
+     "level": 3,
+     "text": "XR-specific capacity enhancements"
+    },
+    {
+     "level": 2,
+     "text": "NTN (Non-Terrestrial Networks) enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Coverage enhancement for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Network verified UE location for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Disabling of HARQ feedback for IoT NTN"
+    },
+    {
+     "level": 3,
+     "text": "Improved GNSS operations for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "Further NR mobility enhancements"
+    },
+    {
+     "level": 3,
+     "text": "L1 enhancements for inter-cell beam management"
+    },
+    {
+     "level": 3,
+     "text": "Timing advance management to reduce latency"
+    },
+    {
+     "level": 2,
+     "text": "Study on low-power wake-up signal and receiver for NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on low power WUS"
+    },
+    {
+     "level": 3,
+     "text": "Low power WUS receiver architectures"
+    },
+    {
+     "level": 3,
+     "text": "L1 signal design and procedure for low power WUS"
+    },
+    {
+     "level": 2,
+     "text": "Further NR coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "PRACH coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Power domain enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Dynamic switching between DFT-S-OFDM and CP-OFDM"
+    },
+    {
+     "level": 2,
+     "text": "NR support for dedicated spectrum less than 5MHz for FR1"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements to operate NR on dedicated spectrum less than 5 MHz"
+    },
+    {
+     "level": 2,
+     "text": "Study on self-evaluation towards the IMT-2020 submission of the 3GPP Satellite Radio Interface Technology"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation methodology"
+    },
+    {
+     "level": 3,
+     "text": "Self-evaluation results for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Self-evaluation results for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "TEIs"
+    },
+    {
+     "level": 2,
+     "text": "UE features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for expanded and improved NR positioning"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR network energy savings"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR NCR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR NTN enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR mobility enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for eRedCap"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MC enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for XR enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for IoT NTN enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for dedicated spectrum less than 5MHz"
+    },
+    {
+     "level": 3,
+     "text": "UE features for eDSS"
+    },
+    {
+     "level": 3,
+     "text": "UE features for BWP without restriction"
+    },
+    {
+     "level": 3,
+     "text": "UE features for coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Other"
+    },
+    {
+     "level": 2,
+     "text": "Other"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #114"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 1RAN1 MainAnnex A-2:RAN1#114 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #114"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #114"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #114"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #114"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #114"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2023 – 2024"
+    }
+   ]
+  },
+  "115": {
+   "source_file": "Final_Minutes_report_RAN1#115_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#115_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_115/Report/Final_Minutes_report_RAN1%23115_v100.zip",
+   "bytes": 1909298,
+   "heading_count": 108,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 NR Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Releases 15 – 16"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Release 17"
+    },
+    {
+     "level": 1,
+     "text": "Rel-18"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR MIMO Evolution for Downlink and Uplink"
+    },
+    {
+     "level": 3,
+     "text": "Multi-TRP enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Unified TCI framework extension for multi-TRP"
+    },
+    {
+     "level": 4,
+     "text": "Two TAs for multi-DCI"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Reference signal enhancement"
+    },
+    {
+     "level": 4,
+     "text": "Increased number of orthogonal DMRS ports"
+    },
+    {
+     "level": 4,
+     "text": "SRS enhancement targeting TDD CJT and 8 TX operation"
+    },
+    {
+     "level": 3,
+     "text": "Enhanced uplink transmission"
+    },
+    {
+     "level": 4,
+     "text": "UL precoding indication for multi-panel transmission"
+    },
+    {
+     "level": 4,
+     "text": "SRI/TPMI enhancement for enabling 8 TX UL transmission"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Sidelink Evolution"
+    },
+    {
+     "level": 3,
+     "text": "Support of sidelink on unlicensed spectrum"
+    },
+    {
+     "level": 4,
+     "text": "Channel access mechanism"
+    },
+    {
+     "level": 4,
+     "text": "Physical channel design framework"
+    },
+    {
+     "level": 3,
+     "text": "Co-channel coexistence for LTE sidelink and NR sidelink"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink CA operation"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Expanded and Improved NR Positioning"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink positioning"
+    },
+    {
+     "level": 4,
+     "text": "SL positioning reference signal"
+    },
+    {
+     "level": 4,
+     "text": "Measurements and reporting for SL positioning"
+    },
+    {
+     "level": 4,
+     "text": "Resource allocation for SL positioning reference signal"
+    },
+    {
+     "level": 3,
+     "text": "NR DL and UL carrier phase positioning"
+    },
+    {
+     "level": 3,
+     "text": "LPHAP (Low Power High Accuracy Positioning)"
+    },
+    {
+     "level": 3,
+     "text": "Bandwidth aggregation for positioning measurements"
+    },
+    {
+     "level": 3,
+     "text": "Positioning for RedCap UEs"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Enhanced Support of Reduced Capability NR device"
+    },
+    {
+     "level": 3,
+     "text": "UE complexity reduction"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Network Energy Savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "Techniques in spatial and power domains"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements on cell DTX/DRX mechanism"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on XR Enhancements for NR"
+    },
+    {
+     "level": 3,
+     "text": "XR-specific capacity enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Further NR Mobility Enhancements"
+    },
+    {
+     "level": 3,
+     "text": "L1 enhancements for inter-cell beam management"
+    },
+    {
+     "level": 3,
+     "text": "Timing advance management to reduce latency"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Further NR Coverage Enhancements"
+    },
+    {
+     "level": 3,
+     "text": "PRACH coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Power domain enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Dynamic switching between DFT-S-OFDM and CP-OFDM"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Support for Dedicated Spectrum Less than 5MHz for FR1"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements to operate NR on dedicated spectrum less than 5 MHz"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Enhancement of NR Dynamic Spectrum Sharing (DSS)"
+    },
+    {
+     "level": 3,
+     "text": "NR PDCCH reception in symbols with LTE CRS REs"
+    },
+    {
+     "level": 3,
+     "text": "UE support for two overlapping CRS rate matching patterns"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Network-Controlled Repeaters"
+    },
+    {
+     "level": 3,
+     "text": "Side control information and NCR behaviour"
+    },
+    {
+     "level": 3,
+     "text": "Other aspects including control plane signalling and procedures relevant to RAN1"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Multi-Carrier Enhancements for NR"
+    },
+    {
+     "level": 3,
+     "text": "Multi-cell PUSCH/PDSCH scheduling with a single DCI"
+    },
+    {
+     "level": 3,
+     "text": "Multi-carrier UL Tx switching scheme"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NTN (Non-Terrestrial Networks) Enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Coverage enhancement for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Network verified UE location for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Disabling of HARQ feedback for IoT NTN"
+    },
+    {
+     "level": 3,
+     "text": "Improved GNSS operations for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "Study on Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "General aspects of AI/ML framework"
+    },
+    {
+     "level": 3,
+     "text": "Other aspects on AI/ML for CSI feedback enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Remaining aspects on AI/ML"
+    },
+    {
+     "level": 2,
+     "text": "Study on Self-Evaluation towards the IMT-2020 Submission of the 3GPP Satellite Radio Interface Technology"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation methodology"
+    },
+    {
+     "level": 3,
+     "text": "Self-evaluation results for NR NTN"
+    },
+    {
+     "level": 3,
+     "text": "Self-evaluation results for IoT NTN"
+    },
+    {
+     "level": 2,
+     "text": "UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for expanded and improved NR positioning"
+    },
+    {
+     "level": 3,
+     "text": "UE features for eRedCap"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR network energy savings"
+    },
+    {
+     "level": 3,
+     "text": "UE features for XR enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR mobility enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for coverage enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for dedicated spectrum less than 5MHz"
+    },
+    {
+     "level": 3,
+     "text": "UE features for eDSS"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR NCR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MC enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for IoT NTN enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR NTN enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for BWP without restriction"
+    },
+    {
+     "level": 3,
+     "text": "Other"
+    },
+    {
+     "level": 2,
+     "text": "Other"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #115"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 1RAN1 MainAnnex A-2:RAN1#115 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #115"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #115"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #115"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #115"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #115"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2024 – 2025"
+    }
+   ]
+  },
+  "116": {
+   "source_file": "Final_Minutes_report_RAN1#116_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#116_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_116/Report/Final_Minutes_report_RAN1%23116_v100.zip",
+   "bytes": 1670117,
+   "heading_count": 91,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 NR Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Releases 15 – 16"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Release 17"
+    },
+    {
+     "level": 1,
+     "text": "Maintenance on Release 18"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR MIMO Evolution for Downlink and Uplink"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Sidelink Evolution"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Expanded and Improved NR Positioning"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Network Energy Savings for NR"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Further NR Mobility Enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Further NR Coverage Enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR Network-Controlled Repeaters"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Multi-Carrier Enhancements for NR"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on IoT NTN enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR NTN enhancements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on other Rel-18 work items"
+    },
+    {
+     "level": 2,
+     "text": "UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR sidelink evolution"
+    },
+    {
+     "level": 3,
+     "text": "UE features for expanded and improved NR positioning"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MC enhancements"
+    },
+    {
+     "level": 3,
+     "text": "UE features for other Rel-18 work items (Topics A)"
+    },
+    {
+     "level": 3,
+     "text": "UE features for other Rel-18 work items (Topics B)"
+    },
+    {
+     "level": 1,
+     "text": "Release 19"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Additional study on AI/ML for NR air interface"
+    },
+    {
+     "level": 4,
+     "text": "CSI prediction"
+    },
+    {
+     "level": 4,
+     "text": "CSI compression"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects of AI/ML model and data"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Study on solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on Ambient IoT in NR"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation assumptions and results"
+    },
+    {
+     "level": 4,
+     "text": "Ambient IoT device architectures"
+    },
+    {
+     "level": 3,
+     "text": "Physical layer design for Ambient IoT"
+    },
+    {
+     "level": 4,
+     "text": "General aspects of physical layer design"
+    },
+    {
+     "level": 4,
+     "text": "Frame structure and timing aspects"
+    },
+    {
+     "level": 4,
+     "text": "Downlink and uplink channel/signal aspects"
+    },
+    {
+     "level": 4,
+     "text": "Waveform characteristics of carrier-wave provided externally to the Ambient IoT device"
+    },
+    {
+     "level": 2,
+     "text": "Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode UEs"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "ISAC deployment scenarios"
+    },
+    {
+     "level": 3,
+     "text": "ISAC channel modelling"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 2,
+     "text": "NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 2,
+     "text": "XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 3 and Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 2,
+     "text": "TEI"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #116"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#116 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #116"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #116"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #116"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #116"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #116"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2024 – 2025"
+    }
+   ]
+  },
+  "117": {
+   "source_file": "Draft_Minutes_report_RAN1#117_v030.zip",
+   "inner_docx": "Draft_Minutes_report_RAN1#117_v030.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_117/Report/Draft_Minutes_report_RAN1%23117_v030.zip",
+   "bytes": 1023342,
+   "heading_count": 77,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 NR Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Maintenance on Release 18"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Rel-18 work items"
+    },
+    {
+     "level": 2,
+     "text": "Rel-18 UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for other Rel-18 work items (Topics A)"
+    },
+    {
+     "level": 3,
+     "text": "UE features for other Rel-18 work items (Topics B)"
+    },
+    {
+     "level": 1,
+     "text": "Release 19"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Additional study on AI/ML for NR air interface"
+    },
+    {
+     "level": 4,
+     "text": "CSI prediction"
+    },
+    {
+     "level": 4,
+     "text": "CSI compression"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects of AI/ML model and data"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Study on solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on Ambient IoT in NR"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation assumptions and results"
+    },
+    {
+     "level": 4,
+     "text": "Ambient IoT device architectures"
+    },
+    {
+     "level": 3,
+     "text": "Physical layer design for Ambient IoT"
+    },
+    {
+     "level": 4,
+     "text": "General aspects of physical layer design"
+    },
+    {
+     "level": 4,
+     "text": "Frame structure and timing aspects"
+    },
+    {
+     "level": 4,
+     "text": "Downlink and uplink channel/signal aspects"
+    },
+    {
+     "level": 4,
+     "text": "Waveform characteristics of carrier-wave provided externally to the Ambient IoT device"
+    },
+    {
+     "level": 2,
+     "text": "Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode UEs"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "ISAC deployment scenarios"
+    },
+    {
+     "level": 3,
+     "text": "ISAC channel modelling"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 3,
+     "text": "Channel model validation of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 3,
+     "text": "Channel model adaptation/extension of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 2,
+     "text": "NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 2,
+     "text": "XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 3 and Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 2,
+     "text": "TEI"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #117"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#117 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #117"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #117"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #117"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #117"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #117"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2024 – 2025"
+    }
+   ]
+  },
+  "118": {
+   "source_file": "Final_Minutes_report_RAN1#118_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#118_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_118/Report/Final_Minutes_report_RAN1%23118_v100.zip",
+   "bytes": 1735219,
+   "heading_count": 89,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 NR Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Maintenance on Release 18"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Rel-18 work items"
+    },
+    {
+     "level": 3,
+     "text": "MIMO"
+    },
+    {
+     "level": 3,
+     "text": "Network Energy Savings"
+    },
+    {
+     "level": 3,
+     "text": "Others"
+    },
+    {
+     "level": 4,
+     "text": "FR1 Less than 5MHz"
+    },
+    {
+     "level": 4,
+     "text": "Coverage Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Mobility"
+    },
+    {
+     "level": 3,
+     "text": "Multi-Carrier"
+    },
+    {
+     "level": 3,
+     "text": "Positioning"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN/IoT-NTN"
+    },
+    {
+     "level": 3,
+     "text": "MBS"
+    },
+    {
+     "level": 2,
+     "text": "Rel-18 UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for other Rel-18 work items (Topics A)"
+    },
+    {
+     "level": 3,
+     "text": "UE features for other Rel-18 work items (Topics B)"
+    },
+    {
+     "level": 1,
+     "text": "Release 19"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Additional study on AI/ML for NR air interface"
+    },
+    {
+     "level": 4,
+     "text": "CSI prediction"
+    },
+    {
+     "level": 4,
+     "text": "CSI compression"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects of AI/ML model and data"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Study on solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on Ambient IoT in NR"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation assumptions and results"
+    },
+    {
+     "level": 4,
+     "text": "Ambient IoT device architectures"
+    },
+    {
+     "level": 3,
+     "text": "Physical layer design for Ambient IoT"
+    },
+    {
+     "level": 4,
+     "text": "General aspects of physical layer design"
+    },
+    {
+     "level": 4,
+     "text": "Frame structure and timing aspects"
+    },
+    {
+     "level": 4,
+     "text": "Downlink and uplink channel/signal aspects"
+    },
+    {
+     "level": 4,
+     "text": "Waveform characteristics of carrier-wave provided externally to the Ambient IoT device"
+    },
+    {
+     "level": 2,
+     "text": "Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode UEs"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "ISAC deployment scenarios"
+    },
+    {
+     "level": 3,
+     "text": "ISAC channel modelling"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 3,
+     "text": "Channel model validation of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 3,
+     "text": "Channel model adaptation/extension of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 2,
+     "text": "NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "Measurements related enhancements for LTM"
+    },
+    {
+     "level": 2,
+     "text": "XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 3 and Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 2,
+     "text": "TEI"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #118"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#118 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #118"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #118"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #118"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #118"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #118"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2024 – 2025"
+    }
+   ]
+  },
+  "119": {
+   "source_file": "Draft_Minutes_report_RAN1#119_v030.zip",
+   "inner_docx": "Draft_Minutes_report_RAN1#119_v030.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_119/Report/Draft_Minutes_report_RAN1%23119_v030.zip",
+   "bytes": 2990119,
+   "heading_count": 102,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 NR Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Maintenance on Release 18"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Rel-18 work items"
+    },
+    {
+     "level": 3,
+     "text": "NES"
+    },
+    {
+     "level": 3,
+     "text": "MIMO"
+    },
+    {
+     "level": 3,
+     "text": "Others"
+    },
+    {
+     "level": 3,
+     "text": "Multi-Carrier Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Coverage Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Mobility Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Positioning Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN"
+    },
+    {
+     "level": 2,
+     "text": "Rel-18 UE Features"
+    },
+    {
+     "level": 1,
+     "text": "Release 19"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for CSI prediction"
+    },
+    {
+     "level": 3,
+     "text": "Additional study on AI/ML for NR air interface"
+    },
+    {
+     "level": 4,
+     "text": "CSI compression"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects of AI/ML model and data"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Study on solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation on Ambient IoT in NR"
+    },
+    {
+     "level": 4,
+     "text": "Evaluation assumptions and results"
+    },
+    {
+     "level": 4,
+     "text": "Ambient IoT device architectures"
+    },
+    {
+     "level": 3,
+     "text": "Physical layer design for Ambient IoT"
+    },
+    {
+     "level": 4,
+     "text": "General aspects of physical layer design"
+    },
+    {
+     "level": 4,
+     "text": "Frame structure and timing aspects"
+    },
+    {
+     "level": 4,
+     "text": "Downlink and uplink channel/signal aspects"
+    },
+    {
+     "level": 4,
+     "text": "Waveform characteristics of carrier-wave provided externally to the Ambient IoT device"
+    },
+    {
+     "level": 2,
+     "text": "Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode UEs"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "ISAC deployment scenarios"
+    },
+    {
+     "level": 3,
+     "text": "ISAC channel modelling"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 3,
+     "text": "Channel model validation of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 3,
+     "text": "Channel model adaptation/extension of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 2,
+     "text": "NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "Measurements related enhancements for LTM"
+    },
+    {
+     "level": 2,
+     "text": "XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 3, Internet of Things (IoT) Phase 3, and IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN TDD mode"
+    },
+    {
+     "level": 2,
+     "text": "Multi-Carrier Enhancements for NR Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Multi-cell PUSCH/PDSCH scheduling with a single DCI"
+    },
+    {
+     "level": 2,
+     "text": "TEI"
+    },
+    {
+     "level": 2,
+     "text": "Rel-19 UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for AI/ML for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "UE features for evolution of NR duplex operation: SBFD"
+    },
+    {
+     "level": 3,
+     "text": "UE features for enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for LP-WUS/WUR for NR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "UE features for XR for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NTN for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NTN for Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MCE for NR Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Others"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #119"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#119 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #119"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #119"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #119"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #119"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #119"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2025 – 2026"
+    }
+   ]
+  },
+  "120": {
+   "source_file": "Final_Minutes_report_RAN1#120_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#120_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_120/Report/Final_Minutes_report_RAN1%23120_v100.zip",
+   "bytes": 1499340,
+   "heading_count": 103,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-18 NR Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Maintenance on Release 18"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Rel-18 work items"
+    },
+    {
+     "level": 3,
+     "text": "MIMO"
+    },
+    {
+     "level": 3,
+     "text": "MIMO (Alignment/editorial issues)"
+    },
+    {
+     "level": 3,
+     "text": "Network Energy Savings"
+    },
+    {
+     "level": 3,
+     "text": "Mobility Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Multi-Carrier Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Coverage Enhancement"
+    },
+    {
+     "level": 3,
+     "text": "NR Extension to 71GHz"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN/NR-NTN"
+    },
+    {
+     "level": 3,
+     "text": "Positioning"
+    },
+    {
+     "level": 3,
+     "text": "Sidelink"
+    },
+    {
+     "level": 2,
+     "text": "Rel-18 UE Features"
+    },
+    {
+     "level": 1,
+     "text": "Release 19"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for CSI prediction"
+    },
+    {
+     "level": 3,
+     "text": "Study on AI/ML for NR air interface Phase 2"
+    },
+    {
+     "level": 4,
+     "text": "CSI compression"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects of AI/ML model and data"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 3,
+     "text": "Physical channels design – modulation aspects"
+    },
+    {
+     "level": 3,
+     "text": "Physical channels design – line coding, FEC, CRC, repetition aspects"
+    },
+    {
+     "level": 3,
+     "text": "Timing acquisition and synchronization"
+    },
+    {
+     "level": 3,
+     "text": "Other aspects incl. multiplexing/multiple access, scheduling information, and timing relationships"
+    },
+    {
+     "level": 2,
+     "text": "Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode UEs"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "ISAC deployment scenarios"
+    },
+    {
+     "level": 3,
+     "text": "ISAC channel modelling"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 3,
+     "text": "Channel model validation of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 3,
+     "text": "Channel model adaptation/extension of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 2,
+     "text": "NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "Measurements related enhancements for LTM"
+    },
+    {
+     "level": 2,
+     "text": "XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 3, Internet of Things (IoT) Phase 3, and IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN TDD mode"
+    },
+    {
+     "level": 2,
+     "text": "Multi-Carrier Enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Multi-carrier enhancements for NR phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Low band carrier aggregation via switching"
+    },
+    {
+     "level": 2,
+     "text": "LTE-based 5G Broadcast Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Time-frequency interleaver design for MBMS dedicated cells"
+    },
+    {
+     "level": 2,
+     "text": "TEI"
+    },
+    {
+     "level": 2,
+     "text": "Rel-19 UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for AI/ML for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "UE features for evolution of NR duplex operation: SBFD"
+    },
+    {
+     "level": 3,
+     "text": "UE features for enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for LP-WUS/WUR for NR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "UE features for XR for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NTN for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NTN for Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MCE for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for low band CA via switching"
+    },
+    {
+     "level": 3,
+     "text": "UE features for LTE based 5G broadcast Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Others"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #120"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#120 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #120"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #120"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #120"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #120"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #120"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2025 – 2026"
+    }
+   ]
+  },
+  "121": {
+   "source_file": "Final_Minutes_report_RAN1#121_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#121_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_121/Report/Final_Minutes_report_RAN1%23121_v100.zip",
+   "bytes": 2126668,
+   "heading_count": 97,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for Registered Delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-19 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-19 NR Maintenance"
+    },
+    {
+     "level": 2,
+     "text": "MIMO, NES"
+    },
+    {
+     "level": 2,
+     "text": "NR NewRAT (Release 15)"
+    },
+    {
+     "level": 2,
+     "text": "Mobility Enh, CovEnh, UE Power Saving, MCE"
+    },
+    {
+     "level": 2,
+     "text": "NTN, Positioning, IAB, Sidelink, 71GHz, URLLC, SDT, Others"
+    },
+    {
+     "level": 1,
+     "text": "Void"
+    },
+    {
+     "level": 1,
+     "text": "Release 19"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for CSI prediction"
+    },
+    {
+     "level": 3,
+     "text": "Study on AI/ML for NR air interface Phase 2"
+    },
+    {
+     "level": 4,
+     "text": "CSI compression and any other aspects on AI/ML model/data"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 3,
+     "text": "Physical channels design – modulation aspects"
+    },
+    {
+     "level": 3,
+     "text": "Physical channels design – line coding, FEC, CRC, repetition aspects"
+    },
+    {
+     "level": 3,
+     "text": "Timing acquisition and synchronization"
+    },
+    {
+     "level": 3,
+     "text": "Other aspects incl. multiplexing/multiple access, scheduling information, and timing relationships"
+    },
+    {
+     "level": 2,
+     "text": "Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode UEs"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "ISAC deployment scenarios"
+    },
+    {
+     "level": 3,
+     "text": "ISAC channel modelling"
+    },
+    {
+     "level": 2,
+     "text": "Study on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 3,
+     "text": "Channel model validation of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 3,
+     "text": "Channel model adaptation/extension of TR38.901 for 7-24GHz"
+    },
+    {
+     "level": 2,
+     "text": "NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "Measurements related enhancements for LTM"
+    },
+    {
+     "level": 2,
+     "text": "XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 3, Internet of Things (IoT) Phase 3, and IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN TDD mode"
+    },
+    {
+     "level": 2,
+     "text": "Multi-Carrier Enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Multi-carrier enhancements for NR phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Low band carrier aggregation via switching"
+    },
+    {
+     "level": 2,
+     "text": "LTE-based 5G Broadcast Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Time-frequency interleaver design for MBMS dedicated cells"
+    },
+    {
+     "level": 2,
+     "text": "TEI"
+    },
+    {
+     "level": 2,
+     "text": "Rel-19 UE Features"
+    },
+    {
+     "level": 3,
+     "text": "UE features for AI/ML for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "UE features for evolution of NR duplex operation: SBFD"
+    },
+    {
+     "level": 3,
+     "text": "UE features for enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for LP-WUS/WUR for NR"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "UE features for XR for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NTN for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for NTN for Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "UE features for MCE for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "UE features for low band CA via switching"
+    },
+    {
+     "level": 3,
+     "text": "UE features for LTE based 5G broadcast Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Others"
+    },
+    {
+     "level": 1,
+     "text": "Elections"
+    },
+    {
+     "level": 2,
+     "text": "Chair election"
+    },
+    {
+     "level": 2,
+     "text": "Vice Chair election"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #121"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#121 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #121"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #121"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #121"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #121"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #121"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2025 – 2026"
+    }
+   ]
+  },
+  "122": {
+   "source_file": "Final_Minutes_report_RAN1#122_v100.zip",
+   "inner_docx": "Final_Minutes_report_RAN1#122_v100.docx",
+   "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/Report/Final_Minutes_report_RAN1%23122_v100.zip",
+   "bytes": 1524043,
+   "heading_count": 119,
+   "headings": [
+    {
+     "level": 1,
+     "text": "Opening of the meeting"
+    },
+    {
+     "level": 2,
+     "text": "Call for IPR"
+    },
+    {
+     "level": 2,
+     "text": "Competition law statement"
+    },
+    {
+     "level": 2,
+     "text": "Network usage conditions"
+    },
+    {
+     "level": 2,
+     "text": "Consensus principles reminder"
+    },
+    {
+     "level": 2,
+     "text": "Streamlined standards"
+    },
+    {
+     "level": 2,
+     "text": "Check-in for registered delegates"
+    },
+    {
+     "level": 2,
+     "text": "Recording of RAN1 Meeting"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Agenda"
+    },
+    {
+     "level": 1,
+     "text": "Highlights from RAN plenary"
+    },
+    {
+     "level": 1,
+     "text": "Approval of Minutes from previous meeting"
+    },
+    {
+     "level": 1,
+     "text": "Incoming Liaison Statements"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-19 E-UTRA Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Pre-Rel-19 NR Maintenance"
+    },
+    {
+     "level": 1,
+     "text": "Maintenance on Rel-19 NR and E-UTRA"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Artificial Intelligence (AI)/Machine Learning (ML) for NR Air Interface"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for beam management"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for positioning accuracy enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Specification support for CSI prediction"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR MIMO Phase 5"
+    },
+    {
+     "level": 3,
+     "text": "Enhancements for UE-initiated/event-driven beam management"
+    },
+    {
+     "level": 3,
+     "text": "CSI enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Support for 3-antenna-port codebook-based transmissions"
+    },
+    {
+     "level": 3,
+     "text": "Enhancement for asymmetric DL sTRP/UL mTRP scenarios"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Evolution of NR duplex operation: Sub-band full duplex (SBFD)"
+    },
+    {
+     "level": 3,
+     "text": "SBFD TX/RX/measurement procedures"
+    },
+    {
+     "level": 3,
+     "text": "SBFD random access operation"
+    },
+    {
+     "level": 3,
+     "text": "CLI handling"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Solutions for Ambient IoT (Internet of Things) in NR"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Enhancements of network energy savings for NR"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SSB SCell operation"
+    },
+    {
+     "level": 3,
+     "text": "On-demand SIB1 for idle/inactive mode Ues"
+    },
+    {
+     "level": 3,
+     "text": "Adaptation of common signal/channel transmissions"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Low-power wake-up signal and receiver for NR (LP-WUS/WUR)"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS and LP-SS design"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in IDLE/INACTIVE modes"
+    },
+    {
+     "level": 3,
+     "text": "LP-WUS operation in CONNECTED modes"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on channel modelling for Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on channel modelling enhancements for 7-24GHz for NR"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "Measurements related enhancements for LTM"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on XR (eXtended Reality) for NR Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Enabling TX/RX for XR during RRM measurements"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Non-Terrestrial Networks (NTN) for NR Phase 3, Internet of Things (IoT) Phase 3, and IoT-NTN TDD mode"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN downlink coverage enhancement"
+    },
+    {
+     "level": 3,
+     "text": "Support of RedCap and eRedCap UEs with NR NTN operating in FR1-NTN bands"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN uplink capacity/throughput enhancement"
+    },
+    {
+     "level": 3,
+     "text": "IoT-NTN TDD mode"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on Multi-Carrier Enhancements"
+    },
+    {
+     "level": 3,
+     "text": "Multi-carrier enhancements for NR phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Low band carrier aggregation via switching"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on LTE-based 5G Broadcast Phase 2"
+    },
+    {
+     "level": 3,
+     "text": "Time-frequency interleaver design for MBMS dedicated cells"
+    },
+    {
+     "level": 2,
+     "text": "Maintenance on R19 TEI"
+    },
+    {
+     "level": 1,
+     "text": "Rel-19 UE Features"
+    },
+    {
+     "level": 2,
+     "text": "UE features for AI/ML for NR Air Interface"
+    },
+    {
+     "level": 2,
+     "text": "UE features for NR MIMO Phase 5"
+    },
+    {
+     "level": 2,
+     "text": "UE features for evolution of NR duplex operation: SBFD"
+    },
+    {
+     "level": 2,
+     "text": "UE features for enhancements of network energy savings for NR"
+    },
+    {
+     "level": 2,
+     "text": "UE features for LP-WUS/WUR for NR"
+    },
+    {
+     "level": 2,
+     "text": "UE features for NR mobility enhancements Phase 4"
+    },
+    {
+     "level": 2,
+     "text": "UE features for XR for NR Phase 3"
+    },
+    {
+     "level": 2,
+     "text": "UE features for NTN for NR Phase 3"
+    },
+    {
+     "level": 2,
+     "text": "UE features for NTN for Internet of Things (IoT) Phase 3"
+    },
+    {
+     "level": 2,
+     "text": "UE features for IoT-NTN TDD mode"
+    },
+    {
+     "level": 2,
+     "text": "UE features for MCE for NR Phase 3"
+    },
+    {
+     "level": 2,
+     "text": "UE features for low band CA via switching"
+    },
+    {
+     "level": 2,
+     "text": "UE features for LTE based 5G broadcast Phase 2"
+    },
+    {
+     "level": 2,
+     "text": "Others"
+    },
+    {
+     "level": 1,
+     "text": "Release 20 NR"
+    },
+    {
+     "level": 2,
+     "text": "Artificial Intelligence (AI)/Machine Learning (ML) for NR air interface enhancements"
+    },
+    {
+     "level": 3,
+     "text": "CSI spatial/frequency compression without temporal aspects (“Case 0”)"
+    },
+    {
+     "level": 4,
+     "text": "Inference related aspects"
+    },
+    {
+     "level": 4,
+     "text": "Other aspects"
+    },
+    {
+     "level": 3,
+     "text": "Inter-vendor training collaboration for two-sided AI/ML models"
+    },
+    {
+     "level": 2,
+     "text": "NR MIMO Phase 6"
+    },
+    {
+     "level": 3,
+     "text": "Improvement of SRS capacity and coverage"
+    },
+    {
+     "level": 3,
+     "text": "Enhancing DL CSI acquisition"
+    },
+    {
+     "level": 2,
+     "text": "Study of Enhancements for solutions for Ambient IoT (Internet of Things) in NR outdoor for active devices"
+    },
+    {
+     "level": 3,
+     "text": "Evaluations"
+    },
+    {
+     "level": 3,
+     "text": "Study of air interface for Device 2b/C"
+    },
+    {
+     "level": 2,
+     "text": "Coverage Enhancement Phase 3"
+    },
+    {
+     "level": 3,
+     "text": "Coverage enhancement"
+    },
+    {
+     "level": 2,
+     "text": "Study on Integrated Sensing And Communication (ISAC) for NR"
+    },
+    {
+     "level": 3,
+     "text": "Evaluation assumptions and performance evaluation"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for NR Phase 4"
+    },
+    {
+     "level": 3,
+     "text": "NR-NTN GNSS resilience"
+    },
+    {
+     "level": 2,
+     "text": "Non-Terrestrial Networks (NTN) for Internet of Things (IoT) Phase 4"
+    },
+    {
+     "level": 1,
+     "text": "Rel-20 Study of 6GR"
+    },
+    {
+     "level": 2,
+     "text": "Overview of 6GR air interface"
+    },
+    {
+     "level": 2,
+     "text": "Evaluation assumptions for 6GR air interface"
+    },
+    {
+     "level": 2,
+     "text": "Waveform and frame structure for 6GR air interface"
+    },
+    {
+     "level": 3,
+     "text": "Waveform"
+    },
+    {
+     "level": 3,
+     "text": "Frame structure"
+    },
+    {
+     "level": 2,
+     "text": "Channel coding and modulation for 6GR interface"
+    },
+    {
+     "level": 3,
+     "text": "Channel coding"
+    },
+    {
+     "level": 3,
+     "text": "Modulation, joint channel coding and modulation"
+    },
+    {
+     "level": 2,
+     "text": "Energy efficiency"
+    },
+    {
+     "level": 2,
+     "text": "AI/ML in 6GR interface"
+    },
+    {
+     "level": 2,
+     "text": "Initial access"
+    },
+    {
+     "level": 2,
+     "text": "MIMO operation"
+    },
+    {
+     "level": 2,
+     "text": "Physical layer control, data scheduling and HARQ operation"
+    },
+    {
+     "level": 2,
+     "text": "Duplexing"
+    },
+    {
+     "level": 2,
+     "text": "6GR spectrum utilization and aggregation"
+    },
+    {
+     "level": 2,
+     "text": "NTN"
+    },
+    {
+     "level": 2,
+     "text": "Other physical layer signals, channels and procedures"
+    },
+    {
+     "level": 2,
+     "text": "Sensing"
+    },
+    {
+     "level": 1,
+     "text": "Closing of the meeting"
+    },
+    {
+     "level": 1,
+     "text": "Annex A-1:List of Tdocs at RAN1 #122"
+    },
+    {
+     "level": 1,
+     "text": "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 MainAnnex A-2:RAN1#122 Online Session Schedule"
+    },
+    {
+     "level": 1,
+     "text": "Annex B:List of CRs agreed at RAN1 #122"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-1:List of Outgoing LSs from RAN1 #122"
+    },
+    {
+     "level": 1,
+     "text": "Annex C-2:List of Incoming LSs from RAN1 #122"
+    },
+    {
+     "level": 1,
+     "text": "Annex D:List of Approved updated WIDs"
+    },
+    {
+     "level": 1,
+     "text": "Annex E:List of draft TSs/TRs agreed at RAN1 #122"
+    },
+    {
+     "level": 1,
+     "text": "Annex F:List of actions"
+    },
+    {
+     "level": 1,
+     "text": "Annex G:List of participants at RAN1 #122"
+    },
+    {
+     "level": 1,
+     "text": "Annex H:TSG RAN WG1 meetings in 2025 – 2026"
+    }
+   ]
+  }
+ }
+}
