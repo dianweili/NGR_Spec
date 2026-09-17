@@ -2537,4 +2537,323 @@ git commit -m "feat(map): 血统段匹配引擎"
 
 ---
 
+### Task 13: map 编排、state 写入与 lineage-report
+
+> **里程碑：本任务完成后，`parsed → state` 全链路打通，agreement 已按血统归集入库。**
+
+`lineage-report` 不是锦上添花 —— 5G-A 段的 `title_re` 必然要反复调，没有这个"改正则 → remap → 看命中"的秒级闭环，血统追溯根本做不下去。
+
+**Files:**
+- Create: `ngr/mapping/runner.py`, `ngr/mapping/report.py`
+- Test: `tests/test_mapping_runner.py`
+
+**Interfaces:**
+- Consumes: `match_event`、`ngr.models.Event`、`ngr.config.load_features`
+- Produces:
+  - `map_meeting(parsed: dict, features, meeting_end=None) -> list[Event]`
+  - `merge_events(existing: list[dict], incoming: list[Event], today: str) -> tuple[list[dict], MergeStats]`
+  - `MergeStats`：`.added` `.changed` `.unchanged`
+  - `write_state(events: list[dict], path) -> Path`
+  - `lineage_report(features, parsed_meetings) -> str`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_mapping_runner.py
+import json
+from ngr.models import Feature, LineageSegment
+from ngr.mapping.runner import map_meeting, merge_events, write_state
+from ngr.mapping.report import lineage_report
+
+def seg(era, depth, **kw):
+    return LineageSegment(era=era, release=kw.get("release", "Rel-20"), depth=depth,
+                          agenda=kw.get("agenda", []), title_re=kw.get("title_re"),
+                          meetings=kw.get("meetings", {"RAN1": (124, None)}))
+
+FEATS = [
+    Feature(slug="waveform", name_zh="波形",
+            lineage=[seg("6G", "full", agenda=["RAN1:10.2", "RAN1:10.2.*"])]),
+    Feature(slug="isac", name_zh="ISAC",
+            lineage=[seg("5G-A", "origin", release="Rel-19", title_re="(?i)ISAC",
+                         meetings={"RAN1": (116, 123)}),
+                     seg("6G", "full", agenda=["RAN1:10.8"])]),
+]
+
+def parsed(events):
+    return {"wg": "RAN1", "meeting": 126, "minutes_version": 10,
+            "unmatched_ratio": 0.0, "unaligned": [], "events": events}
+
+def ev(kind="agreement", item="10.2", text="X", path=None):
+    return {"kind": kind, "text_en": text, "para_index": 1,
+            "heading_path": path or ["Rel-20 Study of 6GR", "Waveform"],
+            "agenda_item": item, "agenda_title": "Waveform"}
+
+def test_map_assigns_feature_era_and_depth():
+    out = map_meeting(parsed([ev()]), FEATS)
+    assert len(out) == 1
+    e = out[0]
+    assert e.feature == "waveform" and e.era == "6G" and e.depth == "full"
+
+def test_unmatched_events_are_dropped():
+    out = map_meeting(parsed([ev(item="8.1", path=["Maintenance"])]), FEATS)
+    assert out == []
+
+def test_seq_numbers_restart_per_agenda_item_and_kind():
+    out = map_meeting(parsed([ev(), ev(), ev(kind="conclusion")]), FEATS)
+    ids = [e.id for e in out]
+    assert ids == ["RAN1-126-10.2-a001", "RAN1-126-10.2-a002", "RAN1-126-10.2-c001"]
+
+def test_legacy_segment_marks_origin_depth():
+    p = {"wg": "RAN1", "meeting": 120, "minutes_version": 100, "unmatched_ratio": 0.0,
+         "unaligned": [], "events": [ev(item=None, path=["Rel-19 NR", "ISAC channel model"])]}
+    out = map_meeting(p, FEATS)
+    assert out[0].feature == "isac" and out[0].era == "5G-A" and out[0].depth == "origin"
+
+def test_events_without_agenda_item_get_synthetic_key():
+    """无议程号时用 heading 路径末节做 id 段，保证 id 仍然稳定。"""
+    p = {"wg": "RAN1", "meeting": 120, "minutes_version": 100, "unmatched_ratio": 0.0,
+         "unaligned": [], "events": [ev(item=None, path=["Rel-19 NR", "ISAC channel model"])]}
+    out = map_meeting(p, FEATS)
+    assert out[0].id.startswith("RAN1-120-")
+    assert " " not in out[0].id
+
+def test_content_hash_is_set():
+    out = map_meeting(parsed([ev()]), FEATS)
+    assert out[0].content_hash.startswith("sha256:")
+
+# —— 合并 ——
+def test_merge_adds_new_events():
+    new = map_meeting(parsed([ev()]), FEATS)
+    merged, stats = merge_events([], new, today="2026-09-17")
+    assert stats.added == 1 and merged[0]["first_seen"] == "2026-09-17"
+
+def test_merge_preserves_first_seen_and_llm_fields():
+    new = map_meeting(parsed([ev()]), FEATS)
+    existing = [{**new[0].__dict__, "id": new[0].id, "first_seen": "2026-01-01",
+                 "summary_zh": "旧摘要", "llm_status": "ok"}]
+    merged, stats = merge_events(existing, new, today="2026-09-17")
+    assert stats.unchanged == 1
+    assert merged[0]["first_seen"] == "2026-01-01"
+    assert merged[0]["summary_zh"] == "旧摘要"
+
+def test_merge_detects_text_change_and_invalidates_summary():
+    """纪要 v010→v100 措辞微调：同一条 id，但摘要要重算。"""
+    new = map_meeting(parsed([ev(text="NEW TEXT")]), FEATS)
+    existing = [{**new[0].__dict__, "id": new[0].id, "text_en": "OLD TEXT",
+                 "content_hash": "sha256:old", "first_seen": "2026-01-01",
+                 "summary_zh": "旧摘要", "llm_status": "ok"}]
+    merged, stats = merge_events(existing, new, today="2026-09-17")
+    assert stats.changed == 1
+    assert merged[0]["text_en"] == "NEW TEXT"
+    assert merged[0]["summary_zh"] is None and merged[0]["llm_status"] == "pending"
+    assert merged[0]["first_seen"] == "2026-01-01"
+
+def test_merge_keeps_events_from_other_meetings():
+    new = map_meeting(parsed([ev()]), FEATS)
+    existing = [{"id": "RAN1-120-9.1-a001", "wg": "RAN1", "meeting": 120,
+                 "text_en": "x", "first_seen": "2026-01-01"}]
+    merged, _ = merge_events(existing, new, today="2026-09-17")
+    assert len(merged) == 2
+
+def test_write_state_is_sorted_and_deterministic(tmp_path):
+    new = map_meeting(parsed([ev(), ev()]), FEATS)
+    merged, _ = merge_events([], new, today="2026-09-17")
+    a = write_state(merged, tmp_path / "a.json").read_bytes()
+    b = write_state(list(reversed(merged)), tmp_path / "b.json").read_bytes()
+    assert a == b, "事件顺序不同也必须产出相同字节 —— 否则 git diff 全是噪声"
+
+# —— 血统报告 ——
+def test_lineage_report_lists_hits_and_misses():
+    txt = lineage_report(FEATS, [parsed([ev()])])
+    assert "waveform" in txt and "6G" in txt
+    assert "isac" in txt
+    assert "0" in txt          # isac 的两段在本次会议都没命中
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_mapping_runner.py -v`
+Expected: FAIL，`No module named 'ngr.mapping.runner'`
+
+- [ ] **Step 3: 写 `ngr/mapping/runner.py`**
+
+```python
+from __future__ import annotations
+import hashlib, json, re
+from collections import defaultdict
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from ngr.mapping.lineage import match_event
+from ngr.models import Event, Feature
+
+_SLUG_RE = re.compile(r"[^A-Za-z0-9.]+")
+
+def _agenda_key(agenda_item: str | None, heading_path: list[str]) -> str:
+    """没有议程号时（5G-A 老会议）用 heading 末节造一个稳定的 key。"""
+    if agenda_item:
+        return agenda_item
+    tail = heading_path[-1] if heading_path else "unknown"
+    return _SLUG_RE.sub("-", tail).strip("-").lower()[:40] or "unknown"
+
+def _hash(text: str) -> str:
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+def map_meeting(parsed: dict, features: list[Feature],
+                meeting_end: str | None = None) -> list[Event]:
+    wg, meeting = parsed["wg"], parsed["meeting"]
+    counters: dict[tuple[str, str], int] = defaultdict(int)
+    out: list[Event] = []
+
+    for raw in parsed["events"]:
+        m = match_event(features, wg, meeting,
+                        raw.get("agenda_item"), raw.get("heading_path") or [])
+        if m is None:
+            continue
+        if m.segment.depth == "milestone" and raw["kind"] == "agreement":
+            continue          # milestone 段只收转折点
+
+        key = _agenda_key(raw.get("agenda_item"), raw.get("heading_path") or [])
+        counters[(key, raw["kind"])] += 1
+        out.append(Event(
+            wg=wg, meeting=meeting, agenda_item=key,
+            seq=counters[(key, raw["kind"])], kind=raw["kind"],
+            text_en=raw["text_en"], agenda_title=raw.get("agenda_title", ""),
+            meeting_end=meeting_end,
+            era=m.segment.era, release=m.segment.release, depth=m.segment.depth,
+            feature=m.feature_slug,
+            source={"minutes_version": parsed.get("minutes_version"),
+                    "para": raw.get("para_index")},
+            llm_status="pending" if m.segment.depth == "full" else "skipped_by_depth",
+            content_hash=_hash(raw["text_en"]),
+        ))
+    return out
+
+@dataclass
+class MergeStats:
+    added: int = 0
+    changed: int = 0
+    unchanged: int = 0
+
+# 事件变更时要作废的 LLM 产物
+_LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
+
+def merge_events(existing: list[dict], incoming: list[Event],
+                 today: str) -> tuple[list[dict], MergeStats]:
+    by_id = {e["id"]: dict(e) for e in existing}
+    stats = MergeStats()
+
+    for ev in incoming:
+        new = asdict(ev)
+        new["id"] = ev.id
+        old = by_id.get(ev.id)
+        if old is None:
+            new["first_seen"] = today
+            by_id[ev.id] = new
+            stats.added += 1
+            continue
+
+        new["first_seen"] = old.get("first_seen", today)
+        if old.get("content_hash") == new["content_hash"]:
+            # 正文未变：保留既有 LLM 产物
+            for k in ("summary_zh", "tags", "impact", "llm_status"):
+                if k in old:
+                    new[k] = old[k]
+            stats.unchanged += 1
+        else:
+            if new["depth"] == "full":
+                new.update(_LLM_FIELDS)
+            stats.changed += 1
+        by_id[ev.id] = new
+
+    return list(by_id.values()), stats
+
+def write_state(events: list[dict], path: Path) -> Path:
+    """按 id 排序后写出。顺序稳定是幂等性的前提 —— 否则 git diff 全是噪声。"""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = sorted(events, key=lambda e: e["id"])
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True),
+                    encoding="utf-8")
+    return path
+```
+
+- [ ] **Step 4: 写 `ngr/mapping/report.py`**
+
+```python
+from __future__ import annotations
+from collections import Counter
+from ngr.mapping.lineage import match_event
+from ngr.models import Feature
+
+def lineage_report(features: list[Feature], parsed_meetings: list[dict]) -> str:
+    """打印每个血统段命中了哪些 heading、各多少条事件。
+    这是校准 5G-A title_re 的主要工具：改正则 → remap → 看这张表。"""
+    hits: dict[tuple[str, int], Counter] = {}
+    for feat in features:
+        for i, _ in enumerate(feat.lineage):
+            hits[(feat.slug, i)] = Counter()
+
+    for parsed in parsed_meetings:
+        wg, meeting = parsed["wg"], parsed["meeting"]
+        for raw in parsed["events"]:
+            m = match_event(features, wg, meeting,
+                            raw.get("agenda_item"), raw.get("heading_path") or [])
+            if m is None:
+                continue
+            feat = next(f for f in features if f.slug == m.feature_slug)
+            idx = feat.lineage.index(m.segment)
+            head = (raw.get("heading_path") or ["(无)"])[-1]
+            hits[(m.feature_slug, idx)][head] += 1
+
+    lines = ["# 血统命中对照表", ""]
+    for feat in features:
+        lines.append(f"## {feat.slug} — {feat.name_zh}")
+        for i, seg in enumerate(feat.lineage):
+            c = hits[(feat.slug, i)]
+            total = sum(c.values())
+            rng = ", ".join(f"{w} {lo}–{hi if hi is not None else '至今'}"
+                            for w, (lo, hi) in seg.meetings.items())
+            flag = "  ⚠️ 命中为 0" if total == 0 else ""
+            lines.append(f"- [{seg.era}/{seg.release}] depth={seg.depth} ({rng}) "
+                         f"→ **{total}** 条{flag}")
+            for head, n in c.most_common(8):
+                lines.append(f"    - {n:4d}  {head}")
+        lines.append("")
+    return "\n".join(lines)
+```
+
+- [ ] **Step 5: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_mapping_runner.py -v`
+Expected: 13 passed
+
+- [ ] **Step 6: 端到端手动验证（真实 fixture 走完 parse → map）**
+
+```bash
+.venv/Scripts/python.exe -c "
+import pathlib, json
+from ngr.models import Meeting
+from ngr.config import load_features
+from ngr.parse.runner import parse_meeting
+from ngr.mapping.runner import map_meeting, merge_events, write_state
+from ngr.mapping.report import lineage_report
+mtg = Meeting(wg='RAN1', number=126, suffix='', url='')
+p = parse_meeting(pathlib.Path('tests/fixtures/RAN1_126'), mtg, agenda_required=True)
+feats = load_features()
+evs = map_meeting({'wg':'RAN1','meeting':126,'minutes_version':10,'unmatched_ratio':p.unmatched_ratio,'unaligned':p.unaligned,'events':p.events}, feats)
+print(f'解析 {len(p.events)} 条，归集 {len(evs)} 条')
+print(lineage_report(feats, [{'wg':'RAN1','meeting':126,'events':p.events}]))"
+```
+
+Expected: 解析出 362 条，归集数 > 0；血统报告中 6G 段有命中。**若某个 6G 段命中为 0，先调 `features.yaml` 的锚点，不要改代码。**
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add ngr/mapping/runner.py ngr/mapping/report.py tests/test_mapping_runner.py
+git commit -m "feat(map): 血统归集、state 合并、lineage-report"
+```
+
+---
+
 <!-- APPEND-HERE -->
