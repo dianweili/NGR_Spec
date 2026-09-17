@@ -68,4 +68,124 @@
 
 ---
 
+## Phase 0：侦察与地基
+
+### Task 1: 站点侦察，填实配置与测试 fixture
+
+Spec §10 列出三项未经实测的假设。先探明再写代码 —— 后面所有测试断言都依赖这里的产出。
+
+**Files:**
+- Create: `config/sources.yaml`
+- Create: `docs/superpowers/recon-2026-09-17.md`
+- Create: `tests/fixtures/RAN1_126/{agenda.csv,minutes.docx,docs_listing.html}`
+- Create: `tests/fixtures/RAN1_120/{minutes.docx,agenda_listing.html}`
+- Create: `scripts/recon.py`
+
+**Interfaces:**
+- Consumes: 无（首个任务）
+- Produces: `config/sources.yaml`，键为 `RAN1/RAN2/RAN3/RAN4/RANP`，每项含 `path` `dir_re` `hard_floor` `artifacts` `agenda_csv_since`；测试 fixture 文件
+
+- [ ] **Step 1: 写侦察脚本**
+
+```python
+# scripts/recon.py
+"""一次性侦察脚本：探明各工作组目录布局，抓取测试 fixture。
+限速严格 —— 3GPP 的 WAF 会在密集请求下返回 403。"""
+import time, pathlib, re, sys, requests
+
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
+BASE = "https://www.3gpp.org/ftp/"
+S = requests.Session()
+S.headers["User-Agent"] = UA
+
+def get(path: str, tries: int = 3) -> bytes | None:
+    """返回内容；403 一律当限流，退避重试；最终失败返回 None。"""
+    for i, backoff in enumerate([2, 8, 30][:tries]):
+        r = S.get(BASE + path, timeout=(10, 300))
+        if r.status_code == 200:
+            time.sleep(3)          # 侦察阶段用 3s，比生产的 0.5s 更保守
+            return r.content
+        print(f"  {path} -> {r.status_code}, 退避 {backoff}s", file=sys.stderr)
+        time.sleep(backoff)
+    return None
+
+def entries(html: bytes, prefix: str) -> list[str]:
+    """从目录列表 HTML 抽出该目录下的条目名。"""
+    pat = re.escape(prefix.rstrip("/")) + r'/([^"/]+)'
+    return sorted(set(re.findall(pat, html.decode("utf-8", "ignore"))))
+
+if __name__ == "__main__":
+    for wg, path in [("RAN1", "tsg_ran/WG1_RL1/"), ("RAN2", "tsg_ran/WG2_RL2/"),
+                     ("RAN3", "tsg_ran/WG3_Iu/"), ("RAN4", "tsg_ran/WG4_Radio/"),
+                     ("RANP", "tsg_ran/TSG_RAN/")]:
+        html = get(path)
+        print(f"\n=== {wg}  {path}  {'OK' if html else 'FAILED'}")
+        if html:
+            dirs = [e for e in entries(html, path) if re.match(r"TSGR", e)]
+            print("  最近 5 个会议目录:", dirs[-5:])
+```
+
+- [ ] **Step 2: 跑侦察脚本，记录五个工作组的真实路径**
+
+Run: `python scripts/recon.py`
+
+对每个返回 FAILED 的工作组，手工试探正确路径（3GPP 的目录名不完全规则，例如 RAN3 可能是 `WG3_Iu`、RAN4 可能是 `WG4_Radio`），把确认结果写进 `docs/superpowers/recon-2026-09-17.md`。
+
+- [ ] **Step 3: 确定 `agenda.csv` 的起始会议号**
+
+对 RAN1 从 #118 到 #126 逐个探 `TSGR1_<n>/Agenda/`（**读目录列表，不要直接 GET `agenda.csv`** —— 403 分不清缺文件与限流），记录哪些目录里有 `agenda.csv`。每次请求间隔 ≥ 5 秒。结果写进侦察报告，并填入 `sources.yaml` 的 `agenda_csv_since`。
+
+- [ ] **Step 4: 抓取 5G-A 时代的 heading 清单**
+
+对 RAN1 #112–#122 各下载一份纪要 docx，抽出全部 heading 文本（用 spec §5 的 `w:pStyle` 方法），汇总成一张表写进侦察报告。这张表是 Task 12 里 5G-A `title_re` 的唯一依据 —— 没有它，血统正则只能靠猜。
+
+- [ ] **Step 5: 保存测试 fixture**
+
+```bash
+mkdir -p tests/fixtures/RAN1_126 tests/fixtures/RAN1_120
+# RAN1_126：6GR 时代，有 agenda.csv
+#   agenda.csv, minutes.docx (Draft_Minutes_report_RAN1#126_v010.docx), docs_listing.html
+# RAN1_120：5G-A 时代，无 agenda.csv
+#   minutes.docx, agenda_listing.html (证明该目录下只有 TDoc zip)
+```
+
+`docs_listing.html` 裁到前 50 个条目即可，保留完整的 HTML 表格结构。
+
+- [ ] **Step 6: 写 `config/sources.yaml`**
+
+用 Step 2–3 的实测结果填写。下面是结构示例，**`path` 与数字必须换成实测值**：
+
+```yaml
+sources:
+  RAN1:
+    path: tsg_ran/WG1_RL1
+    dir_re: 'TSGR1_(\d+)([a-z]*)'
+    hard_floor: 112
+    agenda_csv_since: 124
+    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+  # RAN2/RAN3/RAN4/RANP 同构，值由 Step 2 实测填入
+http:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+  concurrency: 2
+  delay_seconds: 0.5
+  retry_backoff: [2, 8, 30]
+  timeout: { connect: 10, read: 300 }
+extract:
+  backend: cli
+  max_calls_per_run: 60
+  batch_size: 40
+  model_bulk: sonnet
+  model_digest: opus
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add config/sources.yaml docs/superpowers/recon-2026-09-17.md scripts/recon.py tests/fixtures
+git commit -m "chore: 站点侦察结果、sources.yaml、测试 fixture"
+```
+
+---
+
 <!-- APPEND-HERE -->
