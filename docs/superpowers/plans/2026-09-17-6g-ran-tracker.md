@@ -2117,4 +2117,248 @@ git commit -m "feat(parse): heading 与议程号三重校验对齐"
 
 ---
 
+### Task 11: parse 编排与沉默失败防线
+
+这一层最重要的不是解析，是**拒绝在解析退化时装作成功**。3GPP 换纪要模板是迟早的事，届时解析器会安静返回 0 条，而定时任务照常"成功"，几个月后才被发现。
+
+**Files:**
+- Create: `ngr/parse/runner.py`
+- Test: `tests/test_parse_runner.py`
+
+**Interfaces:**
+- Consumes: `parse_agenda`、`parse_docx`、`extract_events`、`align`、`P.parsed_dir`
+- Produces:
+  - `ParseError(Exception)`
+  - `parse_meeting(raw_dir, meeting, *, agenda_required: bool) -> ParsedMeeting`
+  - `ParsedMeeting` 数据类：`.wg` `.meeting` `.events: list[dict]` `.unaligned: list[str]` `.unmatched_ratio: float` `.minutes_version: int | None`
+  - `write_parsed(parsed, out_dir) -> Path`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_parse_runner.py
+import json, pathlib, pytest, shutil
+from ngr.models import Meeting
+from ngr.parse.runner import parse_meeting, write_parsed, ParseError
+
+FIX126 = pathlib.Path("tests/fixtures/RAN1_126")
+MTG = Meeting(wg="RAN1", number=126, suffix="", url="https://x/TSGR1_126/")
+
+def test_parse_meeting_on_fixture(tmp_path):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    p = parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+    assert len(p.events) == 320 + 29 + 13
+    assert p.unmatched_ratio < 0.20
+    assert p.minutes_version == 10
+
+def test_events_carry_agenda_item_when_aligned(tmp_path):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    p = parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+    sixg = [e for e in p.events if e.get("agenda_item", "").startswith("10")]
+    assert sixg, "6GR 议程项下应有事件"
+    assert all("heading_path" in e and "text_en" in e for e in p.events)
+
+def test_events_keep_heading_path_when_agenda_absent(tmp_path):
+    """5G-A 老会议没有 agenda.csv：事件照常产出，只是没有 agenda_item。"""
+    raw = tmp_path / "raw"; raw.mkdir()
+    shutil.copy(FIX126 / "minutes.docx", raw / "minutes.docx")
+    p = parse_meeting(raw, MTG, agenda_required=False)
+    assert len(p.events) == 362
+    assert all(e["agenda_item"] is None for e in p.events)
+    assert any(e["heading_path"] for e in p.events)
+
+def test_missing_agenda_raises_when_required(tmp_path):
+    raw = tmp_path / "raw"; raw.mkdir()
+    shutil.copy(FIX126 / "minutes.docx", raw / "minutes.docx")
+    with pytest.raises(ParseError, match="agenda"):
+        parse_meeting(raw, MTG, agenda_required=True)
+
+def test_missing_minutes_raises(tmp_path):
+    raw = tmp_path / "raw"; raw.mkdir()
+    with pytest.raises(ParseError, match="minutes"):
+        parse_meeting(raw, MTG, agenda_required=False)
+
+def test_zero_headings_raises(tmp_path, monkeypatch):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    from ngr.parse import runner
+    monkeypatch.setattr(runner, "parse_docx",
+                        lambda p: type("D", (), {"headings": [], "blocks": [], "paragraphs": []})())
+    with pytest.raises(ParseError, match="heading"):
+        parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+
+def test_zero_events_raises(tmp_path, monkeypatch):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    from ngr.parse import runner
+    monkeypatch.setattr(runner, "extract_events", lambda doc: [])
+    with pytest.raises(ParseError, match="事件"):
+        parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+
+def test_high_unmatched_ratio_raises(tmp_path, monkeypatch):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    from ngr.parse import runner
+    from ngr.parse.align import Alignment
+    from ngr.models import Heading
+    bad = Alignment(by_heading={}, unaligned=[Heading(1, "x", 0)])
+    monkeypatch.setattr(runner, "align", lambda a, h: bad)
+    with pytest.raises(ParseError, match="未对齐"):
+        parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+
+def test_write_parsed_is_deterministic(tmp_path):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    p = parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+    a = write_parsed(p, tmp_path / "out1").read_bytes()
+    b = write_parsed(p, tmp_path / "out2").read_bytes()
+    assert a == b, "同一输入必须产出逐字节相同的 JSON（幂等性前提）"
+    assert json.loads(a)["wg"] == "RAN1"
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_runner.py -v`
+Expected: FAIL，`No module named 'ngr.parse.runner'`
+
+- [ ] **Step 3: 写 `ngr/parse/runner.py`**
+
+```python
+from __future__ import annotations
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from ngr.models import Meeting
+from ngr.parse.agenda import parse_agenda
+from ngr.parse.align import align
+from ngr.parse.docx import parse_docx
+from ngr.parse.events import extract_events
+from ngr.parse.manifest_helpers import read_minutes_version   # 见 Step 4
+from ngr.paths import P
+
+MAX_UNMATCHED_RATIO = 0.20
+
+class ParseError(Exception):
+    """解析退化。必须硬失败：保留 raw、不写 state、不 commit。"""
+
+@dataclass
+class ParsedMeeting:
+    wg: str
+    meeting: int
+    events: list[dict] = field(default_factory=list)
+    unaligned: list[str] = field(default_factory=list)
+    unmatched_ratio: float = 0.0
+    minutes_version: int | None = None
+
+def parse_meeting(raw_dir: Path, meeting: Meeting, *,
+                  agenda_required: bool) -> ParsedMeeting:
+    raw_dir = Path(raw_dir)
+    minutes = raw_dir / "minutes.docx"
+    if not minutes.exists():
+        raise ParseError(f"{meeting.label}: 缺少 minutes.docx，无法解析")
+
+    agenda_path = raw_dir / "agenda.csv"
+    if agenda_required and not agenda_path.exists():
+        raise ParseError(
+            f"{meeting.label}: 缺少 agenda.csv，但该会议被标记为应有议程锚点。"
+            "若这是 5G-A 老会议，请把 sources.yaml 的 agenda_csv_since 调对。")
+
+    doc = parse_docx(minutes)
+    if not doc.headings:
+        raise ParseError(f"{meeting.label}: 纪要解析出 0 个 heading —— 模板很可能变了")
+
+    raw_events = extract_events(doc)
+    if not raw_events:
+        raise ParseError(f"{meeting.label}: 解析出 0 条事件 —— 标记正则很可能失效了")
+
+    alignment = None
+    if agenda_path.exists():
+        agenda = parse_agenda(agenda_path.read_bytes())
+        alignment = align(agenda, doc.headings)
+        if alignment.unmatched_ratio > MAX_UNMATCHED_RATIO:
+            raise ParseError(
+                f"{meeting.label}: 未对齐议程项占比 {alignment.unmatched_ratio:.0%} "
+                f"超过阈值 {MAX_UNMATCHED_RATIO:.0%} —— 议程或纪要模板已变")
+
+    # heading 文本 → 议程项（由 para_index 反查）
+    head_by_text: dict[str, object] = {}
+    if alignment:
+        for h in doc.headings:
+            item = alignment.by_heading.get(h.para_index)
+            if item is not None:
+                head_by_text[h.text] = item
+
+    events = []
+    for ev in raw_events:
+        item = None
+        for text in reversed(ev.heading_path):     # 取最深的已对齐祖先
+            if text in head_by_text:
+                item = head_by_text[text]
+                break
+        events.append({
+            "kind": ev.kind,
+            "text_en": ev.text_en,
+            "para_index": ev.para_index,
+            "heading_path": list(ev.heading_path),
+            "agenda_item": item.item if item else None,
+            "agenda_title": item.title if item else (ev.heading_path[-1] if ev.heading_path else ""),
+        })
+
+    return ParsedMeeting(
+        wg=meeting.wg, meeting=meeting.number, events=events,
+        unaligned=[h.text for h in (alignment.unaligned if alignment else [])],
+        unmatched_ratio=alignment.unmatched_ratio if alignment else 0.0,
+        minutes_version=read_minutes_version(raw_dir),
+    )
+
+def write_parsed(parsed: ParsedMeeting, out_dir: Path | None = None) -> Path:
+    out_dir = Path(out_dir) if out_dir else P.parsed_dir(parsed.wg, parsed.meeting)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / "events.json"
+    payload = {
+        "wg": parsed.wg, "meeting": parsed.meeting,
+        "minutes_version": parsed.minutes_version,
+        "unmatched_ratio": round(parsed.unmatched_ratio, 4),
+        "unaligned": parsed.unaligned,
+        "events": parsed.events,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True),
+                    encoding="utf-8")
+    return path
+```
+
+- [ ] **Step 4: 写 `ngr/parse/manifest_helpers.py`**
+
+从 manifest 里读回纪要的版本号，避免 parse 层反向依赖 fetch 层的内部结构。
+
+```python
+from __future__ import annotations
+import json
+from pathlib import Path
+from ngr.fetch.manifest import minutes_version
+
+def read_minutes_version(raw_dir: Path) -> int | None:
+    """从 _manifest.json 记录的原始 URL 里还原纪要版本号。"""
+    man = Path(raw_dir) / "_manifest.json"
+    if not man.exists():
+        return None
+    entry = json.loads(man.read_text(encoding="utf-8")).get("files", {}).get("minutes.docx")
+    return minutes_version(entry["url"]) if entry and entry.get("url") else None
+```
+
+- [ ] **Step 5: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_runner.py -v`
+Expected: 9 passed
+
+- [ ] **Step 6: 跑全部测试**
+
+Run: `.venv/Scripts/python.exe -m pytest -v`
+Expected: 全绿
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add ngr/parse/runner.py ngr/parse/manifest_helpers.py tests/test_parse_runner.py
+git commit -m "feat(parse): 编排与沉默失败防线"
+```
+
+---
+
 <!-- APPEND-HERE -->
