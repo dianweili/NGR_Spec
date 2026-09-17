@@ -1097,4 +1097,362 @@ git commit -m "feat(fetch): 目录列表解析、会议发现、血统抓取区�
 
 ---
 
+### Task 6: manifest 增量、frozen 跳过、会议抓取编排
+
+**Files:**
+- Create: `ngr/fetch/manifest.py`, `ngr/fetch/runner.py`
+- Test: `tests/test_fetch_manifest.py`, `tests/test_fetch_runner.py`
+
+**Interfaces:**
+- Consumes: `Http`、`parse_listing`、`discover_meetings`、`fetch_window`、`P.raw_dir`
+- Produces:
+  - `Manifest(dir: Path)`，方法 `.load()` `.save()` `.needs_fetch(name, head) -> bool` `.record(name, url, head, data)` `.is_frozen() -> bool` `.mark_frozen()`
+  - `minutes_version(filename: str) -> int | None`（`..._v010.docx` → `10`）
+  - `pick_latest_minutes(names: list[str]) -> str | None`
+  - `fetch_meeting(http, meeting, cfg, force=False) -> FetchResult`（`.changed: bool`、`.files: dict[str, Path]`、`.skipped_reason: str | None`）
+
+- [ ] **Step 1: 写 manifest 的失败测试**
+
+```python
+# tests/test_fetch_manifest.py
+from ngr.fetch.manifest import Manifest, minutes_version, pick_latest_minutes
+
+def test_minutes_version_parsing():
+    assert minutes_version("Draft_Minutes_report_RAN1#126_v010.docx") == 10
+    assert minutes_version("Draft_Minutes_report_RAN1#126_v100.docx") == 100
+    assert minutes_version("Welcome.docx") is None
+
+def test_pick_latest_minutes_prefers_higher_version():
+    names = ["Draft_Minutes_report_RAN1#126_v010.docx",
+             "Draft_Minutes_report_RAN1#126_v100.docx", "Archive"]
+    assert pick_latest_minutes(names) == "Draft_Minutes_report_RAN1#126_v100.docx"
+
+def test_pick_latest_minutes_returns_none_when_absent():
+    assert pick_latest_minutes(["Archive", "notes.txt"]) is None
+
+def test_needs_fetch_true_when_unknown(tmp_path):
+    assert Manifest(tmp_path).needs_fetch("a.docx", {"etag": '"x"', "length": 5})
+
+def test_needs_fetch_false_when_etag_matches(tmp_path):
+    m = Manifest(tmp_path)
+    m.record("a.docx", "http://u", {"etag": '"x"', "length": 5}, b"hello")
+    m.save()
+    assert not Manifest(tmp_path).needs_fetch("a.docx", {"etag": '"x"', "length": 5})
+
+def test_needs_fetch_true_when_length_changed(tmp_path):
+    m = Manifest(tmp_path)
+    m.record("a.docx", "http://u", {"etag": None, "length": 5}, b"hello")
+    m.save()
+    assert Manifest(tmp_path).needs_fetch("a.docx", {"etag": None, "length": 9})
+
+def test_needs_fetch_true_when_head_has_no_validators(tmp_path):
+    """HEAD 什么都没给时必须重抓 —— 宁可多下一次也不要漏掉更新。"""
+    m = Manifest(tmp_path)
+    m.record("a.docx", "http://u", {"etag": '"x"', "length": 5}, b"hello")
+    m.save()
+    assert Manifest(tmp_path).needs_fetch("a.docx", {"etag": None, "length": None})
+
+def test_record_writes_file_and_sha(tmp_path):
+    m = Manifest(tmp_path)
+    m.record("a.docx", "http://u", {"etag": None, "length": 5}, b"hello")
+    m.save()
+    assert (tmp_path / "a.docx").read_bytes() == b"hello"
+    entry = Manifest(tmp_path).load()["files"]["a.docx"]
+    assert entry["sha256"].startswith("sha256:")
+
+def test_frozen_roundtrip(tmp_path):
+    m = Manifest(tmp_path)
+    assert not m.is_frozen()
+    m.mark_frozen(); m.save()
+    assert Manifest(tmp_path).is_frozen()
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_manifest.py -v`
+Expected: FAIL，`No module named 'ngr.fetch.manifest'`
+
+- [ ] **Step 3: 写 `ngr/fetch/manifest.py`**
+
+```python
+from __future__ import annotations
+import hashlib, json, re, time
+from pathlib import Path
+
+MINUTES_RE = re.compile(r"(?i)minutes.*_v(\d{3})\.docx$")
+
+def minutes_version(filename: str) -> int | None:
+    m = MINUTES_RE.search(filename)
+    return int(m.group(1)) if m else None
+
+def pick_latest_minutes(names: list[str]) -> str | None:
+    """纪要有 v010 → v100 的版本演进，永远取最高版本。"""
+    cands = [(minutes_version(n), n) for n in names]
+    cands = [(v, n) for v, n in cands if v is not None]
+    return max(cands)[1] if cands else None
+
+class Manifest:
+    """记录每个已抓文件的 etag/长度/哈希，用于增量判定。"""
+
+    def __init__(self, directory: Path):
+        self.dir = Path(directory)
+        self.path = self.dir / "_manifest.json"
+        self._data: dict | None = None
+
+    def load(self) -> dict:
+        if self._data is None:
+            if self.path.exists():
+                self._data = json.loads(self.path.read_text(encoding="utf-8"))
+            else:
+                self._data = {"files": {}, "frozen": False}
+            self._data.setdefault("files", {})
+            self._data.setdefault("frozen", False)
+        return self._data
+
+    def save(self) -> None:
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.load(), ensure_ascii=False, indent=2,
+                                        sort_keys=True), encoding="utf-8")
+
+    def needs_fetch(self, name: str, head: dict) -> bool:
+        entry = self.load()["files"].get(name)
+        if entry is None or not (self.dir / name).exists():
+            return True
+        # HEAD 没给任何校验信息时无法判断，一律重抓
+        if head.get("etag") is None and head.get("length") is None:
+            return True
+        if head.get("etag") is not None:
+            return head["etag"] != entry.get("etag")
+        return head.get("length") != entry.get("length")
+
+    def record(self, name: str, url: str, head: dict, data: bytes) -> None:
+        self.dir.mkdir(parents=True, exist_ok=True)
+        (self.dir / name).write_bytes(data)
+        self.load()["files"][name] = {
+            "url": url,
+            "etag": head.get("etag"),
+            "length": head.get("length") if head.get("length") is not None else len(data),
+            "sha256": "sha256:" + hashlib.sha256(data).hexdigest(),
+            "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+
+    def is_frozen(self) -> bool:
+        return bool(self.load()["frozen"])
+
+    def mark_frozen(self) -> None:
+        self.load()["frozen"] = True
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_manifest.py -v`
+Expected: 9 passed
+
+- [ ] **Step 5: 写抓取编排的失败测试**
+
+```python
+# tests/test_fetch_runner.py
+from unittest.mock import Mock
+from ngr.config import WgConfig
+from ngr.models import Meeting
+from ngr.fetch.manifest import Manifest
+from ngr.fetch.runner import fetch_meeting
+
+WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)", hard_floor=112,
+              agenda_csv_since=124, artifacts=["agenda_csv", "minutes_docx", "docs_listing"])
+MTG = Meeting(wg="RAN1", number=126, suffix="",
+              url="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/")
+
+def _http(listings: dict[str, bytes], files: dict[str, bytes]):
+    http = Mock()
+    def get(url):
+        if url in listings: return listings[url]
+        if url in files:    return files[url]
+        raise AssertionError(f"未预期的 GET {url}")
+    http.get.side_effect = get
+    http.head.return_value = {"etag": '"e"', "length": 3}
+    return http
+
+def _listing(dir_url, names):
+    return b"".join(f'<a href="{dir_url}{n}">{n}</a>'.encode() for n in names)
+
+def test_fetch_meeting_downloads_agenda_and_latest_minutes(tmp_path):
+    base = MTG.url
+    http = _http(
+        listings={
+            base: _listing(base, ["Agenda", "Report", "Docs"]),
+            base + "Agenda/": _listing(base + "Agenda/", ["agenda.csv"]),
+            base + "Report/": _listing(base + "Report/",
+                ["Draft_Minutes_report_RAN1#126_v010.docx",
+                 "Draft_Minutes_report_RAN1#126_v100.docx"]),
+            base + "Docs/": _listing(base + "Docs/", ["R1-1.zip"]),
+        },
+        files={base + "Agenda/agenda.csv": b"csv",
+               base + "Report/Draft_Minutes_report_RAN1#126_v100.docx": b"doc"})
+    res = fetch_meeting(http, MTG, WG, raw_dir=tmp_path)
+    assert res.changed
+    assert (tmp_path / "agenda.csv").read_bytes() == b"csv"
+    assert (tmp_path / "minutes.docx").read_bytes() == b"doc"
+    assert (tmp_path / "docs_listing.html").exists()
+
+def test_fetch_meeting_skips_agenda_when_absent(tmp_path):
+    """老会议的 Agenda/ 里只有 TDoc zip —— 靠目录列表判断，不靠 GET 状态码。"""
+    base = MTG.url
+    http = _http(
+        listings={
+            base: _listing(base, ["Agenda", "Report", "Docs"]),
+            base + "Agenda/": _listing(base + "Agenda/", ["R1-2500001.zip"]),
+            base + "Report/": _listing(base + "Report/",
+                                       ["Draft_Minutes_report_RAN1#120_v100.docx"]),
+            base + "Docs/": _listing(base + "Docs/", ["R1-1.zip"]),
+        },
+        files={base + "Report/Draft_Minutes_report_RAN1#120_v100.docx": b"doc"})
+    res = fetch_meeting(http, MTG, WG, raw_dir=tmp_path)
+    assert not (tmp_path / "agenda.csv").exists()
+    assert (tmp_path / "minutes.docx").exists()
+    assert "agenda_csv" in res.missing
+
+def test_fetch_meeting_skips_frozen(tmp_path):
+    m = Manifest(tmp_path); m.mark_frozen(); m.save()
+    http = Mock()
+    res = fetch_meeting(http, MTG, WG, raw_dir=tmp_path)
+    assert not res.changed and res.skipped_reason == "frozen"
+    http.get.assert_not_called()
+    http.head.assert_not_called()
+
+def test_fetch_meeting_force_ignores_frozen(tmp_path):
+    base = MTG.url
+    m = Manifest(tmp_path); m.mark_frozen(); m.save()
+    http = _http(
+        listings={base: _listing(base, ["Report"]),
+                  base + "Report/": _listing(base + "Report/", ["Minutes_v010.docx"])},
+        files={base + "Report/Minutes_v010.docx": b"doc"})
+    res = fetch_meeting(http, MTG, WG, raw_dir=tmp_path, force=True)
+    assert res.changed
+
+def test_fetch_meeting_no_redownload_when_unchanged(tmp_path):
+    base = MTG.url
+    listings = {base: _listing(base, ["Report"]),
+                base + "Report/": _listing(base + "Report/", ["Minutes_v010.docx"])}
+    files = {base + "Report/Minutes_v010.docx": b"doc"}
+    http = _http(listings, files)
+    fetch_meeting(http, MTG, WG, raw_dir=tmp_path)
+    http2 = _http(listings, files)
+    res = fetch_meeting(http2, MTG, WG, raw_dir=tmp_path)
+    assert not res.changed
+    assert base + "Report/Minutes_v010.docx" not in [c.args[0] for c in http2.get.call_args_list]
+```
+
+- [ ] **Step 6: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_runner.py -v`
+Expected: FAIL，`No module named 'ngr.fetch.runner'`
+
+- [ ] **Step 7: 写 `ngr/fetch/runner.py`**
+
+```python
+from __future__ import annotations
+import logging
+from dataclasses import dataclass, field
+from pathlib import Path
+from ngr.config import WgConfig
+from ngr.fetch.listing import parse_listing
+from ngr.fetch.manifest import Manifest, pick_latest_minutes
+from ngr.models import Meeting
+from ngr.paths import P
+
+log = logging.getLogger(__name__)
+
+# artifact 名 → (子目录, 落地文件名, 在子目录里怎么选文件)
+def _pick_exact(name):
+    return lambda names: name if name in names else None
+
+ARTIFACTS = {
+    "agenda_csv":    ("Agenda/", "agenda.csv",        _pick_exact("agenda.csv")),
+    "minutes_docx":  ("Report/", "minutes.docx",      pick_latest_minutes),
+}
+LISTING_ARTIFACTS = {
+    "docs_listing":  ("Docs/", "docs_listing.html"),
+    "ls_listing":    ("LS/",   "ls_listing.html"),
+}
+
+@dataclass
+class FetchResult:
+    changed: bool = False
+    files: dict[str, Path] = field(default_factory=dict)
+    missing: list[str] = field(default_factory=list)
+    skipped_reason: str | None = None
+
+def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
+                  raw_dir: Path | None = None, force: bool = False) -> FetchResult:
+    """抓一次会议的全部约定产物。所有文件存在性判断都走目录列表，
+    绝不用 GET 的状态码判断 —— 403 分不清限流与缺失。"""
+    raw_dir = raw_dir or P.raw_dir(meeting.wg, meeting.number)
+    man = Manifest(raw_dir)
+
+    if man.is_frozen() and not force:
+        return FetchResult(skipped_reason="frozen")
+
+    res = FetchResult()
+    root_names = parse_listing(http.get(meeting.url), meeting.url)
+
+    for art in cfg.artifacts:
+        if art in ARTIFACTS:
+            subdir, local, chooser = ARTIFACTS[art]
+            if subdir.rstrip("/") not in root_names:
+                res.missing.append(art)
+                continue
+            sub_url = meeting.url + subdir
+            names = parse_listing(http.get(sub_url), sub_url)
+            chosen = chooser(names)
+            if chosen is None:
+                res.missing.append(art)
+                continue
+            url = sub_url + chosen
+            head = http.head(url)
+            if man.needs_fetch(local, head):
+                man.record(local, url, head, http.get(url))
+                res.changed = True
+            res.files[art] = raw_dir / local
+
+        elif art in LISTING_ARTIFACTS:
+            subdir, local = LISTING_ARTIFACTS[art]
+            if subdir.rstrip("/") not in root_names:
+                res.missing.append(art)
+                continue
+            sub_url = meeting.url + subdir
+            data = http.get(sub_url)
+            head = {"etag": None, "length": len(data)}
+            if man.needs_fetch(local, head):
+                man.record(local, sub_url, head, data)
+                res.changed = True
+            res.files[art] = raw_dir / local
+        else:
+            log.warning("未知 artifact 类型: %s", art)
+
+    man.save()
+    return res
+```
+
+> 目录列表本身没有稳定的 ETag（内容随排序参数变化），所以对它用长度做增量判据。这会带来偶发的无谓重写，但列表只有 2 MB 且不进 git，代价可以接受。
+
+- [ ] **Step 8: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_runner.py -v`
+Expected: 5 passed
+
+- [ ] **Step 9: 跑全部测试**
+
+Run: `.venv/Scripts/python.exe -m pytest -v`
+Expected: 全绿（Task 2–6 的所有测试）
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add ngr/fetch/manifest.py ngr/fetch/runner.py tests/test_fetch_manifest.py tests/test_fetch_runner.py
+git commit -m "feat(fetch): manifest 增量、frozen 跳过、会议抓取编排"
+```
+
+---
+
 <!-- APPEND-HERE -->
