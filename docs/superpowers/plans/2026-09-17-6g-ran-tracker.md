@@ -4165,4 +4165,325 @@ git commit -m "feat(extract): 摘要 prompt、schema 校验、幻觉拦截、批
 
 ---
 
+### Task 18: 特性综述与 5G-A 源头归纳
+
+`legacy_summary` 是 `depth: origin` 这个选择的唯一出口 —— 5G-A 段不做逐条摘要，全部价值都压在这一段归纳里。
+
+**Files:**
+- Create: `ngr/extract/digest.py`
+- Test: `tests/test_extract_digest.py`
+
+**Interfaces:**
+- Consumes: `ClaudeCli`、`LlmCache`、`Budget`、`ngr.models.Feature`
+- Produces:
+  - `build_feature_prompt(feature, six_events, legacy_chunk=None) -> str`
+  - `parse_feature_response(text) -> dict`（键 `stage` `summary` `open_issues`，抛 `SchemaError`）
+  - `build_legacy_chunks(legacy_events, meetings_per_chunk=4) -> list[list[dict]]`
+  - `digest_features(features, events, feat_state, cfg, *, cli_factory, cache, budget) -> dict`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_extract_digest.py
+import json, pytest
+from ngr.config import ExtractConfig
+from ngr.models import Feature, LineageSegment
+from ngr.extract.backend import CliResult
+from ngr.extract.budget import Budget
+from ngr.extract.cache import LlmCache
+from ngr.extract.tasks import SchemaError
+from ngr.extract.digest import (build_feature_prompt, parse_feature_response,
+                                build_legacy_chunks, digest_features)
+
+CFG = ExtractConfig(backend="cli", max_calls_per_run=20, batch_size=40,
+                    model_bulk="sonnet", model_digest="opus")
+
+def seg(era, depth):
+    return LineageSegment(era=era, release="Rel-19" if era == "5G-A" else "Rel-20",
+                          depth=depth, agenda=[], title_re="(?i)x",
+                          meetings={"RAN1": (110, None)})
+
+ISAC = Feature(slug="isac", name_zh="ISAC 通感一体",
+               lineage=[seg("5G-A", "origin"), seg("6G", "full")])
+WAVE = Feature(slug="waveform", name_zh="波形", lineage=[seg("6G", "full")])
+
+def ev(i, era="6G", meeting=126, summary="摘要", text="Adopt X."):
+    return {"id": f"RAN1-{meeting}-10.8-a{i:03d}", "wg": "RAN1", "meeting": meeting,
+            "era": era, "feature": "isac", "kind": "agreement",
+            "text_en": text, "summary_zh": summary,
+            "depth": "full" if era == "6G" else "origin",
+            "agenda_title": "ISAC"}
+
+class FakeCli:
+    def __init__(self, replies): self.replies, self.calls = list(replies), []
+    def call(self, prompt):
+        self.calls.append(prompt)
+        return CliResult(text=self.replies.pop(0), usage={}, cost_usd=0.02)
+
+FEAT_REPLY = json.dumps({"stage": "收敛中", "summary": "正在收敛。",
+                         "open_issues": ["波形未定"]})
+
+def test_feature_prompt_uses_summaries_for_6g():
+    p = build_feature_prompt(ISAC, [ev(1, summary="采纳 X")], None)
+    assert "采纳 X" in p and "ISAC 通感一体" in p
+
+def test_feature_prompt_pins_stage_enum():
+    p = build_feature_prompt(WAVE, [ev(1)], None)
+    for s in ("未启动", "讨论中", "收敛中", "已定稿"):
+        assert s in p
+
+def test_legacy_prompt_uses_english_original_not_summary():
+    """5G-A 事件没有中文摘要，只能喂原文。"""
+    p = build_feature_prompt(ISAC, [], [ev(1, era="5G-A", meeting=118,
+                                           summary=None, text="Rel-19 decision.")])
+    assert "Rel-19 decision." in p
+
+def test_parse_feature_response_ok():
+    got = parse_feature_response(FEAT_REPLY)
+    assert got["stage"] == "收敛中" and got["open_issues"] == ["波形未定"]
+
+def test_parse_feature_rejects_bad_stage():
+    bad = json.dumps({"stage": "快好了", "summary": "s", "open_issues": []})
+    with pytest.raises(SchemaError, match="stage"):
+        parse_feature_response(bad)
+
+def test_parse_feature_rejects_missing_summary():
+    with pytest.raises(SchemaError, match="summary"):
+        parse_feature_response(json.dumps({"stage": "讨论中", "open_issues": []}))
+
+def test_legacy_chunks_group_by_meeting_count():
+    evs = [ev(1, "5G-A", m) for m in (112, 114, 116, 118, 120, 122)]
+    chunks = build_legacy_chunks(evs, meetings_per_chunk=4)
+    assert len(chunks) == 2
+    assert {e["meeting"] for e in chunks[0]} == {112, 114, 116, 118}
+
+def test_legacy_chunks_empty_input():
+    assert build_legacy_chunks([], meetings_per_chunk=4) == []
+
+def test_digest_writes_stage_and_summary(tmp_path):
+    cli = FakeCli([FEAT_REPLY])
+    state = digest_features([WAVE], [ev(1)], {}, CFG,
+                            cli_factory=lambda m, e: cli, cache=LlmCache(tmp_path),
+                            budget=Budget(10))
+    assert state["waveform"]["stage"] == "收敛中"
+    assert state["waveform"]["open_issues"] == ["波形未定"]
+
+def test_digest_produces_legacy_summary_for_legacy_feature(tmp_path):
+    legacy = [ev(i, "5G-A", 112 + i, summary=None, text=f"Legacy {i}.") for i in range(3)]
+    cli = FakeCli(["Rel-19 阶段只做了信道建模。", FEAT_REPLY])
+    state = digest_features([ISAC], legacy + [ev(9)], {}, CFG,
+                            cli_factory=lambda m, e: cli, cache=LlmCache(tmp_path),
+                            budget=Budget(10))
+    assert "信道建模" in state["isac"]["legacy_summary"]
+
+def test_digest_skips_feature_without_legacy(tmp_path):
+    cli = FakeCli([FEAT_REPLY])
+    state = digest_features([WAVE], [ev(1)], {}, CFG,
+                            cli_factory=lambda m, e: cli, cache=LlmCache(tmp_path),
+                            budget=Budget(10))
+    assert "legacy_summary" not in state["waveform"]
+    assert len(cli.calls) == 1
+
+def test_digest_reuses_cached_legacy_summary(tmp_path):
+    """5G-A 会议已冻结，legacy_summary 应当只算一次。"""
+    legacy = [ev(1, "5G-A", 112, summary=None, text="Legacy.")]
+    cache = LlmCache(tmp_path)
+    cli1 = FakeCli(["历史归纳。", FEAT_REPLY])
+    digest_features([ISAC], legacy + [ev(9)], {}, CFG, cli_factory=lambda m, e: cli1,
+                    cache=cache, budget=Budget(10))
+    cli2 = FakeCli([FEAT_REPLY])          # 只剩特性综述一次调用
+    state = digest_features([ISAC], legacy + [ev(9)], {}, CFG,
+                            cli_factory=lambda m, e: cli2, cache=cache, budget=Budget(10))
+    assert len(cli2.calls) == 1
+    assert state["isac"]["legacy_summary"] == "历史归纳。"
+
+def test_digest_skips_feature_with_no_events(tmp_path):
+    cli = FakeCli([])
+    state = digest_features([WAVE], [], {}, CFG, cli_factory=lambda m, e: cli,
+                            cache=LlmCache(tmp_path), budget=Budget(10))
+    assert cli.calls == [] and state == {}
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_digest.py -v`
+Expected: FAIL，`No module named 'ngr.extract.digest'`
+
+- [ ] **Step 3: 写 `ngr/extract/digest.py`**
+
+```python
+from __future__ import annotations
+import json, logging
+from ngr.config import ExtractConfig
+from ngr.extract.backend import LlmError, LlmRateLimited
+from ngr.extract.budget import BudgetExhausted
+from ngr.extract.cache import cache_key
+from ngr.extract.tasks import PROMPT_VERSION, VALID_STAGE, SchemaError, _strip_fence
+from ngr.models import Feature
+
+log = logging.getLogger(__name__)
+EFFORT_DIGEST = "high"
+MEETINGS_PER_CHUNK = 4
+
+LEGACY_SYSTEM = """你在归纳一个 3GPP 特性在 5G-A（Rel-18/19）阶段的历史脉络。
+
+只依据下面给出的英文 agreement 原文，回答三件事：
+1. 这个阶段实际定下了什么；
+2. 哪些问题当时**没有做充分**或被推迟；
+3. 为什么它会延续到 6G。
+
+用中文写 3–6 句，保留关键技术术语的英文原词。不要编造原文里没有的结论。
+直接输出正文，不要 JSON，不要标题。"""
+
+FEATURE_SYSTEM = f"""你在为一个 3GPP 6G 特性写"当前进展"综述。
+
+只输出 JSON，不要任何解释文字：
+{{"stage": "<{'|'.join(VALID_STAGE)}>", "summary": "<3-5 句中文综述>",
+  "open_issues": ["<尚未解决的争议点>", "..."]}}
+
+stage 只能取给定的四个值之一。open_issues 取 0–6 条，没有就给空数组。
+只依据给出的材料，不要编造。"""
+
+def build_legacy_chunks(legacy_events: list[dict],
+                        meetings_per_chunk: int = MEETINGS_PER_CHUNK) -> list[list[dict]]:
+    """按会议分组切块 —— 一个特性十几次会议的原文可能上千条，一次喂不下。"""
+    if not legacy_events:
+        return []
+    meetings = sorted({e["meeting"] for e in legacy_events})
+    chunks = []
+    for i in range(0, len(meetings), meetings_per_chunk):
+        group = set(meetings[i:i + meetings_per_chunk])
+        chunks.append([e for e in legacy_events if e["meeting"] in group])
+    return chunks
+
+def build_feature_prompt(feature: Feature, six_events: list[dict],
+                         legacy_chunk: list[dict] | None) -> str:
+    if legacy_chunk is not None:
+        parts = [LEGACY_SYSTEM, "", f"特性：{feature.name_zh}", ""]
+        for e in sorted(legacy_chunk, key=lambda x: (x["meeting"], x["id"])):
+            parts += [f"[{e['wg']}#{e['meeting']}] {e['kind']}", e["text_en"], ""]
+        return "\n".join(parts)
+
+    parts = [FEATURE_SYSTEM, "", f"特性：{feature.name_zh}", "", "6GR 阶段的进展："]
+    for e in sorted(six_events, key=lambda x: (x["meeting"], x["id"])):
+        line = e.get("summary_zh") or e["text_en"][:200]
+        parts.append(f"- [{e['wg']}#{e['meeting']}] {line}")
+    return "\n".join(parts)
+
+def parse_feature_response(text: str) -> dict:
+    try:
+        data = json.loads(_strip_fence(text))
+    except json.JSONDecodeError as exc:
+        raise SchemaError(f"特性综述不是合法 JSON: {text[:160]}") from exc
+    stage = data.get("stage")
+    if stage not in VALID_STAGE:
+        raise SchemaError(f"stage 非法: {stage!r}，只能是 {list(VALID_STAGE)}")
+    summary = data.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        raise SchemaError("缺少 summary")
+    issues = data.get("open_issues", [])
+    if not isinstance(issues, list):
+        raise SchemaError("open_issues 不是数组")
+    return {"stage": stage, "summary": summary.strip(),
+            "open_issues": [str(i) for i in issues][:6]}
+
+def _legacy_summary(feature: Feature, legacy: list[dict], cli, cache, budget) -> str | None:
+    """分块预归纳后合并。5G-A 会议已冻结，结果缓存后永不重算。"""
+    chunks = build_legacy_chunks(legacy)
+    if not chunks:
+        return None
+
+    pieces = []
+    for chunk in chunks:
+        blob = "\n".join(f"{e['id']}:{e['text_en']}" for e in
+                         sorted(chunk, key=lambda x: x["id"]))
+        key = cache_key("legacy:" + feature.slug, PROMPT_VERSION, EFFORT_DIGEST, blob)
+        hit = cache.get(key)
+        if hit:
+            pieces.append(hit["text"])
+            continue
+        budget.check()
+        res = cli.call(build_feature_prompt(feature, [], chunk))
+        budget.spend(res, task="legacy_chunk")
+        cache.put(key, {"text": res.text.strip()})
+        pieces.append(res.text.strip())
+
+    if len(pieces) == 1:
+        return pieces[0]
+
+    merged_blob = "\n\n".join(pieces)
+    key = cache_key("legacy-merge:" + feature.slug, PROMPT_VERSION,
+                    EFFORT_DIGEST, merged_blob)
+    hit = cache.get(key)
+    if hit:
+        return hit["text"]
+    budget.check()
+    res = cli.call(LEGACY_SYSTEM + "\n\n把下面几段归纳合并成一段连贯的中文：\n\n"
+                   + merged_blob)
+    budget.spend(res, task="legacy_merge")
+    cache.put(key, {"text": res.text.strip()})
+    return res.text.strip()
+
+def digest_features(features: list[Feature], events: list[dict], feat_state: dict,
+                    cfg: ExtractConfig, *, cli_factory, cache, budget) -> dict:
+    cli = cli_factory(cfg.model_digest, EFFORT_DIGEST)
+    out = dict(feat_state)
+
+    for feat in features:
+        mine = [e for e in events if e.get("feature") == feat.slug]
+        if not mine:
+            continue
+        six = [e for e in mine if e.get("era") == "6G"]
+        legacy = [e for e in mine if e.get("era") == "5G-A"]
+        entry = dict(out.get(feat.slug, {}))
+
+        try:
+            if feat.has_legacy and legacy:
+                text = _legacy_summary(feat, legacy, cli, cache, budget)
+                if text:
+                    entry["legacy_summary"] = text
+
+            blob = "\n".join(f"{e['id']}:{e.get('summary_zh') or e['text_en'][:200]}"
+                             for e in sorted(six, key=lambda x: x["id"]))
+            key = cache_key("feature:" + feat.slug, PROMPT_VERSION, EFFORT_DIGEST, blob)
+            hit = cache.get(key)
+            if hit:
+                entry.update(hit)
+            else:
+                budget.check()
+                res = cli.call(build_feature_prompt(feat, six, None))
+                budget.spend(res, task="feature_digest")
+                parsed = parse_feature_response(res.text)
+                cache.put(key, parsed)
+                entry.update(parsed)
+        except (BudgetExhausted, LlmRateLimited) as exc:
+            log.info("%s 的综述未完成（%s），下次继续", feat.slug, type(exc).__name__)
+            if entry:
+                out[feat.slug] = entry
+            break
+        except (SchemaError, LlmError) as exc:
+            log.warning("%s 的综述失败: %s", feat.slug, exc)
+
+        if entry:
+            out[feat.slug] = entry
+
+    return out
+```
+
+> `_strip_fence` 在 Task 17 的 `tasks.py` 里已定义，这里直接复用 —— 不要再抄一份。
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_digest.py -v`
+Expected: 13 passed
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add ngr/extract/digest.py tests/test_extract_digest.py
+git commit -m "feat(extract): 特性综述与 5G-A 源头归纳"
+```
+
+---
+
 <!-- APPEND-HERE -->
