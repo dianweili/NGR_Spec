@@ -895,4 +895,206 @@ git commit -m "feat(fetch): HTTP 客户端，403 一律按限流处理"
 
 ---
 
+### Task 5: 目录列表解析与会议发现
+
+**Files:**
+- Create: `ngr/fetch/listing.py`, `ngr/fetch/discover.py`
+- Test: `tests/test_fetch_listing.py`, `tests/test_fetch_discover.py`
+
+**Interfaces:**
+- Consumes: `ngr.fetch.client.Http`、`ngr.config.{SourcesConfig, WgConfig}`、`ngr.models.{Meeting, Feature}`
+- Produces:
+  - `parse_listing(html: bytes, dir_url: str) -> list[str]`（该目录下的直接条目名）
+  - `discover_meetings(http, wg, wgcfg) -> list[Meeting]`
+  - `fetch_window(features, wg, wgcfg) -> tuple[int, int | None]`（血统并集 ∩ hard_floor）
+
+- [ ] **Step 1: 写目录列表解析的失败测试**
+
+```python
+# tests/test_fetch_listing.py
+from ngr.fetch.listing import parse_listing
+
+DIR = "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/"
+HTML = b"""<html><body><table>
+<tr><td><a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/">..</a></td></tr>
+<tr><td><a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/Agenda">Agenda</a></td></tr>
+<tr><td><a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/Docs">Docs</a></td></tr>
+<tr><td><a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/Report">Report</a></td></tr>
+<tr><td><a href="?sortby=name">name</a></td></tr>
+</table></body></html>"""
+
+def test_parse_listing_returns_direct_children():
+    assert parse_listing(HTML, DIR) == ["Agenda", "Docs", "Report"]
+
+def test_parse_listing_excludes_parent_and_sort_links():
+    got = parse_listing(HTML, DIR)
+    assert ".." not in got and not any(g.startswith("?") for g in got)
+
+def test_parse_listing_ignores_deeper_paths():
+    html = HTML.replace(b"TSGR1_126/Report", b"TSGR1_126/Report/Archive")
+    assert "Archive" not in parse_listing(html, DIR)
+
+def test_parse_listing_tolerates_trailing_slash_in_dir_url():
+    assert parse_listing(HTML, DIR.rstrip("/")) == ["Agenda", "Docs", "Report"]
+
+def test_parse_listing_on_fixture_docs():
+    """真实 fixture：RAN1#126 的 Docs 目录列表全是 R1-*.zip。"""
+    import pathlib
+    p = pathlib.Path("tests/fixtures/RAN1_126/docs_listing.html")
+    names = parse_listing(p.read_bytes(), DIR + "Docs/")
+    assert names, "fixture 解析出 0 条，检查 fixture 或解析逻辑"
+    assert all(n.startswith("R1-") and n.endswith(".zip") for n in names)
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_listing.py -v`
+Expected: FAIL，`No module named 'ngr.fetch.listing'`
+
+- [ ] **Step 3: 写 `ngr/fetch/listing.py`**
+
+```python
+from __future__ import annotations
+import re
+from urllib.parse import unquote
+
+def parse_listing(html: bytes, dir_url: str) -> list[str]:
+    """从 3GPP 的 HTML 目录列表中取出该目录的直接子条目名（不含更深层路径）。"""
+    base = dir_url.rstrip("/") + "/"
+    pattern = re.compile(re.escape(base) + r'([^"/?#]+)(?=["/])')
+    text = html.decode("utf-8", "ignore")
+    seen, out = set(), []
+    for name in pattern.findall(text):
+        name = unquote(name)
+        if name in ("..", ".") or name.startswith("?"):
+            continue
+        if name not in seen:
+            seen.add(name)
+            out.append(name)
+    return sorted(out)
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_listing.py -v`
+Expected: 5 passed
+
+- [ ] **Step 5: 写会议发现与抓取区间的失败测试**
+
+```python
+# tests/test_fetch_discover.py
+from unittest.mock import Mock
+from ngr.config import WgConfig
+from ngr.models import Feature, LineageSegment
+from ngr.fetch.discover import discover_meetings, fetch_window
+
+WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)",
+              hard_floor=112, agenda_csv_since=124, artifacts=["agenda_csv"])
+
+def _feature(slug, segs):
+    return Feature(slug=slug, name_zh=slug, lineage=segs)
+
+def _seg(lo, hi, wg="RAN1"):
+    return LineageSegment(era="6G", release="Rel-20", depth="full",
+                          agenda=["RAN1:10"], title_re=None, meetings={wg: (lo, hi)})
+
+def test_fetch_window_is_union_of_lineage():
+    feats = [_feature("a", [_seg(116, 126)]), _feature("b", [_seg(124, None)])]
+    assert fetch_window(feats, "RAN1", WG) == (116, None)
+
+def test_fetch_window_clamped_by_hard_floor():
+    feats = [_feature("a", [_seg(100, 120)])]
+    assert fetch_window(feats, "RAN1", WG) == (112, 120)
+
+def test_fetch_window_none_when_wg_not_covered():
+    feats = [_feature("a", [_seg(116, 126, wg="RAN2")])]
+    assert fetch_window(feats, "RAN1", WG) is None
+
+def test_fetch_window_closed_range_when_all_bounded():
+    feats = [_feature("a", [_seg(116, 120)]), _feature("b", [_seg(118, 126)])]
+    assert fetch_window(feats, "RAN1", WG) == (116, 126)
+
+def test_discover_meetings_parses_and_sorts():
+    http = Mock()
+    http.get.return_value = (
+        b'<a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_120">x</a>'
+        b'<a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126">x</a>'
+        b'<a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126b">x</a>'
+        b'<a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/Templates">x</a>')
+    got = discover_meetings(http, "RAN1", WG)
+    assert [(m.number, m.suffix) for m in got] == [(120, ""), (126, ""), (126, "b")]
+    assert got[0].url.endswith("TSGR1_120/")
+
+def test_discover_meetings_ignores_non_meeting_dirs():
+    http = Mock()
+    http.get.return_value = b'<a href="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/Tdoc_index">x</a>'
+    assert discover_meetings(http, "RAN1", WG) == []
+```
+
+- [ ] **Step 6: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_discover.py -v`
+Expected: FAIL，`No module named 'ngr.fetch.discover'`
+
+- [ ] **Step 7: 写 `ngr/fetch/discover.py`**
+
+```python
+from __future__ import annotations
+import re
+from ngr.config import WgConfig
+from ngr.fetch.listing import parse_listing
+from ngr.models import Feature, Meeting
+
+BASE = "https://www.3gpp.org/ftp/"
+
+def discover_meetings(http, wg: str, cfg: WgConfig) -> list[Meeting]:
+    """列出该工作组下全部会议目录。新会议自动被发现，无需手工登记。"""
+    dir_url = BASE + cfg.path.strip("/") + "/"
+    names = parse_listing(http.get(dir_url), dir_url)
+    pat = re.compile(rf"^{cfg.dir_re}$")
+    out = []
+    for name in names:
+        m = pat.match(name)
+        if not m:
+            continue
+        out.append(Meeting(wg=wg, number=int(m.group(1)), suffix=m.group(2) or "",
+                           url=dir_url + name + "/"))
+    return sorted(out, key=lambda m: (m.number, m.suffix))
+
+def fetch_window(features: list[Feature], wg: str,
+                 cfg: WgConfig) -> tuple[int, int | None] | None:
+    """抓取区间 = 所有血统段在该工作组上的并集，再被 hard_floor 截断。
+    返回 None 表示没有任何特性关心这个工作组。"""
+    lows, highs, unbounded = [], [], False
+    for feat in features:
+        for seg in feat.lineage:
+            rng = seg.meetings.get(wg)
+            if rng is None:
+                continue
+            lo, hi = rng
+            lows.append(lo)
+            if hi is None:
+                unbounded = True
+            else:
+                highs.append(hi)
+    if not lows:
+        return None
+    low = max(min(lows), cfg.hard_floor)
+    return (low, None) if unbounded else (low, max(highs))
+```
+
+- [ ] **Step 8: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_discover.py -v`
+Expected: 6 passed
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add ngr/fetch/listing.py ngr/fetch/discover.py tests/test_fetch_listing.py tests/test_fetch_discover.py
+git commit -m "feat(fetch): 目录列表解析、会议发现、血统抓取区间"
+```
+
+---
+
 <!-- APPEND-HERE -->
