@@ -42,7 +42,12 @@ HEADING_RE = re.compile(r"(?i)^heading\d+$")
 
 
 def get(path: str, tries: int = 3, label: str = "") -> bytes | None:
-    """返回内容；403 一律当限流，退避重试；最终失败返回 None。"""
+    """返回内容；失败退避重试，最终失败返回 None。
+
+    ⚠️ 403 不等于限流：实测这台服务器对 *不存在的路径* 返回的就是 403 而非 404
+    （证据见 docs/superpowers/recon-2026-09-17.md §4.2）。这里对 403 仍然退避重试，
+    是侦察阶段"宁可多等"的取舍；抓取层不应照抄，应当先读父目录列表判断条目是否存在，
+    把 403 判为"路径不存在"而不是无脑退避。"""
     for backoff in [2, 8, 30][:tries]:
         r = S.get(BASE + path, timeout=(10, 300))
         if r.status_code == 200:
@@ -122,7 +127,7 @@ def phase_roots():
         return
     dirs = entries(html, "tsg_ran")
     print("tsg_ran/ 子目录:", dirs)
-    (RAW / "tsg_ran_dirs.json").write_text(json.dumps(dirs, ensure_ascii=False, indent=2))
+    (RAW / "tsg_ran_dirs.json").write_text(json.dumps(dirs, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def phase_meetings(wg: str, path: str):
@@ -132,7 +137,7 @@ def phase_meetings(wg: str, path: str):
         return
     dirs = entries(html, path)
     print(f"{wg} ({path}) 下的条目:", dirs)
-    (RAW / f"{wg}_root_entries.json").write_text(json.dumps(dirs, ensure_ascii=False, indent=2))
+    (RAW / f"{wg}_root_entries.json").write_text(json.dumps(dirs, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def phase_agenda_since(wg_path: str = "tsg_ran/WG1_RL1", prefix: str = "TSGR1_",
@@ -149,7 +154,7 @@ def phase_agenda_since(wg_path: str = "tsg_ran/WG1_RL1", prefix: str = "TSGR1_",
             result[n] = {"has_agenda_csv": "agenda.csv" in ents, "entries_sample": ents[:10]}
         print(f"  meeting {n}: {result[n]}", file=sys.stderr)
         time.sleep(5)  # 会议之间的额外限速
-    (RAW / "agenda_since.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
+    (RAW / "agenda_since.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
@@ -200,7 +205,7 @@ def phase_headings(wg_path: str = "tsg_ran/WG1_RL1", prefix: str = "TSGR1_",
         except Exception as e:  # noqa: BLE001
             summary[n] = {"status": f"PARSE_ERROR: {e}", "chosen": chosen}
         time.sleep(5)
-    (RAW / "headings_112_122.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+    (RAW / "headings_112_122.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({k: v.get("status") for k, v in summary.items()}, ensure_ascii=False, indent=2))
 
 

@@ -1,93 +1,168 @@
 # 3GPP RAN 抓取源配置 —— 由 Task 1 侦察实测结果生成。
-# 实测方法与证据见 docs/superpowers/recon-2026-09-17.md。
+# 实测方法与全部证据见 docs/superpowers/recon-2026-09-17.md。
 #
 # 字段说明：
 #   path              相对 https://www.3gpp.org/ftp/ 的工作组根目录（末尾不带斜杠）
 #   dir_re            该工作组下会议目录名的正则，捕获组1=会议号，捕获组2=后缀（b/bis/-e等）
 #                     ⚠️ 不是全量兼容：2026-09-17 实测各组根目录，未匹配条目为
-#                        RAN1 TSGR1_100b_e / RAN2 - / RAN3 TSGR3_107-cancelled /
+#                        RAN1 TSGR1_100b_e / RAN3 TSGR3_107-cancelled /
 #                        RAN4 TSGR4_57AH,58AH,59AH,94_eBis（另各组有一个 *_AH/_AHs/_AHGs 容器目录，
 #                        它不是会议目录，不匹配是正确行为）。带编号的这些全部低于各组 hard_floor，
 #                        当前取数范围内无影响。若将来下调任一组 hard_floor，必须重跑这个匹配检查。
-#   hard_floor        硬下限会议号：血统段的 meetings 区间再怎么配置也不得回溯到此之前
-#   agenda_csv_since  从这次会议号起，Agenda/ 目录下确认存在 agenda.csv（实测边界，见下）；
-#                      早于此值的会议一律退到 title_re 锚定，fetch 层也不应尝试拉取 agenda.csv
+#   hard_floor        硬下限会议号：血统段的 meetings 区间再怎么配置也不得回溯到此之前。
+#                     spec §4 把它定义为"各组的 Rel-18 起始会议"。本次用统一方法实测：
+#                     下载各会议纪要，看 heading 里首次出现 Release 18 / Rel-18 是哪一次。
+#                     RAN1/RAN2/RAN3 有干净的"上一次没有、这一次有"跳变，已按实测值改写；
+#                     RAN4/RANP 的议程从 2021-2022 年起就一直挂着 Rel-18 条目（频谱 WI 与
+#                     新 WI/SI 提案远早于版本正式开工），探到目前最早的会议仍然有，下界没收敛，
+#                     因此保持原推测值并标记 unverified —— 详见各组注释与报告 §6。
+#   agenda_csv_since  已实测确认存在 agenda.csv 的最早会议号。
+#                     ⚠️ 语义是"最早出现"，不是"从此每次都有"：实测 RAN2 #131 就没有，
+#                        而它前后的 #130、#132 都有。fetch 层对 >= 该值的会议也必须容忍缺失。
 #                     ⚠️ 低于该值的会议有两种形态，fetch 层都要容忍，不得当异常抛出或退避重试：
 #                        (a) Agenda/ 存在但没有 agenda.csv（如 RAN1 #120、#123）；
 #                        (b) 该会议压根没有 Agenda 子目录，直接 403（实测 RAN1 #118/#119/#121/#122，
 #                            四次会议根目录均 200 且只有 Docs/Inbox/Invitation/LS/Report）。
+#   report_dir        纪要所在子目录名。**各组不同、且 RAN4 随时间变过**，不能写死成 "Report"。
+#   minutes_re        纪要文件名的识别正则（对 report_dir 列表里的文件名匹配）。
+#                     ⚠️ RAN1 之外的组，纪要文件名里**根本没有 minutes 字样**，多数就是一个 TDoc 号。
+#                        照搬 RAN1 的 "文件名含 minutes" 规则会让这些组静默抓空。
 #   artifacts         每次会议固定抓取的产物种类
-#                     ⚠️ minutes_docx 不等于"目录里一定有 .docx"：2026-09-17 实测 RAN1 #112–#122 的纪要
-#                        全部以 zip 包裹分发（Final_Minutes_report_RAN1#<n>_v100.zip），#126 才是裸 .docx。
-#                        fetch 层必须"先找 .docx，找不到退到含 minutes 的 .zip 再解包"（见 scripts/recon.py
-#                        的 unwrap_docx()）。切换的确切会议号未测（#123–#125 未探）。
+#                     ⚠️ minutes_docx 不等于"目录里一定有 .docx"：实测 RAN1 #112-#122 的纪要
+#                        全部以 zip 包裹分发，#126 才是裸 .docx；RAN2/RAN3/RANP 也都是 zip 包裹。
+#                        fetch 层必须"先找 .docx，找不到退到匹配 minutes_re 的 .zip 再解包"
+#                        （见 scripts/recon.py 的 unwrap_docx()）。
+#   ls_dirs           LS 所在子目录名。四组三种写法，且 RAN4 的带空格，必须按组配置。
+#   latest_meeting_seen         根目录列表里出现的最大会议号（目录存在，不代表有内容）
+#   latest_meeting_with_content 实测确认目录下已有 Agenda/Docs/Report 等实质内容的最大会议号
+#                     ⚠️ 两者常常不等：RAN2/RAN3/RAN4/RANP 的最新 1-3 个会议目录下**只有
+#                        Invitation 一个子目录**（会议尚未召开）。抓取层若直接冲最新号会一无所获。
+#   verified          该组**全部**字段是否都有实测支撑；逐字段情况见 verified_fields /
+#                     unverified_fields，不要只看这个布尔值。
 #
-# ⚠️ RAN1 之外的四组，仅 path/dir_re/最新会议号 为 Task 1 实测确认；
-#    hard_floor 与 agenda_csv_since 沿用设计文档 §4 的推测值，尚未实测，
-#    标记 verified: false，需要在后续任务（结合各组 features.yaml 血统段落地时）用同样的
-#    "读目录列表" 方法核实，不得直接采信。
-#
-# ⚠️ 403 的含义（2026-09-17 实测更正，证据见 task-1-report.md §4.2）：
-#    这台服务器对 *不存在的路径* 返回的就是 403，不是 404。实测三条：
-#      GET .../WG1_RL1/TSGR1_121/              -> 200，列表里只有 Docs/Inbox/Invitation/LS/Report，无 Agenda
-#      GET .../WG1_RL1/TSGR1_999/Agenda/       -> 403（#999 这次会议根本不存在）
-#      GET .../WG1_RL1/TSGR1_121/NoSuchDir_zzz/-> 403（随手编的目录名）
-#    同一会话同一 UA 下 #123/#124/#125 的 Agenda/ 全部 200，#121/#122 连续三次 403。
-#    => 探测 Agenda/ 时应先 GET 会议根目录、看列表里有没有 Agenda 条目；直接吃到 403
-#       应判为"该目录不存在"而不是退避重试。
-#    但这只证明"403 覆盖了不存在的路径"，并未证明"403 一定不是限流"——本次没有制造过载，
-#    高频下是否另有一类 403 无数据。故下面四组仍按"未实测"对待。
+# 403 的含义（实测，证据见报告 §4.2）：这台服务器对 *不存在的路径* 返回的就是 403，不是 404。
+#   GET .../TSGR1_121/ -> 200 且列表里没有 Agenda；GET .../TSGR1_999/Agenda/ -> 403；
+#   GET .../TSGR1_121/NoSuchDir_zzz/ -> 403。本轮又添一例：GET .../WG2_RL2/TSGR2_119/ -> 403，
+#   因为该会议的真实目录名是 TSGR2_119-e。
+#   => 探测子目录时应先读父目录列表判断条目是否存在；直接吃到 403 应判为"路径不存在"而非退避重试。
+#   这只证明"403 覆盖了不存在的路径"，并未证明"403 一定不是限流"——本次没有制造过载，无数据。
 
 sources:
   RAN1:
     path: tsg_ran/WG1_RL1
     dir_re: 'TSGR1_(\d+)([a-z]*(-e)?|_e)?'
-    hard_floor: 112
-    agenda_csv_since: 124            # 2026-09-17 逐会实测坐实：#120 无 / #123 无 / #124 有 / #125 有 / #126 有
-                                      # （#121、#122 这两次会议压根没有 Agenda 子目录，见上面 403 说明）
+    hard_floor: 109                   # 实测：#107-e 与 #108-e 的纪要 heading 里没有 Release 18，
+                                      # #109-e 有 H1 "Release 18"。原值 112 比实测起点晚 3 次会议。
+                                      # ⚠️ 计划书 line 481 有 assert hard_floor == 112，需同步。
+    agenda_csv_since: 124             # 实测：#120 有 Agenda 无 csv / #123 有 Agenda 无 csv / #124、#125、#126 有 csv；
+                                      # #112、#115、#117、#118、#119、#121、#122 连 Agenda 子目录都没有
+    report_dir: Report
+    minutes_re: '(?i)^(Draft|Final)_Minutes_report_RAN1#\d+.*\.(zip|docx)$'
+    ls_dirs: [LS]
     verified: true
-    latest_meeting_seen: 127          # 实测于 2026-09-17；TSGR1_127 已在目录列表中（内容未必齐全）
+    verified_fields: [path, dir_re, hard_floor, agenda_csv_since, report_dir, minutes_re, ls_dirs,
+                      latest_meeting_seen, latest_meeting_with_content, artifacts]
+    unverified_fields: []
+    latest_meeting_seen: 127
+    latest_meeting_with_content: 127  # 实测 TSGR1_127/ 已有 Agenda/Docs/Report/LS
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
 
   RAN2:
     path: tsg_ran/WG2_RL2
     dir_re: 'TSGR2_(\d+)((bis)?(-e|_e)?)?'
-    hard_floor: 121                   # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测：TSGR2_137 的 Agenda/ 持续 403。按上面更正后的 403 语义，
-                                       # 最可能是该会议没有 Agenda 子目录，但尚未用"先读会议根目录"的方法复核；
-                                       # 不得据此判定为空，也不得据此判定不存在
-    verified: false
-    latest_meeting_seen: 137          # 实测于 2026-09-17（目录名存在，内容未验证）
+    hard_floor: 119                   # 实测：#118-e 纪要无 Rel-18 章节，#119-e 有 "8Rel-18"。原推测值 121 晚 2 次。
+    agenda_csv_since: 129             # 实测：#120/#124/#126/#128 无；#129 起有。
+                                      # ⚠️ 非单调：#131 没有 agenda.csv，而 #130、#132 都有。
+    report_dir: Report
+    minutes_re: '(?i)^R2-\d+\.zip$'   # 实测：纪要就是一个 TDoc 号 zip（#134 = R2-2604502.zip，
+                                      # 内含 R2-2604502.docx + PartList + TDoc_List，docx 有 196 条 heading）。
+                                      # 会议刚结束时 Report/ 里可能只有 Skeleton_Report_v*.zip（#135 即如此）。
+    ls_dirs: [LSin, LSout]
+    verified: true
+    verified_fields: [path, dir_re, hard_floor, agenda_csv_since, report_dir, minutes_re, ls_dirs,
+                      latest_meeting_seen, latest_meeting_with_content, artifacts]
+    unverified_fields: []
+    latest_meeting_seen: 137
+    latest_meeting_with_content: 135  # 实测 #137/#136/#135bis 目录下只有 Invitation（会议未召开）
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
 
   RAN3:
     path: tsg_ran/WG3_Iu
     dir_re: 'TSGR3_(\d+)((-?bis)?(_e|-e)?)?'
-    hard_floor: 118                   # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR3_135 Agenda/ 持续 403，403 语义见文件头）
+    hard_floor: 116                   # 实测：#115-e 纪要无 Rel-18 章节，#116-e 有 "31Corrections and
+                                      # Enhancements to Rel-18"。原推测值 118 晚 2 次。
+    agenda_csv_since: 127             # 实测：#120/#125/#126 无；#127-#134 连续每次都有
+                                      # （127,128,129,130,131,132,133,133-bis,134）
+    report_dir: Report
+    minutes_re: '(?i)^(R3-\d+\.zip|.*RAN3.*report.*\.zip|.*report.*RAN3.*\.zip)$'
+                                      # ⚠️ 实测三种形态并存：#132 = R3-263001.zip（TDoc 号）、
+                                      # #133 = RP-26xxxx_draft_report_RAN3_133_260902.zip、
+                                      # #131 = draft_RAN3#131_Meeting_Report_TDoc_Participants.zip。
+                                      # 这条正则是按这三例拟的，覆盖面未在更多会议上验证。
+                                      # 另：#134 与 #133-bis 的 Report/ 目前是空的（纪要尚未发布）。
+    ls_dirs: [LSin, LSout]
     verified: false
+    verified_fields: [path, dir_re, hard_floor, agenda_csv_since, report_dir, ls_dirs,
+                      latest_meeting_seen, latest_meeting_with_content, artifacts]
+    unverified_fields: [minutes_re]   # 三种命名形态只各见过一例，正则的覆盖面未充分验证
     latest_meeting_seen: 135
+    latest_meeting_with_content: 134  # 实测 #135 目录下只有 Invitation
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
 
   RAN4:
     path: tsg_ran/WG4_Radio
     dir_re: 'TSGR4_(\d+)((-?[Bb]is)?(_e|-e)?)?'
-    hard_floor: 106                   # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR4_122 Agenda/ 持续 403，403 语义见文件头）
+    hard_floor: 106                   # ⚠️ 仍为推测值，实测下界未收敛：探到 #103-e，其纪要就已经有
+                                      # "11Rel-18 Study Items for NR"；#105 也有整章 Rel-18 频谱 WI。
+                                      # RAN4 的频谱类 WI 远早于版本开工就挂上议程，"Rel-18 起始会议"
+                                      # 这个定义对本组不适用。按现值 106 会截掉已实测存在的 #103-#105。
+                                      # 需要设计方先定义清楚该字段对 RAN4 取什么口径，见报告 §6.4。
+    agenda_csv_since: 114             # 实测：#109/#112/#113 无；#114 起有，且 #114-#120 连续每次都有
+                                      # （114,115,116,117,118,118bis,119,120）
+    report_dir: Report                # ⚠️ 随时间变过：#103-e~#110 用的是复数 "Reports"，
+                                      # #118bis 起的新会议用单数 "Report"。切换点未精确定位。
+    minutes_re: '(?i)^(R4-\d+\.zip|.*Draft_MeetingReport.*\.zip|Skeleton[ _]Report.*\.(zip|docx))$'
+                                      # 实测：#119 = R4-2610001.zip、#118bis = R4-2605201.zip（TDoc 号）；
+                                      # #106/#105/#104-e/#103-e 的 Reports/ 里是十来份
+                                      # Draft_MeetingReport*_<日期>_<时刻>_UTC.zip 时间戳快照，
+                                      # 没有版本号可排序，"取版本号最高"的规则对本组无效。
+    ls_dirs: ['LS in', 'LS out']      # 注意带空格
     verified: false
+    verified_fields: [path, dir_re, agenda_csv_since, report_dir, minutes_re, ls_dirs,
+                      latest_meeting_seen, latest_meeting_with_content, artifacts]
+    unverified_fields: [hard_floor]
     latest_meeting_seen: 122
+    latest_meeting_with_content: 120  # 实测 #122/#121/#120bis 目录下只有 Invitation
     artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
 
   RANP:
     path: tsg_ran/TSG_RAN
     dir_re: 'TSGR_(\d+)(e)?'
-    hard_floor: 99                    # 未实测，沿用设计文档推测值
-    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR_114 Agenda/ 持续 403，403 语义见文件头）；
-                                       # 另注：plenary 的核心产物是批准的 WID/SID 与状态表而非 agreement，
-                                       # artifacts 清单需在后续任务单独确认，此处先沿用同构占位
+    hard_floor: 99                    # ⚠️ 仍为推测值，实测下界未收敛：探到 #93e（2021-09），其纪要就已经有
+                                      # "9.0New WI/SI proposals for NR for REL-18"。plenary 天然提前受理
+                                      # 下个版本的提案，"Rel-18 起始会议"对本组同样不适用。见报告 §6.5。
+    agenda_csv_since: 107             # 实测：#104/#105/#106 无；#107 起有（107,108,110,111,112,113 均有）
+    report_dir: Report
+    minutes_re: '(?i)^(RP-\d+\.zip|.*MeetingReport_RAN_\d+.*\.zip)$'
+                                      # 实测：#112 = RP-261576.zip（TDoc 号）、
+                                      # #113 = draft_MeetingReport_RAN_113_260916_noon.zip
+    ls_dirs: [LSin, LSout]
     verified: false
+    verified_fields: [path, dir_re, agenda_csv_since, report_dir, minutes_re, ls_dirs,
+                      latest_meeting_seen, latest_meeting_with_content, artifacts]
+    unverified_fields: [hard_floor]
     latest_meeting_seen: 114
-    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+    latest_meeting_with_content: 113  # 实测 #114 目录下只有 Invitation
+    # ⚠️ plenary 的 artifacts 与 WG 不同构，照搬 RAN1 那份清单不成立（实测依据见报告 §6.5）：
+    #   - agenda_csv 是本组**最有价值**的产物，不是可选项：#113 的 agenda.csv 13936 B，
+    #     直接把每个 WI/SI 写成 "NR MIMO Phase 6 [RAN1 led WI: NR_MIMO_Ph6]"，
+    #     并按 "New WI/SI proposals" / "Open ... WIs" / "Closed ... SIs" 分节给出状态。
+    #     这就是设计文档想要的 WID/SID 状态表，不需要从纪要里抽 agreement。
+    #   - docs_listing 指向 RP-xxxxxx 文档：#113 的 Docs/ 有 669 个文件，其中 666 个是 RP-*.zip，
+    #     WID/SID 本体在这里。
+    #   - minutes_docx 仍然有，但它是会议报告，不是本组的核心产物。
+    #   - 另有 WG 没有的 Info_for_workplan/ 与 Tdoclist/ 子目录，用途本次未展开。
+    artifacts: [agenda_csv, docs_listing, minutes_docx, ls_listing]
 
 http:
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
