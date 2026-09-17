@@ -561,8 +561,23 @@ class WgConfig:
     path: str
     dir_re: str
     hard_floor: int
+    """允许回溯的最早会议号，安全钳位 —— 防止血统段配错导致失控回溯。
+    **不是**语义边界：实测 RAN4/plenary 的频谱 WI 与新 WI/SI 提案远早于版本开工就上议程，
+    "Rel-18 起始会议"这个定义对它们不成立。取值宁宽勿窄，真正的范围由血统段决定。"""
     agenda_csv_since: int | None
+    """agenda.csv **最早出现**的会议号；不表示此后每次都有。
+    实测 RAN2 #131 无 agenda.csv 而 #130/#132 都有 —— 缺口是正常现象，不得据此硬失败。"""
+    minutes_re: str
+    """该组纪要文件名的正则。必须按组配置：实测 RAN1 是 Draft_Minutes_report_RAN1#N_v###.docx，
+    而 RAN2 就是个 TDoc 号 R2-2604502.zip（文件名里没有 minutes 字样），RAN3 三种形态并存。
+    用一条全局正则会让除 RAN1 外的所有组零匹配、静默产出空结果。"""
     artifacts: list[str]
+    report_dir: str = "Report"
+    ls_dirs: list[str] = field(default_factory=lambda: ["LS"])
+    """LS 目录名，实测有 LS / LSin+LSout / Reports 等多种写法。"""
+    latest_meeting_with_content: int | None = None
+    """最新的**已召开**会议号。实测四组的最新目录常常只有 Invitation（会议未召开），
+    用目录列表的最大值会让冻结逻辑把最新的有内容会议提前冻住（见 Task 20）。"""
 
 @dataclass(frozen=True)
 class HttpConfig:
@@ -603,12 +618,21 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
             re.compile(_require(raw, "dir_re", where))
         except re.error as exc:
             raise ConfigError(f"{where}.dir_re 不是合法正则: {exc}") from exc
+        minutes_re = _require(raw, "minutes_re", where)
+        try:
+            re.compile(minutes_re)
+        except re.error as exc:
+            raise ConfigError(f"{where}.minutes_re 不是合法正则: {exc}") from exc
         wgs[name] = WgConfig(
             path=_require(raw, "path", where),
             dir_re=raw["dir_re"],
             hard_floor=int(_require(raw, "hard_floor", where)),
             agenda_csv_since=raw.get("agenda_csv_since"),
+            minutes_re=minutes_re,
             artifacts=list(_require(raw, "artifacts", where)),
+            report_dir=raw.get("report_dir", "Report"),
+            ls_dirs=list(raw.get("ls_dirs", ["LS"])),
+            latest_meeting_with_content=raw.get("latest_meeting_with_content"),
         )
     if not wgs:
         raise ConfigError("sources.yaml 未定义任何工作组")
@@ -1117,7 +1141,10 @@ git commit -m "feat(fetch): 目录列表解析、会议发现、血统抓取区�
 
 ```python
 # tests/test_fetch_manifest.py
-from ngr.fetch.manifest import Manifest, minutes_version, pick_latest_minutes
+from ngr.fetch.manifest import Manifest, minutes_version, pick_latest_minutes, unwrap_docx
+
+RAN1_RE = r"(?i)^(Draft|Final)_Minutes_report_RAN1#\d+.*\.(zip|docx)$"
+RAN2_RE = r"(?i)^R2-\d+\.zip$"
 
 def test_minutes_version_parsing():
     assert minutes_version("Draft_Minutes_report_RAN1#126_v010.docx") == 10
@@ -1131,22 +1158,44 @@ def test_minutes_version_accepts_zip():
 def test_pick_latest_minutes_prefers_higher_version():
     names = ["Draft_Minutes_report_RAN1#126_v010.docx",
              "Draft_Minutes_report_RAN1#126_v100.docx", "Archive"]
-    assert pick_latest_minutes(names) == "Draft_Minutes_report_RAN1#126_v100.docx"
+    assert pick_latest_minutes(names, RAN1_RE) == "Draft_Minutes_report_RAN1#126_v100.docx"
 
 def test_pick_latest_minutes_finds_zip_only_meeting():
     names = ["Final_Minutes_report_RAN1#112_v100.zip", "Archive"]
-    assert pick_latest_minutes(names) == "Final_Minutes_report_RAN1#112_v100.zip"
+    assert pick_latest_minutes(names, RAN1_RE) == "Final_Minutes_report_RAN1#112_v100.zip"
 
 def test_pick_latest_minutes_prefers_docx_over_zip_at_same_version():
     names = ["Minutes_report_RAN1#123_v100.zip", "Minutes_report_RAN1#123_v100.docx"]
-    assert pick_latest_minutes(names) == "Minutes_report_RAN1#123_v100.docx"
+    assert pick_latest_minutes(names, RAN1_RE) == "Minutes_report_RAN1#123_v100.docx"
 
 def test_pick_latest_minutes_version_beats_format():
     names = ["Minutes_report_RAN1#123_v100.zip", "Minutes_report_RAN1#123_v010.docx"]
-    assert pick_latest_minutes(names) == "Minutes_report_RAN1#123_v100.zip"
+    assert pick_latest_minutes(names, RAN1_RE) == "Minutes_report_RAN1#123_v100.zip"
 
 def test_pick_latest_minutes_returns_none_when_absent():
-    assert pick_latest_minutes(["Archive", "notes.txt"]) is None
+    assert pick_latest_minutes(["Archive", "notes.txt"], RAN1_RE) is None
+
+def test_pick_latest_minutes_ran2_tdoc_naming():
+    """实测 RAN2 的纪要就是个 TDoc 号 zip，文件名里没有 minutes 字样。
+    用 RAN1 的正则会零匹配 —— 这正是必须按组配置的原因。"""
+    names = ["R2-2604502.zip", "Skeleton_Report_v001.zip", "TDoc_List.xlsx"]
+    assert pick_latest_minutes(names, RAN2_RE) == "R2-2604502.zip"
+    assert pick_latest_minutes(names, RAN1_RE) is None
+
+def test_pick_latest_minutes_no_version_falls_back_to_name_order():
+    names = ["R2-2604502.zip", "R2-2604999.zip"]
+    assert pick_latest_minutes(names, RAN2_RE) == "R2-2604999.zip"
+
+def test_unwrap_docx_picks_largest_inner_docx():
+    """RAN2 的纪要 zip 内含 PartList / TDoc_List 等小文件，正文是最大的那个。"""
+    import io as _io, zipfile as _zf, pathlib
+    real = pathlib.Path("tests/fixtures/RAN1_126/minutes.docx").read_bytes()
+    buf = _io.BytesIO()
+    with _zf.ZipFile(buf, "w") as z:
+        z.writestr("PartList.docx", b"x" * 100)
+        z.writestr("R2-2604502.docx", real)
+    out = unwrap_docx(buf.getvalue())
+    assert _zf.ZipFile(_io.BytesIO(out)).namelist().count("word/document.xml") == 1
 
 def test_unwrap_docx_passes_through_real_docx():
     import pathlib
@@ -1219,41 +1268,47 @@ from __future__ import annotations
 import hashlib, io, json, re, time, zipfile
 from pathlib import Path
 
-MINUTES_RE = re.compile(r"(?i)minutes.*_v(\d{3})\.(docx|zip)$")
+VERSION_RE = re.compile(r"(?i)_v(\d{3})\b")
 
 def minutes_version(filename: str) -> int | None:
-    m = MINUTES_RE.search(filename)
+    """从文件名抽版本号。实测多数组的纪要文件名里根本没有 _v###
+    （RAN2 的就是个 TDoc 号 R2-2604502.zip），此时返回 None 而非报错。"""
+    m = VERSION_RE.search(filename)
     return int(m.group(1)) if m else None
 
-def pick_latest_minutes(names: list[str]) -> str | None:
+def pick_latest_minutes(names: list[str], minutes_re: str) -> str | None:
     """纪要有 v010 → v100 的版本演进，永远取最高版本。
 
-    实测（Task 1）：RAN1 ≤#122 的纪要以 **zip 包裹 docx** 分发
-    （`Final_Minutes_report_RAN1#112_v100.zip`），#124 起改为裸 `.docx`。
-    只匹配 .docx 会让全部 5G-A 会议匹配失败、被标记为 missing 而静默跳过 ——
-    血统段出现无声空洞，是本项目最坏的失败模式。故两种后缀都要认。
-    同版本号同时存在 docx 与 zip 时取 docx（省一次解压）。"""
-    cands = []
-    for n in names:
-        v = minutes_version(n)
-        if v is not None:
-            cands.append((v, 0 if n.lower().endswith(".docx") else 1, n))
+    候选由**该工作组配置的 `minutes_re`** 决定，不用全局正则 —— 实测各组命名毫无共性：
+      RAN1  `Draft_Minutes_report_RAN1#126_v010.docx`（≤#122 为 .zip 包裹）
+      RAN2  `R2-2604502.zip`  ← 纯 TDoc 号，文件名里没有 "minutes" 字样
+      RAN3  三种形态并存（TDoc 号 / RP-…_draft_report_RAN3_133_… / draft_RAN3#131_…）
+    用一条全局正则会让除 RAN1 外所有组零匹配、静默产出空结果。
+
+    排序：有 `_v###` 的按版本号降序优先；都没有版本号时按文件名降序（TDoc 号越大越新）。
+    同等次序下取 .docx 而非 .zip（省一次解压）。"""
+    rx = re.compile(minutes_re)
+    cands = [n for n in names if rx.search(n)]
     if not cands:
         return None
-    return min(cands, key=lambda c: (-c[0], c[1]))[2]
+    def rank(n: str):
+        v = minutes_version(n)
+        return (0 if v is None else 1, v or 0, n, 0 if n.lower().endswith(".docx") else -1)
+    return max(cands, key=rank)
 
 def unwrap_docx(data: bytes) -> bytes:
-    """老会议的纪要是 zip 包裹的 docx；剥掉外层 zip 返回真正的 docx 字节。
-    传入的本身就是 docx 时原样返回。"""
+    """纪要常以 zip 分发；剥掉外层返回真正的 docx 字节。本身就是 docx 时原样返回。
+
+    zip 内常有多个文件（实测 RAN2 的纪要 zip 含 `R2-2604502.docx` +
+    PartList + TDoc_List），取**体积最大**的 docx —— 纪要正文远大于名单类附件。"""
     with zipfile.ZipFile(io.BytesIO(data)) as z:
-        names = z.namelist()
-        if "word/document.xml" in names:
+        infos = z.infolist()
+        if any(i.filename == "word/document.xml" for i in infos):
             return data
-        inner = [n for n in names if n.lower().endswith(".docx")]
+        inner = [i for i in infos if i.filename.lower().endswith(".docx")]
         if not inner:
-            raise ValueError(f"zip 内未找到 docx，条目: {names[:10]}")
-        best = max(inner, key=lambda n: minutes_version(n) or 0)
-        return z.read(best)
+            raise ValueError(f"zip 内未找到 docx，条目: {[i.filename for i in infos][:10]}")
+        return z.read(max(inner, key=lambda i: i.file_size).filename)
 
 class Manifest:
     """记录每个已抓文件的 etag/长度/哈希，用于增量判定。"""
@@ -1431,9 +1486,10 @@ log = logging.getLogger(__name__)
 def _pick_exact(name):
     return lambda names: name if name in names else None
 
+# minutes 的选择器需要该组的 minutes_re，故在 fetch_meeting 里按组构造
 ARTIFACTS = {
-    "agenda_csv":    ("Agenda/", "agenda.csv",        _pick_exact("agenda.csv")),
-    "minutes_docx":  ("Report/", "minutes.docx",      pick_latest_minutes),
+    "agenda_csv":    ("Agenda/", "agenda.csv",   _pick_exact("agenda.csv")),
+    "minutes_docx":  (None,      "minutes.docx", None),   # 子目录与选择器按组决定
 }
 LISTING_ARTIFACTS = {
     "docs_listing":  ("Docs/", "docs_listing.html"),
@@ -1463,6 +1519,10 @@ def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
     for art in cfg.artifacts:
         if art in ARTIFACTS:
             subdir, local, chooser = ARTIFACTS[art]
+            if art == "minutes_docx":
+                # 纪要的子目录名与识别正则都按组配置：实测各组命名毫无共性
+                subdir = cfg.report_dir.rstrip("/") + "/"
+                chooser = lambda names: pick_latest_minutes(names, cfg.minutes_re)
             if subdir.rstrip("/") not in root_names:
                 res.missing.append(art)
                 continue
@@ -2233,11 +2293,13 @@ def test_events_keep_heading_path_when_agenda_absent(tmp_path):
     assert all(e["agenda_item"] is None for e in p.events)
     assert any(e["heading_path"] for e in p.events)
 
-def test_missing_agenda_raises_when_required(tmp_path):
+def test_missing_agenda_warns_but_does_not_raise(tmp_path):
+    """实测 agenda_csv_since 只表示最早出现（RAN2 #131 有缺口），
+    缺 agenda.csv 是正常现象，不得以退出码 2 中止整条管线。"""
     raw = tmp_path / "raw"; raw.mkdir()
     shutil.copy(FIX126 / "minutes.docx", raw / "minutes.docx")
-    with pytest.raises(ParseError, match="agenda"):
-        parse_meeting(raw, MTG, agenda_required=True)
+    p = parse_meeting(raw, MTG, agenda_required=True)
+    assert p.events and any("agenda.csv" in w for w in p.warnings)
 
 def test_missing_minutes_raises(tmp_path):
     raw = tmp_path / "raw"; raw.mkdir()
@@ -2311,6 +2373,7 @@ class ParsedMeeting:
     unaligned: list[str] = field(default_factory=list)
     unmatched_ratio: float = 0.0
     minutes_version: int | None = None
+    warnings: list[str] = field(default_factory=list)
 
 def parse_meeting(raw_dir: Path, meeting: Meeting, *,
                   agenda_required: bool) -> ParsedMeeting:
@@ -2320,10 +2383,14 @@ def parse_meeting(raw_dir: Path, meeting: Meeting, *,
         raise ParseError(f"{meeting.label}: 缺少 minutes.docx，无法解析")
 
     agenda_path = raw_dir / "agenda.csv"
+    warnings: list[str] = []
     if agenda_required and not agenda_path.exists():
-        raise ParseError(
-            f"{meeting.label}: 缺少 agenda.csv，但该会议被标记为应有议程锚点。"
-            "若这是 5G-A 老会议，请把 sources.yaml 的 agenda_csv_since 调对。")
+        # 不硬失败：实测 agenda_csv_since 只表示"最早出现"，不表示此后每次都有
+        # （RAN2 #131 无 agenda.csv 而 #130/#132 都有）。缺口是正常现象，
+        # 降级到 title_re 锚定即可，但必须让人看见。
+        warnings.append(
+            f"{meeting.label}: 预期有 agenda.csv 但该会议没有，已降级为仅按标题锚定 —— "
+            "该次会议的议程号归属会缺失")
 
     doc = parse_docx(minutes)
     if not doc.headings:
@@ -2367,7 +2434,7 @@ def parse_meeting(raw_dir: Path, meeting: Meeting, *,
         })
 
     return ParsedMeeting(
-        wg=meeting.wg, meeting=meeting.number, events=events,
+        wg=meeting.wg, meeting=meeting.number, events=events, warnings=warnings,
         unaligned=[h.text for h in (alignment.unaligned if alignment else [])],
         unmatched_ratio=alignment.unmatched_ratio if alignment else 0.0,
         minutes_version=read_minutes_version(raw_dir),
@@ -2382,6 +2449,7 @@ def write_parsed(parsed: ParsedMeeting, out_dir: Path | None = None) -> Path:
         "minutes_version": parsed.minutes_version,
         "unmatched_ratio": round(parsed.unmatched_ratio, 4),
         "unaligned": parsed.unaligned,
+        "warnings": parsed.warnings,
         "events": parsed.events,
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True),
@@ -5021,7 +5089,7 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False,
             res.alerts.append(f"{wg} 会议发现被限流: {exc}")
             continue
 
-        latest = max((m.number for m in all_meetings), default=0)
+        latest_with_content = 0   # 本次真正抓到纪要的最大会议号，见下方冻结逻辑
         for mtg in all_meetings:
             if mtg.number < lo or (hi is not None and mtg.number > hi):
                 continue
@@ -5050,7 +5118,11 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False,
                 if ev.id in added:
                     stats_by_meeting[(wg, mtg.number)][ev.feature] += 1
 
-            if mtg.number <= latest - FREEZE_LAG:
+            # 仅在解析成功之后才冻结，且 latest 用"本次真正抓到纪要的最大会议号"。
+            # 实测各组最新目录常常只有 Invitation（会议未召开），用目录列表的最大值
+            # 会把最新的有内容会议提前冻住，其 v010→v100 的最终版纪要永远不会被抓到。
+            latest_with_content = max(latest_with_content, mtg.number)
+            if mtg.number <= latest_with_content - FREEZE_LAG:
                 man = Manifest(raw_dir); man.mark_frozen(); man.save()
 
     feat_state = _load_json(P.state / "features_state.json", {})
