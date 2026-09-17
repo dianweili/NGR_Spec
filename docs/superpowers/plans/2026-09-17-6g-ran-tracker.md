@@ -1938,4 +1938,183 @@ git commit -m "feat(parse): agreement 块提取"
 
 ---
 
+### Task 10: heading ↔ 议程号对齐
+
+纪要标题是 Word 自动编号，正文里没有议程号。靠 `agenda.csv` 的标题文本对齐回去。**三重校验都通过才落库** —— 宁可少归类，不可错归类。
+
+**Files:**
+- Create: `ngr/parse/align.py`
+- Test: `tests/test_parse_align.py`
+
+**Interfaces:**
+- Consumes: `ngr.models.{AgendaItem, Heading}`
+- Produces:
+  - `Alignment` 数据类：`.by_heading: dict[int, AgendaItem]`（键为 `Heading.para_index`）、`.unaligned: list[Heading]`、`.unmatched_ratio: float`
+  - `align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment`
+  - `normalize(text: str) -> str`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_parse_align.py
+from ngr.models import AgendaItem, Heading
+from ngr.parse.align import align, normalize
+
+def A(item, title): return AgendaItem(item=item, title=title)
+def H(level, text, i=0): return Heading(level=level, text=text, para_index=i)
+
+def test_normalize_strips_case_punct_and_space():
+    assert normalize("  Waveform for 6GR  air-interface! ") == normalize("waveform for 6gr airinterface")
+
+def test_exact_match():
+    ag = [A("10.2", "Waveform for 6GR air interface")]
+    al = align(ag, [H(2, "Waveform for 6GR air interface", 5)])
+    assert al.by_heading[5].item == "10.2"
+    assert al.unmatched_ratio == 0.0
+
+def test_fuzzy_match_above_threshold():
+    ag = [A("10.3", "Channel coding and modulation for 6GR interface")]
+    al = align(ag, [H(2, "Channel coding and modulation for 6GR  interface", 7)])
+    assert al.by_heading[7].item == "10.3"
+
+def test_fuzzy_below_threshold_is_rejected():
+    ag = [A("10.2", "Waveform for 6GR air interface")]
+    al = align(ag, [H(2, "Totally different topic", 3)])
+    assert 3 not in al.by_heading
+    assert al.unaligned[0].text == "Totally different topic"
+
+def test_depth_mismatch_is_rejected():
+    """标题对得上但层级对不上 —— 拒绝，这是模板变动的信号。"""
+    ag = [A("10.2", "Waveform")]                  # depth 2
+    al = align(ag, [H(4, "Waveform", 1)])         # Heading4
+    assert 1 not in al.by_heading
+
+def test_depth_match_allows_one_level_offset():
+    """纪要常把 Heading1 用在 depth-1 议程项上，允许 ±1 的偏移。"""
+    ag = [A("10.2", "Waveform")]
+    al = align(ag, [H(3, "Waveform", 1)])
+    assert al.by_heading[1].item == "10.2"
+
+def test_each_agenda_item_used_at_most_once():
+    ag = [A("10.2", "Waveform")]
+    al = align(ag, [H(2, "Waveform", 1), H(2, "Waveform", 9)])
+    assert len(al.by_heading) == 1
+
+def test_unmatched_ratio_computed():
+    ag = [A("1", "Opening")]
+    al = align(ag, [H(1, "Opening", 0), H(1, "Mystery", 1)])
+    assert al.unmatched_ratio == 0.5
+
+def test_empty_agenda_marks_all_unaligned():
+    al = align([], [H(1, "X", 0)])
+    assert al.unmatched_ratio == 1.0 and al.by_heading == {}
+
+def test_real_fixture_alignment():
+    import pathlib
+    from ngr.parse.agenda import parse_agenda
+    from ngr.parse.docx import parse_docx
+    ag = parse_agenda(pathlib.Path("tests/fixtures/RAN1_126/agenda.csv").read_bytes())
+    doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
+    al = align(ag, doc.headings)
+    assert al.unmatched_ratio < 0.20, f"未对齐率过高: {al.unmatched_ratio:.0%}"
+    items = {v.item for v in al.by_heading.values()}
+    assert "10" in items and "10.2" in items
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_align.py -v`
+Expected: FAIL，`No module named 'ngr.parse.align'`
+
+- [ ] **Step 3: 写 `ngr/parse/align.py`**
+
+```python
+from __future__ import annotations
+import difflib, re, unicodedata
+from dataclasses import dataclass, field
+from ngr.models import AgendaItem, Heading
+
+FUZZY_THRESHOLD = 0.90
+DEPTH_TOLERANCE = 1          # heading 层级与议程深度允许 ±1 偏移
+
+_PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
+_SPACE = re.compile(r"\s+")
+
+def normalize(text: str) -> str:
+    t = unicodedata.normalize("NFKC", text).lower()
+    t = _PUNCT.sub("", t)
+    return _SPACE.sub(" ", t).strip()
+
+@dataclass
+class Alignment:
+    by_heading: dict[int, AgendaItem] = field(default_factory=dict)
+    unaligned: list[Heading] = field(default_factory=list)
+
+    @property
+    def unmatched_ratio(self) -> float:
+        total = len(self.by_heading) + len(self.unaligned)
+        return len(self.unaligned) / total if total else 0.0
+
+def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
+    """把纪要 heading 对回议程号。三道关：标题归一化精确匹配 →
+    difflib 相似度 ≥ 0.90 → heading 层级与议程深度互校。全过才算数。"""
+    result = Alignment()
+    exact: dict[str, list[AgendaItem]] = {}
+    for item in agenda:
+        exact.setdefault(normalize(item.title), []).append(item)
+    used: set[str] = set()
+    norm_keys = list(exact.keys())
+
+    for h in headings:
+        key = normalize(h.text)
+        cands = [i for i in exact.get(key, []) if i.item not in used]
+
+        if not cands and norm_keys:
+            close = difflib.get_close_matches(key, norm_keys, n=1, cutoff=FUZZY_THRESHOLD)
+            if close:
+                cands = [i for i in exact[close[0]] if i.item not in used]
+
+        chosen = None
+        for cand in cands:
+            if abs(cand.depth - h.level) <= DEPTH_TOLERANCE:
+                chosen = cand
+                break
+
+        if chosen is None:
+            result.unaligned.append(h)
+        else:
+            result.by_heading[h.para_index] = chosen
+            used.add(chosen.item)
+
+    return result
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_align.py -v`
+Expected: 10 passed
+
+若真实 fixture 的未对齐率超过 20%，先打印未对齐清单看是什么：
+
+```bash
+.venv/Scripts/python.exe -c "
+import pathlib
+from ngr.parse.agenda import parse_agenda
+from ngr.parse.docx import parse_docx
+from ngr.parse.align import align
+ag = parse_agenda(pathlib.Path('tests/fixtures/RAN1_126/agenda.csv').read_bytes())
+doc = parse_docx(pathlib.Path('tests/fixtures/RAN1_126/minutes.docx'))
+al = align(ag, doc.headings)
+print(f'{al.unmatched_ratio:.0%} 未对齐'); [print(' ', h.level, h.text) for h in al.unaligned[:15]]"
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add ngr/parse/align.py tests/test_parse_align.py
+git commit -m "feat(parse): heading 与议程号三重校验对齐"
+```
+
+---
+
 <!-- APPEND-HERE -->
