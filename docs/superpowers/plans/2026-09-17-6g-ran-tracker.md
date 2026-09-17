@@ -167,8 +167,8 @@ sources:
   # RAN2/RAN3/RAN4/RANP 同构，值由 Step 2 实测填入
 http:
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-  concurrency: 2
-  delay_seconds: 0.5
+  concurrency: 1          # 实测可用值；spec §4 的 2 为未验证上限
+  delay_seconds: 2.0      # 实测 Task 1 全程 5s 串行无限流；0.5 未验证
   retry_backoff: [2, 8, 30]
   timeout: { connect: 10, read: 300 }
 extract:
@@ -614,8 +614,8 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
     h = _require(data, "http", "sources.yaml")
     http = HttpConfig(
         user_agent=_require(h, "user_agent", "http"),
-        concurrency=int(h.get("concurrency", 2)),
-        delay_seconds=float(h.get("delay_seconds", 0.5)),
+        concurrency=int(h.get("concurrency", 1)),
+        delay_seconds=float(h.get("delay_seconds", 2.0)),
         retry_backoff=list(h.get("retry_backoff", [2, 8, 30])),
         connect_timeout=float(h.get("timeout", {}).get("connect", 10)),
         read_timeout=float(h.get("timeout", {}).get("read", 300)),
@@ -1122,13 +1122,51 @@ def test_minutes_version_parsing():
     assert minutes_version("Draft_Minutes_report_RAN1#126_v100.docx") == 100
     assert minutes_version("Welcome.docx") is None
 
+def test_minutes_version_accepts_zip():
+    """实测：RAN1 ≤#122 的纪要以 zip 分发，只认 .docx 会让 5G-A 全线静默跳过。"""
+    assert minutes_version("Final_Minutes_report_RAN1#112_v100.zip") == 100
+
 def test_pick_latest_minutes_prefers_higher_version():
     names = ["Draft_Minutes_report_RAN1#126_v010.docx",
              "Draft_Minutes_report_RAN1#126_v100.docx", "Archive"]
     assert pick_latest_minutes(names) == "Draft_Minutes_report_RAN1#126_v100.docx"
 
+def test_pick_latest_minutes_finds_zip_only_meeting():
+    names = ["Final_Minutes_report_RAN1#112_v100.zip", "Archive"]
+    assert pick_latest_minutes(names) == "Final_Minutes_report_RAN1#112_v100.zip"
+
+def test_pick_latest_minutes_prefers_docx_over_zip_at_same_version():
+    names = ["Minutes_report_RAN1#123_v100.zip", "Minutes_report_RAN1#123_v100.docx"]
+    assert pick_latest_minutes(names) == "Minutes_report_RAN1#123_v100.docx"
+
+def test_pick_latest_minutes_version_beats_format():
+    names = ["Minutes_report_RAN1#123_v100.zip", "Minutes_report_RAN1#123_v010.docx"]
+    assert pick_latest_minutes(names) == "Minutes_report_RAN1#123_v100.zip"
+
 def test_pick_latest_minutes_returns_none_when_absent():
     assert pick_latest_minutes(["Archive", "notes.txt"]) is None
+
+def test_unwrap_docx_passes_through_real_docx():
+    import pathlib
+    data = pathlib.Path("tests/fixtures/RAN1_126/minutes.docx").read_bytes()
+    assert unwrap_docx(data) is data
+
+def test_unwrap_docx_extracts_inner_docx():
+    import io as _io, zipfile as _zf, pathlib
+    inner = pathlib.Path("tests/fixtures/RAN1_126/minutes.docx").read_bytes()
+    buf = _io.BytesIO()
+    with _zf.ZipFile(buf, "w") as z:
+        z.writestr("Final_Minutes_report_RAN1#112_v100.docx", inner)
+    out = unwrap_docx(buf.getvalue())
+    assert _zf.ZipFile(_io.BytesIO(out)).namelist().count("word/document.xml") == 1
+
+def test_unwrap_docx_raises_when_no_docx_inside():
+    import io as _io, zipfile as _zf, pytest as _pytest
+    buf = _io.BytesIO()
+    with _zf.ZipFile(buf, "w") as z:
+        z.writestr("readme.txt", b"nothing here")
+    with _pytest.raises(ValueError, match="docx"):
+        unwrap_docx(buf.getvalue())
 
 def test_needs_fetch_true_when_unknown(tmp_path):
     assert Manifest(tmp_path).needs_fetch("a.docx", {"etag": '"x"', "length": 5})
@@ -1176,20 +1214,44 @@ Expected: FAIL，`No module named 'ngr.fetch.manifest'`
 
 ```python
 from __future__ import annotations
-import hashlib, json, re, time
+import hashlib, io, json, re, time, zipfile
 from pathlib import Path
 
-MINUTES_RE = re.compile(r"(?i)minutes.*_v(\d{3})\.docx$")
+MINUTES_RE = re.compile(r"(?i)minutes.*_v(\d{3})\.(docx|zip)$")
 
 def minutes_version(filename: str) -> int | None:
     m = MINUTES_RE.search(filename)
     return int(m.group(1)) if m else None
 
 def pick_latest_minutes(names: list[str]) -> str | None:
-    """纪要有 v010 → v100 的版本演进，永远取最高版本。"""
-    cands = [(minutes_version(n), n) for n in names]
-    cands = [(v, n) for v, n in cands if v is not None]
-    return max(cands)[1] if cands else None
+    """纪要有 v010 → v100 的版本演进，永远取最高版本。
+
+    实测（Task 1）：RAN1 ≤#122 的纪要以 **zip 包裹 docx** 分发
+    （`Final_Minutes_report_RAN1#112_v100.zip`），#124 起改为裸 `.docx`。
+    只匹配 .docx 会让全部 5G-A 会议匹配失败、被标记为 missing 而静默跳过 ——
+    血统段出现无声空洞，是本项目最坏的失败模式。故两种后缀都要认。
+    同版本号同时存在 docx 与 zip 时取 docx（省一次解压）。"""
+    cands = []
+    for n in names:
+        v = minutes_version(n)
+        if v is not None:
+            cands.append((v, 0 if n.lower().endswith(".docx") else 1, n))
+    if not cands:
+        return None
+    return min(cands, key=lambda c: (-c[0], c[1]))[2]
+
+def unwrap_docx(data: bytes) -> bytes:
+    """老会议的纪要是 zip 包裹的 docx；剥掉外层 zip 返回真正的 docx 字节。
+    传入的本身就是 docx 时原样返回。"""
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        names = z.namelist()
+        if "word/document.xml" in names:
+            return data
+        inner = [n for n in names if n.lower().endswith(".docx")]
+        if not inner:
+            raise ValueError(f"zip 内未找到 docx，条目: {names[:10]}")
+        best = max(inner, key=lambda n: minutes_version(n) or 0)
+        return z.read(best)
 
 class Manifest:
     """记录每个已抓文件的 etag/长度/哈希，用于增量判定。"""
@@ -1357,7 +1419,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from ngr.config import WgConfig
 from ngr.fetch.listing import parse_listing
-from ngr.fetch.manifest import Manifest, pick_latest_minutes
+from ngr.fetch.manifest import Manifest, pick_latest_minutes, unwrap_docx
 from ngr.models import Meeting
 from ngr.paths import P
 
@@ -1411,7 +1473,10 @@ def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
             url = sub_url + chosen
             head = http.head(url)
             if man.needs_fetch(local, head):
-                man.record(local, url, head, http.get(url))
+                data = http.get(url)
+                if art == "minutes_docx":
+                    data = unwrap_docx(data)   # 老会议是 zip 包裹的 docx
+                man.record(local, url, head, data)
                 res.changed = True
             res.files[art] = raw_dir / local
 

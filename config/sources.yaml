@@ -82,8 +82,8 @@ sources:
 
 http:
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-  concurrency: 2
-  delay_seconds: 0.5
+  concurrency: 1          # Ruling E: Task 1 实测 5s 串行无限流；spec 的 2 未验证
+  delay_seconds: 2.0      # Ruling E: 0.5 未验证，被限流会让日常任务静默失败
   retry_backoff: [2, 8, 30]
   timeout: { connect: 10, read: 300 }
 
