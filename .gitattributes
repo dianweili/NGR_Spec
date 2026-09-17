@@ -1,0 +1,2 @@
+# Fixtures are verbatim captures of upstream 3GPP artefacts: never normalise line endings.
+tests/fixtures/** -text

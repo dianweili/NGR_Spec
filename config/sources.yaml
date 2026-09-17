@@ -1,0 +1,78 @@
+# 3GPP RAN 抓取源配置 —— 由 Task 1 侦察实测结果生成。
+# 实测方法与证据见 docs/superpowers/recon-2026-09-17.md。
+#
+# 字段说明：
+#   path              相对 https://www.3gpp.org/ftp/ 的工作组根目录（末尾不带斜杠）
+#   dir_re            该工作组下会议目录名的正则，捕获组1=会议号，捕获组2=后缀（b/bis/-e等）
+#   hard_floor        硬下限会议号：血统段的 meetings 区间再怎么配置也不得回溯到此之前
+#   agenda_csv_since  从这次会议号起，Agenda/ 目录下确认存在 agenda.csv（实测边界，见下）；
+#                      早于此值的会议一律退到 title_re 锚定，fetch 层也不应尝试拉取 agenda.csv
+#   artifacts         每次会议固定抓取的产物种类
+#
+# ⚠️ RAN1 之外的四组，仅 path/dir_re/最新会议号 为 Task 1 实测确认；
+#    hard_floor 与 agenda_csv_since 沿用设计文档 §4 的推测值，尚未实测，
+#    标记 verified: false，需要在后续任务（结合各组 features.yaml 血统段落地时）用同样的
+#    "读目录列表" 方法核实，不得直接采信。
+
+sources:
+  RAN1:
+    path: tsg_ran/WG1_RL1
+    dir_re: 'TSGR1_(\d+)([a-z]*(-e)?|_e)?'
+    hard_floor: 112
+    agenda_csv_since: 124
+    verified: true
+    latest_meeting_seen: 127          # 实测于 2026-09-17；TSGR1_127 已在目录列表中（内容未必齐全）
+    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+
+  RAN2:
+    path: tsg_ran/WG2_RL2
+    dir_re: 'TSGR2_(\d+)((bis)?(-e|_e)?)?'
+    hard_floor: 121                   # 未实测，沿用设计文档推测值
+    agenda_csv_since: null            # 未实测：最新会议 TSGR2_137 的 Agenda/ 目录列表探测持续 403（3次退避后仍失败），
+                                       # 无法判定是限流还是该会议尚未开幕/目录未建立；不得据此判定为空
+    verified: false
+    latest_meeting_seen: 137          # 实测于 2026-09-17（目录名存在，内容未验证）
+    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+
+  RAN3:
+    path: tsg_ran/WG3_Iu
+    dir_re: 'TSGR3_(\d+)((-?bis)?(_e|-e)?)?'
+    hard_floor: 118                   # 未实测，沿用设计文档推测值
+    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR3_135 Agenda/ 持续 403）
+    verified: false
+    latest_meeting_seen: 135
+    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+
+  RAN4:
+    path: tsg_ran/WG4_Radio
+    dir_re: 'TSGR4_(\d+)((-?[Bb]is)?(_e|-e)?)?'
+    hard_floor: 106                   # 未实测，沿用设计文档推测值
+    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR4_122 Agenda/ 持续 403）
+    verified: false
+    latest_meeting_seen: 122
+    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+
+  RANP:
+    path: tsg_ran/TSG_RAN
+    dir_re: 'TSGR_(\d+)(e)?'
+    hard_floor: 99                    # 未实测，沿用设计文档推测值
+    agenda_csv_since: null            # 未实测，原因同 RAN2（TSGR_114 Agenda/ 持续 403）；
+                                       # 另注：plenary 的核心产物是批准的 WID/SID 与状态表而非 agreement，
+                                       # artifacts 清单需在后续任务单独确认，此处先沿用同构占位
+    verified: false
+    latest_meeting_seen: 114
+    artifacts: [agenda_csv, minutes_docx, docs_listing, ls_listing]
+
+http:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+  concurrency: 2
+  delay_seconds: 0.5
+  retry_backoff: [2, 8, 30]
+  timeout: { connect: 10, read: 300 }
+
+extract:
+  backend: cli
+  max_calls_per_run: 60
+  batch_size: 40
+  model_bulk: sonnet
+  model_digest: opus
