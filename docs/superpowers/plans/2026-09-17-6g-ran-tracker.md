@@ -1742,4 +1742,200 @@ git commit -m "feat(parse): docx 段落/heading/表格抽取"
 
 ---
 
+### Task 9: agreement 块提取
+
+Agreement 是**块**不是行：标记段之后可能跟若干段落、项目符号和表格。吃到下一个标记或下一个 heading 为止。
+
+**Files:**
+- Create: `ngr/parse/events.py`
+- Test: `tests/test_parse_events.py`
+
+**Interfaces:**
+- Consumes: `ngr.parse.docx.{Document, Block}`、`ngr.models.RawEvent`
+- Produces: `extract_events(doc: Document) -> list[RawEvent]`（`RawEvent.heading_path` 为该事件所在的 heading 文本栈）
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_parse_events.py
+import pathlib
+from ngr.parse.docx import parse_docx, Document, Block
+from ngr.parse.events import extract_events
+from ngr.models import Heading
+
+def doc_of(*blocks_and_headings):
+    """blocks_and_headings: (kind, text, style) 三元组序列。"""
+    d = Document()
+    para_i = 0
+    for kind, text, style in blocks_and_headings:
+        d.blocks.append(Block(kind, text, style, len(d.blocks)))
+        if kind == "para":
+            if style and style.lower().startswith("heading"):
+                d.headings.append(Heading(level=int(style[-1]), text=text, para_index=para_i))
+            para_i += 1
+    return d
+
+def test_single_agreement_captures_following_paragraphs():
+    d = doc_of(("para", "Agreement:", None),
+               ("para", "Adopt option 1.", None),
+               ("para", "Adopt option 2.", None))
+    evs = extract_events(d)
+    assert len(evs) == 1
+    assert evs[0].kind == "agreement"
+    assert "option 1" in evs[0].text_en and "option 2" in evs[0].text_en
+
+def test_block_stops_at_next_marker():
+    d = doc_of(("para", "Agreement:", None), ("para", "A", None),
+               ("para", "Conclusion:", None), ("para", "B", None))
+    evs = extract_events(d)
+    assert [e.kind for e in evs] == ["agreement", "conclusion"]
+    assert "B" not in evs[0].text_en
+
+def test_block_stops_at_next_heading():
+    d = doc_of(("para", "Agreement:", None), ("para", "A", None),
+               ("para", "Next topic", "Heading2"), ("para", "B", None))
+    evs = extract_events(d)
+    assert len(evs) == 1 and "B" not in evs[0].text_en
+
+def test_table_inside_block_is_kept():
+    d = doc_of(("para", "Agreement:", None),
+               ("table", "| a | b |\n| --- | --- |\n| 1 | 2 |", None))
+    assert "| a | b |" in extract_events(d)[0].text_en
+
+def test_all_marker_kinds_recognised():
+    d = doc_of(("para", "Agreement: x", None), ("para", "Conclusion: y", None),
+               ("para", "Working assumption: z", None), ("para", "Observation: w", None),
+               ("para", "Proposal: v", None))
+    assert [e.kind for e in extract_events(d)] == [
+        "agreement", "conclusion", "working_assumption", "observation", "proposal"]
+
+def test_marker_inline_text_is_kept():
+    """'Agreement: 直接跟内容' 这种写法，内容不能丢。"""
+    d = doc_of(("para", "Agreement: adopt X", None))
+    assert "adopt X" in extract_events(d)[0].text_en
+
+def test_heading_path_is_recorded():
+    d = doc_of(("para", "Rel-20 Study of 6GR", "Heading1"),
+               ("para", "Waveform for 6GR air interface", "Heading2"),
+               ("para", "Agreement:", None), ("para", "X", None))
+    ev = extract_events(d)[0]
+    assert ev.heading_path == ["Rel-20 Study of 6GR", "Waveform for 6GR air interface"]
+
+def test_heading_path_pops_on_shallower_heading():
+    d = doc_of(("para", "A", "Heading1"), ("para", "B", "Heading2"),
+               ("para", "C", "Heading1"), ("para", "Agreement:", None), ("para", "X", None))
+    assert extract_events(d)[0].heading_path == ["C"]
+
+def test_word_agreements_not_matched_mid_sentence():
+    """'The agreement was reached' 不是一条 agreement。"""
+    d = doc_of(("para", "The agreement was reached last meeting.", None))
+    assert extract_events(d) == []
+
+def test_real_fixture_counts():
+    doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
+    evs = extract_events(doc)
+    kinds = [e.kind for e in evs]
+    assert kinds.count("agreement") == 320
+    assert kinds.count("conclusion") == 29
+    assert kinds.count("working_assumption") == 13
+    assert all(e.text_en.strip() for e in evs), "不允许出现空正文的事件"
+
+def test_real_fixture_6g_events_have_heading_path():
+    doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
+    evs = extract_events(doc)
+    sixg = [e for e in evs if "Rel-20 Study of 6GR" in e.heading_path]
+    assert sixg, "6GR 子树下应有事件"
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_events.py -v`
+Expected: FAIL，`No module named 'ngr.parse.events'`
+
+- [ ] **Step 3: 写 `ngr/parse/events.py`**
+
+```python
+from __future__ import annotations
+import re
+from ngr.models import RawEvent
+from ngr.parse.docx import Document
+
+MARKERS = {
+    "agreement": r"agreements?",
+    "conclusion": r"conclusions?",
+    "working_assumption": r"working\s+assumptions?",
+    "observation": r"observations?",
+    "proposal": r"proposals?",
+}
+# 标记必须在段首，后跟冒号/句点/行末 —— 避免 "The agreement was reached" 被误判
+MARKER_RE = re.compile(
+    r"^\s*(?:" + "|".join(f"(?P<{k}>{v})" for k, v in MARKERS.items()) + r")"
+    r"\s*(?:\d+[\.\):]?)?\s*(?::|\.\s|$)", re.IGNORECASE)
+
+HEADING_STYLE_RE = re.compile(r"(?i)^heading\s*(\d+)$")
+
+def _marker_kind(text: str) -> str | None:
+    m = MARKER_RE.match(text)
+    if not m:
+        return None
+    return next(k for k, v in m.groupdict().items() if v)
+
+def extract_events(doc: Document) -> list[RawEvent]:
+    """扫描块序列，把每个标记段及其后续内容收成一个事件。"""
+    events: list[RawEvent] = []
+    stack: list[tuple[int, str]] = []      # (level, text)
+    current: RawEvent | None = None
+
+    for block in doc.blocks:
+        is_heading = False
+        if block.kind == "para" and block.style:
+            hm = HEADING_STYLE_RE.match(block.style)
+            if hm:
+                is_heading = True
+                level = int(hm.group(1))
+                while stack and stack[-1][0] >= level:
+                    stack.pop()
+                stack.append((level, block.text))
+
+        if is_heading:
+            current = None                  # heading 终结当前块
+            continue
+
+        kind = _marker_kind(block.text) if block.kind == "para" else None
+        if kind:
+            body = MARKER_RE.sub("", block.text, count=1).strip()
+            current = RawEvent(kind=kind, text_en=body, para_index=block.index,
+                               heading_path=[t for _, t in stack])
+            events.append(current)
+        elif current is not None:
+            current.text_en = (current.text_en + "\n" + block.text).strip()
+
+    return [e for e in events if e.text_en.strip()]
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_events.py -v`
+Expected: 11 passed
+
+若真实 fixture 的计数对不上 320/29/13，最可能的原因是 `MARKER_RE` 太严或太松。用下面的命令看看哪些段落被漏掉/多收：
+
+```bash
+.venv/Scripts/python.exe -c "
+from ngr.parse.docx import parse_docx; from ngr.parse.events import _marker_kind
+import pathlib
+doc = parse_docx(pathlib.Path('tests/fixtures/RAN1_126/minutes.docx'))
+miss = [p for p in doc.paragraphs if p.startswith('Agreement') and not _marker_kind(p)]
+print('漏判:', miss[:5])"
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add ngr/parse/events.py tests/test_parse_events.py
+git commit -m "feat(parse): agreement 块提取"
+```
+
+---
+
 <!-- APPEND-HERE -->
