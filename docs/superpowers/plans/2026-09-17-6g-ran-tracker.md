@@ -3729,4 +3729,440 @@ git commit -m "feat(extract): claude CLI 后端、结果缓存、配额守护"
 
 ---
 
+### Task 17: LLM 任务、schema 校验与幻觉拦截
+
+CLI 没有 API 的 `output_config.format`，所以 JSON 只能靠提示词约束 + 自己校验 + 一次修复重试。
+
+**Files:**
+- Create: `ngr/extract/tasks.py`, `ngr/extract/runner.py`
+- Test: `tests/test_extract_tasks.py`, `tests/test_extract_runner.py`
+
+**Interfaces:**
+- Consumes: `ClaudeCli`、`LlmCache`、`Budget`
+- Produces:
+  - `PROMPT_VERSION: str`
+  - `build_summary_prompt(batch: list[dict]) -> str`
+  - `parse_summary_response(text, expected_ids) -> dict[str, dict]`（抛 `SchemaError`）
+  - `hallucination_flags(summary_zh: str, text_en: str) -> list[str]`
+  - `extract_all(events, features, cfg, *, cli_factory, cache, budget) -> ExtractStats`
+
+- [ ] **Step 1: 写 prompt 与校验的失败测试**
+
+```python
+# tests/test_extract_tasks.py
+import json, pytest
+from ngr.extract.tasks import (build_summary_prompt, parse_summary_response,
+                               hallucination_flags, SchemaError, VALID_IMPACT, VALID_STAGE)
+
+BATCH = [{"id": "RAN1-126-10.2-a001", "agenda_title": "Waveform",
+          "text_en": "Adopt DFT-s-OFDM for uplink in R1-2605180."},
+         {"id": "RAN1-126-10.2-a002", "agenda_title": "Waveform",
+          "text_en": "Confirm 480 kHz SCS."}]
+
+def test_prompt_contains_all_ids_and_texts():
+    p = build_summary_prompt(BATCH)
+    for e in BATCH:
+        assert e["id"] in p and e["text_en"] in p
+
+def test_prompt_forbids_rewriting_original():
+    p = build_summary_prompt(BATCH)
+    assert "不要改写" in p or "不得改写" in p
+
+def test_prompt_pins_enum_values():
+    p = build_summary_prompt(BATCH)
+    for v in VALID_IMPACT:
+        assert v in p
+
+def test_parse_valid_response():
+    body = json.dumps({"results": [
+        {"id": "RAN1-126-10.2-a001", "summary_zh": "采纳上行 DFT-s-OFDM。",
+         "tags": ["DFT-s-OFDM"], "impact": "high"},
+        {"id": "RAN1-126-10.2-a002", "summary_zh": "确认 480 kHz SCS。",
+         "tags": [], "impact": "medium"}]})
+    got = parse_summary_response(body, [e["id"] for e in BATCH])
+    assert got["RAN1-126-10.2-a001"]["impact"] == "high"
+
+def test_parse_tolerates_markdown_fence():
+    body = '```json\n{"results":[{"id":"RAN1-126-10.2-a001","summary_zh":"x",' \
+           '"tags":[],"impact":"low"}]}\n```'
+    got = parse_summary_response(body, ["RAN1-126-10.2-a001"])
+    assert got["RAN1-126-10.2-a001"]["summary_zh"] == "x"
+
+def test_parse_rejects_invalid_impact():
+    body = json.dumps({"results": [{"id": "RAN1-126-10.2-a001", "summary_zh": "x",
+                                    "tags": [], "impact": "critical"}]})
+    with pytest.raises(SchemaError, match="impact"):
+        parse_summary_response(body, ["RAN1-126-10.2-a001"])
+
+def test_parse_rejects_unknown_id():
+    body = json.dumps({"results": [{"id": "BOGUS", "summary_zh": "x",
+                                    "tags": [], "impact": "low"}]})
+    with pytest.raises(SchemaError, match="id"):
+        parse_summary_response(body, ["RAN1-126-10.2-a001"])
+
+def test_parse_rejects_non_json():
+    with pytest.raises(SchemaError, match="JSON"):
+        parse_summary_response("对不起，我无法处理。", ["x"])
+
+def test_parse_allows_partial_results():
+    """少返回几条不算错 —— 缺的会在下次运行补上，不能因此丢弃整批。"""
+    body = json.dumps({"results": [{"id": "RAN1-126-10.2-a001", "summary_zh": "x",
+                                    "tags": [], "impact": "low"}]})
+    got = parse_summary_response(body, [e["id"] for e in BATCH])
+    assert set(got) == {"RAN1-126-10.2-a001"}
+
+# —— 幻觉拦截 ——
+def test_flags_tdoc_number_not_in_source():
+    f = hallucination_flags("参见 R1-2699999 的提案。", "Adopt X. See R1-2605180.")
+    assert any("R1-2699999" in x for x in f)
+
+def test_no_flag_when_tdoc_present_in_source():
+    assert hallucination_flags("参见 R1-2605180。", "See R1-2605180.") == []
+
+def test_flags_number_not_in_source():
+    f = hallucination_flags("确认 960 kHz SCS。", "Confirm 480 kHz SCS.")
+    assert any("960" in x for x in f)
+
+def test_does_not_flag_numbers_present_in_source():
+    assert hallucination_flags("确认 480 kHz。", "Confirm 480 kHz SCS.") == []
+
+def test_does_not_flag_small_ordinals():
+    """'第 1 点''两三条'这类小数字不该触发告警。"""
+    assert hallucination_flags("有 2 个选项待定。", "Options A and B are FFS.") == []
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_tasks.py -v`
+Expected: FAIL，`No module named 'ngr.extract.tasks'`
+
+- [ ] **Step 3: 写 `ngr/extract/tasks.py`**
+
+```python
+from __future__ import annotations
+import json, re
+
+PROMPT_VERSION = "v1"
+VALID_IMPACT = ("high", "medium", "low")
+VALID_STAGE = ("未启动", "讨论中", "收敛中", "已定稿")
+
+TDOC_RE = re.compile(r"\bR[1-4]-\d{6,7}\b")
+NUM_RE = re.compile(r"\d{3,}")          # 三位以上才检查，避免误伤序数词
+
+class SchemaError(Exception):
+    pass
+
+SUMMARY_SYSTEM = f"""你在为 3GPP 6G (Rel-20) RAN 协议跟踪工具生成中文摘要。
+
+规则：
+1. 只依据我给你的英文原文，**不要改写原文**，也不要补充原文里没有的信息。
+2. 不确定的地方宁可不写，绝不猜测。
+3. 摘要 2–3 句，讲清"定了什么"，保留关键技术术语的英文原词。
+4. tags 取 0–4 个技术关键词（英文原词）。
+5. impact 只能是 {list(VALID_IMPACT)} 之一。
+
+只输出 JSON，不要任何解释文字，格式：
+{{"results": [{{"id": "...", "summary_zh": "...", "tags": ["..."], "impact": "high"}}]}}
+"""
+
+def build_summary_prompt(batch: list[dict]) -> str:
+    parts = [SUMMARY_SYSTEM, "", "以下是需要摘要的条目：", ""]
+    for e in batch:
+        parts += [f"--- id: {e['id']}",
+                  f"议程: {e.get('agenda_title', '')}",
+                  "原文:", e["text_en"], ""]
+    return "\n".join(parts)
+
+def _strip_fence(text: str) -> str:
+    t = text.strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```[a-zA-Z]*\s*", "", t)
+        t = re.sub(r"\s*```$", "", t)
+    return t.strip()
+
+def parse_summary_response(text: str, expected_ids: list[str]) -> dict[str, dict]:
+    try:
+        data = json.loads(_strip_fence(text))
+    except json.JSONDecodeError as exc:
+        raise SchemaError(f"响应不是合法 JSON: {text[:160]}") from exc
+
+    results = data.get("results")
+    if not isinstance(results, list):
+        raise SchemaError("JSON 缺少 results 数组")
+
+    allowed, out = set(expected_ids), {}
+    for item in results:
+        eid = item.get("id")
+        if eid not in allowed:
+            raise SchemaError(f"返回了未请求的 id: {eid!r}")
+        impact = item.get("impact")
+        if impact not in VALID_IMPACT:
+            raise SchemaError(f"{eid} 的 impact 非法: {impact!r}")
+        summary = item.get("summary_zh")
+        if not isinstance(summary, str) or not summary.strip():
+            raise SchemaError(f"{eid} 的 summary_zh 为空")
+        tags = item.get("tags", [])
+        if not isinstance(tags, list):
+            raise SchemaError(f"{eid} 的 tags 不是数组")
+        out[eid] = {"summary_zh": summary.strip(),
+                    "tags": [str(t) for t in tags][:4], "impact": impact}
+    return out
+
+def hallucination_flags(summary_zh: str, text_en: str) -> list[str]:
+    """摘要里出现、原文里没有的 TDoc 号与大数字 —— 标出来等人工核对。
+    摘要是索引不是事实来源，这道防线保证索引错了也能一眼跳回原文。"""
+    flags = []
+    for tdoc in set(TDOC_RE.findall(summary_zh)):
+        if tdoc not in text_en:
+            flags.append(f"摘要中的 {tdoc} 未出现在原文")
+    src_nums = set(NUM_RE.findall(text_en))
+    for num in set(NUM_RE.findall(summary_zh)):
+        if num not in src_nums:
+            flags.append(f"摘要中的数字 {num} 未出现在原文")
+    return flags
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_tasks.py -v`
+Expected: 14 passed
+
+- [ ] **Step 5: 写 extract 编排的失败测试**
+
+```python
+# tests/test_extract_runner.py
+import json
+from ngr.config import ExtractConfig
+from ngr.extract.backend import CliResult, LlmRateLimited
+from ngr.extract.budget import Budget
+from ngr.extract.cache import LlmCache
+from ngr.extract.runner import extract_all
+
+CFG = ExtractConfig(backend="cli", max_calls_per_run=10, batch_size=2,
+                    model_bulk="sonnet", model_digest="opus")
+
+def ev(i, depth="full", status="pending"):
+    return {"id": f"RAN1-126-10.2-a{i:03d}", "text_en": f"Adopt option {i}.",
+            "agenda_title": "Waveform", "depth": depth, "llm_status": status,
+            "feature": "waveform", "summary_zh": None, "tags": [], "impact": None}
+
+class FakeCli:
+    def __init__(self, replies): self.replies, self.calls = list(replies), []
+    def call(self, prompt):
+        self.calls.append(prompt)
+        r = self.replies.pop(0)
+        if isinstance(r, Exception): raise r
+        return CliResult(text=r, usage={"output_tokens": 5}, cost_usd=0.01)
+
+def reply(ids):
+    return json.dumps({"results": [{"id": i, "summary_zh": f"摘要{i}",
+                                    "tags": [], "impact": "low"} for i in ids]})
+
+def test_summaries_are_written_back(tmp_path):
+    evs = [ev(1), ev(2)]
+    cli = FakeCli([reply([e["id"] for e in evs])])
+    extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                cache=LlmCache(tmp_path), budget=Budget(10))
+    assert evs[0]["summary_zh"].startswith("摘要")
+    assert evs[0]["llm_status"] == "ok"
+
+def test_origin_depth_events_are_skipped(tmp_path):
+    evs = [ev(1, depth="origin", status="skipped_by_depth")]
+    cli = FakeCli([])
+    stats = extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                        cache=LlmCache(tmp_path), budget=Budget(10))
+    assert cli.calls == [] and stats.skipped == 1
+
+def test_batches_respect_batch_size(tmp_path):
+    evs = [ev(i) for i in range(1, 6)]     # 5 条，batch_size=2 → 3 次调用
+    cli = FakeCli([reply([e["id"] for e in evs[0:2]]),
+                   reply([e["id"] for e in evs[2:4]]),
+                   reply([e["id"] for e in evs[4:5]])])
+    extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                cache=LlmCache(tmp_path), budget=Budget(10))
+    assert len(cli.calls) == 3
+
+def test_cache_hit_avoids_call(tmp_path):
+    evs = [ev(1), ev(2)]
+    cache = LlmCache(tmp_path)
+    cli1 = FakeCli([reply([e["id"] for e in evs])])
+    extract_all(evs, CFG, cli_factory=lambda m, e: cli1, cache=cache, budget=Budget(10))
+    for e in evs:
+        e.update(summary_zh=None, llm_status="pending")
+    cli2 = FakeCli([])
+    extract_all(evs, CFG, cli_factory=lambda m, e: cli2, cache=cache, budget=Budget(10))
+    assert cli2.calls == [] and evs[0]["summary_zh"].startswith("摘要")
+
+def test_malformed_json_retries_once_then_marks_failed(tmp_path):
+    evs = [ev(1)]
+    cli = FakeCli(["не json", "still not json"])
+    stats = extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                        cache=LlmCache(tmp_path), budget=Budget(10))
+    assert len(cli.calls) == 2
+    assert evs[0]["llm_status"] == "failed" and evs[0]["summary_zh"] is None
+    assert stats.failed == 1
+
+def test_rate_limit_stops_cleanly_keeping_done_work(tmp_path):
+    evs = [ev(i) for i in range(1, 5)]
+    cli = FakeCli([reply([evs[0]["id"], evs[1]["id"]]), LlmRateLimited("limit")])
+    stats = extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                        cache=LlmCache(tmp_path), budget=Budget(10))
+    assert evs[0]["llm_status"] == "ok"
+    assert evs[2]["llm_status"] == "pending"     # 未处理的留待下次
+    assert stats.rate_limited is True
+
+def test_budget_exhaustion_stops_cleanly(tmp_path):
+    evs = [ev(i) for i in range(1, 7)]
+    cli = FakeCli([reply([evs[0]["id"], evs[1]["id"]])])
+    stats = extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                        cache=LlmCache(tmp_path), budget=Budget(1))
+    assert stats.budget_exhausted is True
+    assert evs[4]["llm_status"] == "pending"
+
+def test_hallucination_flags_recorded(tmp_path):
+    evs = [ev(1)]
+    body = json.dumps({"results": [{"id": evs[0]["id"],
+                                    "summary_zh": "参见 R1-2699999。",
+                                    "tags": [], "impact": "low"}]})
+    cli = FakeCli([body])
+    extract_all(evs, CFG, cli_factory=lambda m, e: cli,
+                cache=LlmCache(tmp_path), budget=Budget(10))
+    assert evs[0]["llm_status"] == "needs_review"
+    assert evs[0]["review_flags"]
+```
+
+- [ ] **Step 6: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_runner.py -v`
+Expected: FAIL，`No module named 'ngr.extract.runner'`
+
+- [ ] **Step 7: 写 `ngr/extract/runner.py`**
+
+```python
+from __future__ import annotations
+import logging
+from dataclasses import dataclass
+from ngr.config import ExtractConfig
+from ngr.extract.backend import LlmError, LlmRateLimited
+from ngr.extract.budget import BudgetExhausted
+from ngr.extract.cache import cache_key
+from ngr.extract.tasks import (PROMPT_VERSION, SchemaError, build_summary_prompt,
+                               hallucination_flags, parse_summary_response)
+
+log = logging.getLogger(__name__)
+EFFORT_BULK = "low"
+
+@dataclass
+class ExtractStats:
+    summarized: int = 0
+    cached: int = 0
+    skipped: int = 0
+    failed: int = 0
+    rate_limited: bool = False
+    budget_exhausted: bool = False
+
+def _apply(event: dict, payload: dict) -> None:
+    flags = hallucination_flags(payload["summary_zh"], event["text_en"])
+    event["summary_zh"] = payload["summary_zh"]
+    event["tags"] = payload["tags"]
+    event["impact"] = payload["impact"]
+    if flags:
+        event["review_flags"] = flags
+        event["llm_status"] = "needs_review"
+    else:
+        event.pop("review_flags", None)
+        event["llm_status"] = "ok"
+
+def extract_all(events: list[dict], cfg: ExtractConfig, *,
+                cli_factory, cache, budget) -> ExtractStats:
+    """只为 depth == 'full' 且尚未成功摘要的事件调用 LLM。
+
+    失败绝不阻断管线：schema 错重试一次，仍失败就标 failed、摘要留空，
+    事件本身照常留在库里。摘要可以缺，agreement 不能丢。"""
+    stats = ExtractStats()
+    pending = []
+    for e in events:
+        if e.get("depth") != "full":
+            stats.skipped += 1
+            continue
+        if e.get("llm_status") in ("ok", "needs_review"):
+            continue
+        key = cache_key(cfg.model_bulk, PROMPT_VERSION, EFFORT_BULK, e["text_en"])
+        hit = cache.get(key)
+        if hit:
+            _apply(e, hit)
+            stats.cached += 1
+            continue
+        pending.append((key, e))
+
+    if not pending:
+        return stats
+
+    cli = cli_factory(cfg.model_bulk, EFFORT_BULK)
+    for i in range(0, len(pending), cfg.batch_size):
+        chunk = pending[i:i + cfg.batch_size]
+        batch = [e for _, e in chunk]
+        ids = [e["id"] for e in batch]
+        prompt = build_summary_prompt(batch)
+
+        try:
+            budget.check()
+        except BudgetExhausted:
+            stats.budget_exhausted = True
+            log.info("配额用尽，剩余 %d 条留待下次", len(pending) - i)
+            break
+
+        result = None
+        for attempt in (1, 2):
+            try:
+                res = cli.call(prompt if attempt == 1 else
+                               prompt + "\n\n上一次回复不是合法 JSON，请只输出 JSON。")
+                budget.spend(res, task="summary")
+                result = parse_summary_response(res.text, ids)
+                break
+            except LlmRateLimited:
+                stats.rate_limited = True
+                log.warning("额度受限，本次运行到此为止；已完成的结果已保存")
+                return stats
+            except (SchemaError, LlmError) as exc:
+                log.warning("批次 %d 第 %d 次失败: %s", i // cfg.batch_size, attempt, exc)
+                try:
+                    budget.check()
+                except BudgetExhausted:
+                    stats.budget_exhausted = True
+                    return stats
+
+        if result is None:
+            for e in batch:
+                e["llm_status"] = "failed"
+                stats.failed += 1
+            continue
+
+        for key, e in chunk:
+            payload = result.get(e["id"])
+            if payload is None:
+                continue          # 少返回的条目保持 pending，下次补
+            _apply(e, payload)
+            cache.put(key, payload)
+            stats.summarized += 1
+
+    return stats
+```
+
+- [ ] **Step 8: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_runner.py -v`
+Expected: 8 passed
+
+> 特性综述与 `legacy_summary`（spec §6.2 任务 ②③）在 Task 18 接入 —— 它们依赖已完成的事件摘要，放在编排层按特性触发更自然。本任务先把量最大、最需要缓存与配额保护的逐条摘要打通。
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add ngr/extract/tasks.py ngr/extract/runner.py tests/test_extract_tasks.py tests/test_extract_runner.py
+git commit -m "feat(extract): 摘要 prompt、schema 校验、幻觉拦截、批次编排"
+```
+
+---
+
 <!-- APPEND-HERE -->
