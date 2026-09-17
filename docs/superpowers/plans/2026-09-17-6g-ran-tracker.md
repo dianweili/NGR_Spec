@@ -572,7 +572,10 @@ class WgConfig:
     而 RAN2 就是个 TDoc 号 R2-2604502.zip（文件名里没有 minutes 字样），RAN3 三种形态并存。
     用一条全局正则会让除 RAN1 外的所有组零匹配、静默产出空结果。"""
     artifacts: list[str]
-    report_dir: str = "Report"
+    report_dirs: list[str] = field(default_factory=lambda: ["Report"])
+    """纪要所在子目录的候选名，按顺序取第一个在会议根目录列表中出现的。
+    必须是列表：实测 RAN4 老会议用复数 "Reports"、新会议用单数 "Report"，
+    单值字段会让回填到老会议时整段抓不到纪要。"""
     ls_dirs: list[str] = field(default_factory=lambda: ["LS"])
     """LS 目录名，实测有 LS / LSin+LSout / Reports 等多种写法。"""
     latest_meeting_with_content: int | None = None
@@ -630,7 +633,7 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
             agenda_csv_since=raw.get("agenda_csv_since"),
             minutes_re=minutes_re,
             artifacts=list(_require(raw, "artifacts", where)),
-            report_dir=raw.get("report_dir", "Report"),
+            report_dirs=list(raw.get("report_dirs", [raw.get("report_dir", "Report")])),
             ls_dirs=list(raw.get("ls_dirs", ["LS"])),
             latest_meeting_with_content=raw.get("latest_meeting_with_content"),
         )
@@ -1134,7 +1137,8 @@ git commit -m "feat(fetch): 目录列表解析、会议发现、血统抓取区�
 - Produces:
   - `Manifest(dir: Path)`，方法 `.load()` `.save()` `.needs_fetch(name, head) -> bool` `.record(name, url, head, data)` `.is_frozen() -> bool` `.mark_frozen()`
   - `minutes_version(filename: str) -> int | None`（`..._v010.docx` → `10`）
-  - `pick_latest_minutes(names: list[str]) -> str | None`
+  - `pick_latest_minutes(names: list[str], minutes_re: str) -> str | None`
+  - `unwrap_docx(data: bytes) -> bytes`
   - `fetch_meeting(http, meeting, cfg, force=False) -> FetchResult`（`.changed: bool`、`.files: dict[str, Path]`、`.skipped_reason: str | None`）
 
 - [ ] **Step 1: 写 manifest 的失败测试**
@@ -1520,8 +1524,13 @@ def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
         if art in ARTIFACTS:
             subdir, local, chooser = ARTIFACTS[art]
             if art == "minutes_docx":
-                # 纪要的子目录名与识别正则都按组配置：实测各组命名毫无共性
-                subdir = cfg.report_dir.rstrip("/") + "/"
+                # 纪要的子目录名与识别正则都按组配置：实测各组命名毫无共性，
+                # 且同一组的目录名会随年代变（RAN4 老会议 Reports / 新会议 Report）
+                hit = next((d for d in cfg.report_dirs if d.rstrip("/") in root_names), None)
+                if hit is None:
+                    res.missing.append(art)
+                    continue
+                subdir = hit.rstrip("/") + "/"
                 chooser = lambda names: pick_latest_minutes(names, cfg.minutes_re)
             if subdir.rstrip("/") not in root_names:
                 res.missing.append(art)

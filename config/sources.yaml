@@ -9,13 +9,17 @@
 #                        RAN4 TSGR4_57AH,58AH,59AH,94_eBis（另各组有一个 *_AH/_AHs/_AHGs 容器目录，
 #                        它不是会议目录，不匹配是正确行为）。带编号的这些全部低于各组 hard_floor，
 #                        当前取数范围内无影响。若将来下调任一组 hard_floor，必须重跑这个匹配检查。
-#   hard_floor        硬下限会议号：血统段的 meetings 区间再怎么配置也不得回溯到此之前。
+#   hard_floor        安全钳位：允许回溯的最早会议号，防止血统段配错导致失控回溯。
+#                     **不是语义边界** —— 不要理解为「Rel-18 起始会议」，该定义对 RAN4/plenary 不成立。
+#                     取值宁宽勿窄；真正的抓取范围由 features.yaml 的血统段决定。
 #                     spec §4 把它定义为"各组的 Rel-18 起始会议"。本次用统一方法实测：
 #                     下载各会议纪要，看 heading 里首次出现 Release 18 / Rel-18 是哪一次。
 #                     RAN1/RAN2/RAN3 有干净的"上一次没有、这一次有"跳变，已按实测值改写；
 #                     RAN4/RANP 的议程从 2021-2022 年起就一直挂着 Rel-18 条目（频谱 WI 与
-#                     新 WI/SI 提案远早于版本正式开工），探到目前最早的会议仍然有，下界没收敛，
-#                     因此保持原推测值并标记 unverified —— 详见各组注释与报告 §6。
+#                     新 WI/SI 提案远早于版本正式开工），探到目前最早的会议仍然有，下界没收敛。
+#                     结论：spec §4 的"Rel-18 起始会议"定义对这两组不成立（Ruling O），
+#                     改按钳位口径取"实测仍含 Rel-18 内容的最早会议"（RAN4=103、RANP=93），
+#                     并保留 unverified_fields: [hard_floor] 表明这不是语义边界的实测值。
 #   agenda_csv_since  已实测确认存在 agenda.csv 的最早会议号。
 #                     ⚠️ 语义是"最早出现"，不是"从此每次都有"：实测 RAN2 #131 就没有，
 #                        而它前后的 #130、#132 都有。fetch 层对 >= 该值的会议也必须容忍缺失。
@@ -53,10 +57,9 @@ sources:
     dir_re: 'TSGR1_(\d+)([a-z]*(-e)?|_e)?'
     hard_floor: 109                   # 实测：#107-e 与 #108-e 的纪要 heading 里没有 Release 18，
                                       # #109-e 有 H1 "Release 18"。原值 112 比实测起点晚 3 次会议。
-                                      # ⚠️ 计划书 line 481 有 assert hard_floor == 112，需同步。
     agenda_csv_since: 124             # 实测：#120 有 Agenda 无 csv / #123 有 Agenda 无 csv / #124、#125、#126 有 csv；
                                       # #112、#115、#117、#118、#119、#121、#122 连 Agenda 子目录都没有
-    report_dir: Report
+    report_dirs: [Report]
     minutes_re: '(?i)^(Draft|Final)_Minutes_report_RAN1#\d+.*\.(zip|docx)$'
     ls_dirs: [LS]
     verified: true
@@ -73,7 +76,7 @@ sources:
     hard_floor: 119                   # 实测：#118-e 纪要无 Rel-18 章节，#119-e 有 "8Rel-18"。原推测值 121 晚 2 次。
     agenda_csv_since: 129             # 实测：#120/#124/#126/#128 无；#129 起有。
                                       # ⚠️ 非单调：#131 没有 agenda.csv，而 #130、#132 都有。
-    report_dir: Report
+    report_dirs: [Report]
     minutes_re: '(?i)^R2-\d+\.zip$'   # 实测：纪要就是一个 TDoc 号 zip（#134 = R2-2604502.zip，
                                       # 内含 R2-2604502.docx + PartList + TDoc_List，docx 有 196 条 heading）。
                                       # 会议刚结束时 Report/ 里可能只有 Skeleton_Report_v*.zip（#135 即如此）。
@@ -93,7 +96,7 @@ sources:
                                       # Enhancements to Rel-18"。原推测值 118 晚 2 次。
     agenda_csv_since: 127             # 实测：#120/#125/#126 无；#127-#134 连续每次都有
                                       # （127,128,129,130,131,132,133,133-bis,134）
-    report_dir: Report
+    report_dirs: [Report]
     minutes_re: '(?i)^(R3-\d+\.zip|.*RAN3.*report.*\.zip|.*report.*RAN3.*\.zip)$'
                                       # ⚠️ 实测三种形态并存：#132 = R3-263001.zip（TDoc 号）、
                                       # #133 = RP-26xxxx_draft_report_RAN3_133_260902.zip、
@@ -112,15 +115,16 @@ sources:
   RAN4:
     path: tsg_ran/WG4_Radio
     dir_re: 'TSGR4_(\d+)((-?[Bb]is)?(_e|-e)?)?'
-    hard_floor: 106                   # ⚠️ 仍为推测值，实测下界未收敛：探到 #103-e，其纪要就已经有
-                                      # "11Rel-18 Study Items for NR"；#105 也有整章 Rel-18 频谱 WI。
-                                      # RAN4 的频谱类 WI 远早于版本开工就挂上议程，"Rel-18 起始会议"
-                                      # 这个定义对本组不适用。按现值 106 会截掉已实测存在的 #103-#105。
-                                      # 需要设计方先定义清楚该字段对 RAN4 取什么口径，见报告 §6.4。
+    hard_floor: 103                   # 安全钳位，非语义边界（Ruling O）。实测下界不收敛：探到 #103-e
+                                      # 其纪要就已有 "11Rel-18 Study Items for NR"，#105 有整章 Rel-18
+                                      # 频谱 WI —— RAN4 的频谱类 WI 远早于版本开工就上议程，
+                                      # "Rel-18 起始会议"对本组不成立。故取实测仍含 Rel-18 内容的最早
+                                      # 会议 #103 作钳位，宁宽勿窄；真正的范围由 features.yaml 血统段决定。
     agenda_csv_since: 114             # 实测：#109/#112/#113 无；#114 起有，且 #114-#120 连续每次都有
                                       # （114,115,116,117,118,118bis,119,120）
-    report_dir: Report                # ⚠️ 随时间变过：#103-e~#110 用的是复数 "Reports"，
-                                      # #118bis 起的新会议用单数 "Report"。切换点未精确定位。
+    report_dirs: [Report, Reports]    # 实测随时间变过：#103-e~#110 用复数 Reports，
+                                      # #118bis 起用单数 Report。按顺序取第一个存在的，
+                                      # 故切换点无需精确定位。
     minutes_re: '(?i)^(R4-\d+\.zip|.*Draft_MeetingReport.*\.zip|Skeleton[ _]Report.*\.(zip|docx))$'
                                       # 实测：#119 = R4-2610001.zip、#118bis = R4-2605201.zip（TDoc 号）；
                                       # #106/#105/#104-e/#103-e 的 Reports/ 里是十来份
@@ -138,11 +142,12 @@ sources:
   RANP:
     path: tsg_ran/TSG_RAN
     dir_re: 'TSGR_(\d+)(e)?'
-    hard_floor: 99                    # ⚠️ 仍为推测值，实测下界未收敛：探到 #93e（2021-09），其纪要就已经有
-                                      # "9.0New WI/SI proposals for NR for REL-18"。plenary 天然提前受理
-                                      # 下个版本的提案，"Rel-18 起始会议"对本组同样不适用。见报告 §6.5。
+    hard_floor: 93                    # 安全钳位，非语义边界（Ruling O）。实测下界不收敛：#93e（2021-09）
+                                      # 的纪要就已有 "9.0New WI/SI proposals for NR for REL-18" ——
+                                      # plenary 天然提前受理下个版本的提案，"Rel-18 起始会议"对本组不成立。
+                                      # 取实测最早仍含 Rel-18 内容的 #93e 作钳位，宁宽勿窄。
     agenda_csv_since: 107             # 实测：#104/#105/#106 无；#107 起有（107,108,110,111,112,113 均有）
-    report_dir: Report
+    report_dirs: [Report]
     minutes_re: '(?i)^(RP-\d+\.zip|.*MeetingReport_RAN_\d+.*\.zip)$'
                                       # 实测：#112 = RP-261576.zip（TDoc 号）、
                                       # #113 = draft_MeetingReport_RAN_113_260916_noon.zip
