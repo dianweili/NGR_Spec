@@ -1646,7 +1646,8 @@ Expected: FAIL，`No module named 'ngr.parse.docx'`
 
 ```python
 from __future__ import annotations
-import re, zipfile
+import io, re, zipfile
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from ngr.models import Heading
@@ -1693,10 +1694,8 @@ def _table_to_markdown(tbl) -> str:
 def parse_docx(source: Path | bytes) -> Document:
     """按文档顺序抽出段落与表格。用 ElementTree 而非 python-docx，
     因为后者拿不到段落与表格的原始交错顺序，而 agreement 块的边界依赖它。"""
-    import xml.etree.ElementTree as ET
-
     data = source.read_bytes() if isinstance(source, Path) else source
-    with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
         xml = z.read("word/document.xml")
     body = ET.fromstring(xml).find(W + "body")
 
@@ -2626,6 +2625,14 @@ def test_merge_adds_new_events():
     new = map_meeting(parsed([ev()]), FEATS)
     merged, stats = merge_events([], new, today="2026-09-17")
     assert stats.added == 1 and merged[0]["first_seen"] == "2026-09-17"
+    assert stats.added_ids == [new[0].id]
+
+def test_merge_added_ids_excludes_unchanged():
+    """提交信息按 added_ids 统计，未变更的事件不能混进'本次新增'。"""
+    new = map_meeting(parsed([ev()]), FEATS)
+    existing = [{**new[0].__dict__, "id": new[0].id, "first_seen": "2026-01-01"}]
+    _, stats = merge_events(existing, new, today="2026-09-17")
+    assert stats.added_ids == [] and stats.unchanged == 1
 
 def test_merge_preserves_first_seen_and_llm_fields():
     new = map_meeting(parsed([ev()]), FEATS)
@@ -2733,6 +2740,9 @@ class MergeStats:
     added: int = 0
     changed: int = 0
     unchanged: int = 0
+    added_ids: list[str] = field(default_factory=list)
+    """新增事件的 id。提交信息按它统计每特性新增数 —— 不能用整批 incoming，
+    否则未变更的事件也会被计进'本次新增'。"""
 
 # 事件变更时要作废的 LLM 产物
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
@@ -2750,6 +2760,7 @@ def merge_events(existing: list[dict], incoming: list[Event],
             new["first_seen"] = today
             by_id[ev.id] = new
             stats.added += 1
+            stats.added_ids.append(ev.id)
             continue
 
         new["first_seen"] = old.get("first_seen", today)
@@ -3744,7 +3755,7 @@ CLI 没有 API 的 `output_config.format`，所以 JSON 只能靠提示词约束
   - `build_summary_prompt(batch: list[dict]) -> str`
   - `parse_summary_response(text, expected_ids) -> dict[str, dict]`（抛 `SchemaError`）
   - `hallucination_flags(summary_zh: str, text_en: str) -> list[str]`
-  - `extract_all(events, features, cfg, *, cli_factory, cache, budget) -> ExtractStats`
+  - `extract_all(events, cfg, *, cli_factory, cache, budget) -> ExtractStats`
 
 - [ ] **Step 1: 写 prompt 与校验的失败测试**
 
@@ -3873,7 +3884,7 @@ def build_summary_prompt(batch: list[dict]) -> str:
                   "原文:", e["text_en"], ""]
     return "\n".join(parts)
 
-def _strip_fence(text: str) -> str:
+def strip_fence(text: str) -> str:
     t = text.strip()
     if t.startswith("```"):
         t = re.sub(r"^```[a-zA-Z]*\s*", "", t)
@@ -3882,7 +3893,7 @@ def _strip_fence(text: str) -> str:
 
 def parse_summary_response(text: str, expected_ids: list[str]) -> dict[str, dict]:
     try:
-        data = json.loads(_strip_fence(text))
+        data = json.loads(strip_fence(text))
     except json.JSONDecodeError as exc:
         raise SchemaError(f"响应不是合法 JSON: {text[:160]}") from exc
 
@@ -4318,7 +4329,7 @@ from ngr.config import ExtractConfig
 from ngr.extract.backend import LlmError, LlmRateLimited
 from ngr.extract.budget import BudgetExhausted
 from ngr.extract.cache import cache_key
-from ngr.extract.tasks import PROMPT_VERSION, VALID_STAGE, SchemaError, _strip_fence
+from ngr.extract.tasks import PROMPT_VERSION, VALID_STAGE, SchemaError, strip_fence
 from ngr.models import Feature
 
 log = logging.getLogger(__name__)
@@ -4372,7 +4383,7 @@ def build_feature_prompt(feature: Feature, six_events: list[dict],
 
 def parse_feature_response(text: str) -> dict:
     try:
-        data = json.loads(_strip_fence(text))
+        data = json.loads(strip_fence(text))
     except json.JSONDecodeError as exc:
         raise SchemaError(f"特性综述不是合法 JSON: {text[:160]}") from exc
     stage = data.get("stage")
@@ -4470,7 +4481,7 @@ def digest_features(features: list[Feature], events: list[dict], feat_state: dic
     return out
 ```
 
-> `_strip_fence` 在 Task 17 的 `tasks.py` 里已定义，这里直接复用 —— 不要再抄一份。
+> `strip_fence` 在 Task 17 的 `tasks.py` 里已定义，这里直接复用 —— 不要再抄一份。
 
 - [ ] **Step 4: 跑测试确认通过**
 
@@ -4967,8 +4978,9 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False,
             incoming = map_meeting(payload, features)
             events, stats = merge_events(events, incoming, today=today)
             res.new_events += stats.added
+            added = set(stats.added_ids)
             for ev in incoming:
-                if stats.added:
+                if ev.id in added:
                     stats_by_meeting[(wg, mtg.number)][ev.feature] += 1
 
             if mtg.number <= latest - FREEZE_LAG:
@@ -5020,7 +5032,6 @@ from __future__ import annotations
 import argparse, logging, sys, time
 from ngr.config import load_features
 from ngr.mapping.report import lineage_report
-from ngr.ops.doctor import run_doctor
 from ngr.parse.runner import ParseError
 from ngr.paths import P
 from ngr.pipeline import (EXIT_GIT, EXIT_LLM, EXIT_OK, EXIT_PARSE,
@@ -5043,6 +5054,11 @@ def run_enrich(**kwargs) -> PipelineResult:
     """只补跑 extract：给积压的待摘要事件补摘要。"""
     from ngr.pipeline import run_pipeline_enrich
     return run_pipeline_enrich(**kwargs)
+
+def run_doctor(**kwargs) -> int:
+    """自检。惰性导入：doctor 模块在 Task 21 才创建，cli 不能在顶层依赖它。"""
+    from ngr.ops.doctor import run_doctor as _run_doctor
+    return _run_doctor(**kwargs)
 
 def build_lineage_report() -> str:
     import json
@@ -5122,8 +5138,10 @@ def run_pipeline_remap() -> PipelineResult:
         incoming = map_meeting(payload, features)
         events, stats = merge_events(events, incoming, today=today)
         res.new_events += stats.added
+        added = set(stats.added_ids)
         for ev in incoming:
-            stats_by_meeting[(payload["wg"], payload["meeting"])][ev.feature] += 1
+            if ev.id in added:
+                stats_by_meeting[(payload["wg"], payload["meeting"])][ev.feature] += 1
 
     feat_state = _load_json(P.state / "features_state.json", {})
     write_state(events, P.state / "events.json")
