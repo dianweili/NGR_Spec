@@ -715,4 +715,184 @@ git commit -m "feat: 配置加载与校验"
 
 ---
 
+## Phase 1：fetch 层
+
+### Task 4: HTTP 客户端
+
+本任务的核心不是"会发请求"，而是**403 的语义处理**。3GPP 对限流和文件缺失都返回 403，客户端必须把 403 一律当限流退避，绝不向上层报告"不存在"。
+
+**Files:**
+- Create: `ngr/fetch/__init__.py`, `ngr/fetch/client.py`
+- Test: `tests/test_fetch_client.py`
+
+**Interfaces:**
+- Consumes: `ngr.config.HttpConfig`
+- Produces:
+  - `Http(cfg: HttpConfig)` 客户端类
+  - `.get(url) -> bytes`（失败抛 `FetchError`）
+  - `.head(url) -> dict`（返回 `{"etag": str|None, "length": int|None}`）
+  - `FetchError(Exception)`、`RateLimited(FetchError)`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_fetch_client.py
+import pytest, responses
+from ngr.config import HttpConfig
+from ngr.fetch.client import Http, FetchError, RateLimited
+
+CFG = HttpConfig(user_agent="Mozilla/5.0 test", concurrency=2, delay_seconds=0,
+                 retry_backoff=[0, 0, 0], connect_timeout=1, read_timeout=5)
+URL = "https://www.3gpp.org/ftp/x/"
+
+@responses.activate
+def test_get_sends_browser_ua():
+    responses.add(responses.GET, URL, body=b"hi", status=200)
+    assert Http(CFG).get(URL) == b"hi"
+    assert "Mozilla" in responses.calls[0].request.headers["User-Agent"]
+
+@responses.activate
+def test_403_is_retried_then_succeeds():
+    responses.add(responses.GET, URL, status=403)
+    responses.add(responses.GET, URL, status=403)
+    responses.add(responses.GET, URL, body=b"ok", status=200)
+    assert Http(CFG).get(URL) == b"ok"
+    assert len(responses.calls) == 3
+
+@responses.activate
+def test_403_exhausted_raises_ratelimited_not_notfound():
+    """403 耗尽重试后必须是 RateLimited —— 绝不能让上层以为文件不存在。"""
+    for _ in range(4):
+        responses.add(responses.GET, URL, status=403)
+    with pytest.raises(RateLimited):
+        Http(CFG).get(URL)
+
+@responses.activate
+def test_404_raises_fetcherror_immediately():
+    responses.add(responses.GET, URL, status=404)
+    with pytest.raises(FetchError):
+        Http(CFG).get(URL)
+    assert len(responses.calls) == 1        # 404 不重试
+
+@responses.activate
+def test_429_is_treated_as_rate_limit():
+    for _ in range(4):
+        responses.add(responses.GET, URL, status=429)
+    with pytest.raises(RateLimited):
+        Http(CFG).get(URL)
+
+@responses.activate
+def test_head_returns_etag_and_length():
+    responses.add(responses.HEAD, URL, status=200,
+                  headers={"ETag": '"abc"', "Content-Length": "123"})
+    assert Http(CFG).head(URL) == {"etag": '"abc"', "length": 123}
+
+@responses.activate
+def test_head_tolerates_missing_headers():
+    responses.add(responses.HEAD, URL, status=200)
+    assert Http(CFG).head(URL) == {"etag": None, "length": None}
+
+@responses.activate
+def test_delay_is_applied(monkeypatch):
+    slept = []
+    monkeypatch.setattr("ngr.fetch.client.time.sleep", lambda s: slept.append(s))
+    cfg = HttpConfig(**{**CFG.__dict__, "delay_seconds": 0.5})
+    responses.add(responses.GET, URL, body=b"x", status=200)
+    Http(cfg).get(URL)
+    assert 0.5 in slept
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_client.py -v`
+Expected: FAIL，`No module named 'ngr.fetch'`
+
+- [ ] **Step 3: 写 `ngr/fetch/client.py`**
+
+```python
+from __future__ import annotations
+import logging, time
+import requests
+from ngr.config import HttpConfig
+
+log = logging.getLogger(__name__)
+
+RATE_LIMIT_CODES = {403, 429, 503}
+"""3GPP 的 WAF 对限流返回 403，文件缺失同样返回 403 —— 因此 403 一律按限流处理。
+把 403 当成 404 会让 fetch 静默跳过整次会议，在血统段里留下无声的空洞。"""
+
+class FetchError(Exception):
+    pass
+
+class RateLimited(FetchError):
+    pass
+
+class Http:
+    def __init__(self, cfg: HttpConfig):
+        self.cfg = cfg
+        self.session = requests.Session()
+        self.session.headers["User-Agent"] = cfg.user_agent
+        self.session.headers["Accept-Language"] = "en-US,en;q=0.9"
+
+    @property
+    def _timeout(self) -> tuple[float, float]:
+        return (self.cfg.connect_timeout, self.cfg.read_timeout)
+
+    def get(self, url: str) -> bytes:
+        last = None
+        for backoff in [*self.cfg.retry_backoff, None]:
+            try:
+                r = self.session.get(url, timeout=self._timeout)
+            except requests.RequestException as exc:
+                last = exc
+                if backoff is None:
+                    raise FetchError(f"{url} 网络错误: {exc}") from exc
+                time.sleep(backoff)
+                continue
+
+            if r.status_code == 200:
+                time.sleep(self.cfg.delay_seconds)
+                return r.content
+            if r.status_code not in RATE_LIMIT_CODES:
+                raise FetchError(f"{url} 返回 HTTP {r.status_code}")
+
+            last = r.status_code
+            if backoff is None:
+                break
+            log.warning("%s 返回 %s（按限流处理），退避 %ss", url, r.status_code, backoff)
+            time.sleep(backoff)
+
+        raise RateLimited(
+            f"{url} 重试耗尽，最后状态 {last}。"
+            "注意：这不代表文件不存在 —— 3GPP 对限流和缺失都返回 403。")
+
+    def head(self, url: str) -> dict:
+        try:
+            r = self.session.head(url, timeout=self._timeout, allow_redirects=True)
+        except requests.RequestException as exc:
+            raise FetchError(f"{url} HEAD 网络错误: {exc}") from exc
+        if r.status_code in RATE_LIMIT_CODES:
+            raise RateLimited(f"{url} HEAD 返回 {r.status_code}")
+        if r.status_code != 200:
+            raise FetchError(f"{url} HEAD 返回 HTTP {r.status_code}")
+        length = r.headers.get("Content-Length")
+        time.sleep(self.cfg.delay_seconds)
+        return {"etag": r.headers.get("ETag"),
+                "length": int(length) if length and length.isdigit() else None}
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_client.py -v`
+Expected: 8 passed
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add ngr/fetch/ tests/test_fetch_client.py
+git commit -m "feat(fetch): HTTP 客户端，403 一律按限流处理"
+```
+
+---
+
 <!-- APPEND-HERE -->
