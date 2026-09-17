@@ -4486,4 +4486,280 @@ git commit -m "feat(extract): 特性综述与 5G-A 源头归纳"
 
 ---
 
+## Phase 6：运维与编排
+
+### Task 19: 告警、心跳与自动提交
+
+一个每天 07:00 静默跑的任务，失败了没人知道，三个月后你才发现看板停在六月 —— 这是这类工具最典型的死法。本任务就是防这个。
+
+**Files:**
+- Create: `ngr/ops/__init__.py`, `ngr/ops/alerts.py`, `ngr/ops/gitio.py`
+- Test: `tests/test_ops_alerts.py`, `tests/test_ops_gitio.py`
+
+**Interfaces:**
+- Consumes: `state/run_history.json`
+- Produces:
+  - `RunRecord`：`.started` `.duration_s` `.new_events` `.llm_calls` `.exit_code` `.message`
+  - `append_run(path, record)`、`load_runs(path) -> list[dict]`
+  - `heartbeat_banner(runs, today, *, stale_days=7) -> str | None`
+  - `build_banner(alerts, runs, today) -> str | None`
+  - `commit_outputs(repo, paths, message) -> bool`、`has_manual_changes(repo, guarded) -> list[str]`
+  - `build_commit_message(stats_by_meeting) -> str`
+
+- [ ] **Step 1: 写告警与心跳的失败测试**
+
+```python
+# tests/test_ops_alerts.py
+from ngr.ops.alerts import RunRecord, append_run, load_runs, heartbeat_banner, build_banner
+
+def rec(day, code=0, msg=""):
+    return RunRecord(started=f"2026-09-{day:02d}T07:00:00", duration_s=12.5,
+                     new_events=3, llm_calls=4, exit_code=code, message=msg)
+
+def test_append_and_load(tmp_path):
+    p = tmp_path / "run_history.json"
+    append_run(p, rec(10)); append_run(p, rec(11))
+    runs = load_runs(p)
+    assert len(runs) == 2 and runs[-1]["exit_code"] == 0
+
+def test_load_missing_file_returns_empty(tmp_path):
+    assert load_runs(tmp_path / "nope.json") == []
+
+def test_load_tolerates_corrupt_file(tmp_path):
+    p = tmp_path / "run_history.json"
+    p.write_text("{ broken", encoding="utf-8")
+    assert load_runs(p) == []
+
+def test_history_is_capped(tmp_path):
+    p = tmp_path / "run_history.json"
+    for d in range(1, 30):
+        append_run(p, rec(d))
+    assert len(load_runs(p)) <= 100
+
+def test_heartbeat_silent_when_recent_success(tmp_path):
+    runs = [rec(16).__dict__]
+    assert heartbeat_banner(runs, today="2026-09-17") is None
+
+def test_heartbeat_fires_after_stale_days():
+    runs = [rec(1).__dict__]
+    b = heartbeat_banner(runs, today="2026-09-17")
+    assert b and "调度可能已失效" in b
+
+def test_heartbeat_fires_when_no_runs_at_all():
+    assert heartbeat_banner([], today="2026-09-17") is not None
+
+def test_heartbeat_ignores_failed_runs_when_counting_success():
+    runs = [rec(1, 0).__dict__, rec(16, 2, "解析失败").__dict__]
+    assert heartbeat_banner(runs, today="2026-09-17") is not None
+
+def test_build_banner_combines_alerts_and_heartbeat():
+    b = build_banner(["解析断言失败: RAN1#127"], [rec(1).__dict__], today="2026-09-17")
+    assert "RAN1#127" in b and "调度可能已失效" in b
+
+def test_build_banner_none_when_all_clear():
+    assert build_banner([], [rec(16).__dict__], today="2026-09-17") is None
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_ops_alerts.py -v`
+Expected: FAIL，`No module named 'ngr.ops'`
+
+- [ ] **Step 3: 写 `ngr/ops/alerts.py`**
+
+```python
+from __future__ import annotations
+import json
+from dataclasses import asdict, dataclass
+from datetime import date, datetime
+from pathlib import Path
+
+MAX_HISTORY = 100
+STALE_DAYS = 7
+
+@dataclass
+class RunRecord:
+    started: str
+    duration_s: float
+    new_events: int
+    llm_calls: int
+    exit_code: int
+    message: str = ""
+
+def load_runs(path: Path) -> list[dict]:
+    path = Path(path)
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    return data if isinstance(data, list) else []
+
+def append_run(path: Path, record: RunRecord) -> None:
+    path = Path(path)
+    runs = load_runs(path)
+    runs.append(asdict(record))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(runs[-MAX_HISTORY:], ensure_ascii=False, indent=2),
+                    encoding="utf-8")
+
+def _as_date(ts: str) -> date | None:
+    try:
+        return datetime.fromisoformat(ts).date()
+    except (ValueError, TypeError):
+        return None
+
+def heartbeat_banner(runs: list[dict], today: str,
+                     *, stale_days: int = STALE_DAYS) -> str | None:
+    """连续 stale_days 天没有成功运行就报警。
+    即使计划任务被 Windows 停掉，打开看板也能立刻发现。"""
+    today_d = _as_date(today) or date.today()
+    ok_dates = [d for d in (_as_date(r.get("started", "")) for r in runs
+                            if r.get("exit_code") == 0) if d]
+    if not ok_dates:
+        return f"⚠️ **调度可能已失效** —— 从未记录到成功运行（检查日期 {today}）"
+    gap = (today_d - max(ok_dates)).days
+    if gap >= stale_days:
+        return (f"⚠️ **调度可能已失效** —— 距上次成功运行已 {gap} 天"
+                f"（{max(ok_dates)}）。请检查计划任务与 `logs/`。")
+    return None
+
+def build_banner(alerts: list[str], runs: list[dict], today: str) -> str | None:
+    parts = list(alerts)
+    hb = heartbeat_banner(runs, today)
+    if hb:
+        parts.append(hb)
+    if not parts:
+        return None
+    return "\n".join(p if p.startswith("⚠️") else f"⚠️ {p}" for p in parts)
+```
+
+- [ ] **Step 4: 写 git 提交的失败测试**
+
+```python
+# tests/test_ops_gitio.py
+import subprocess
+from pathlib import Path
+from ngr.ops.gitio import commit_outputs, has_manual_changes, build_commit_message
+
+def init_repo(tmp_path: Path) -> Path:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "t@e"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=tmp_path, check=True)
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "features.yaml").write_text("features: []\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "init"], cwd=tmp_path, check=True)
+    return tmp_path
+
+def test_commit_outputs_creates_commit(tmp_path):
+    repo = init_repo(tmp_path)
+    (repo / "out").mkdir()
+    (repo / "out" / "dashboard.md").write_text("x", encoding="utf-8")
+    assert commit_outputs(repo, ["out"], "RAN1#127: +3 agreements")
+    log = subprocess.run(["git", "log", "--oneline"], cwd=repo,
+                         capture_output=True, text=True).stdout
+    assert "RAN1#127" in log
+
+def test_commit_outputs_noop_when_nothing_changed(tmp_path):
+    repo = init_repo(tmp_path)
+    (repo / "out").mkdir()
+    (repo / "out" / "dashboard.md").write_text("x", encoding="utf-8")
+    commit_outputs(repo, ["out"], "first")
+    assert commit_outputs(repo, ["out"], "second") is False
+
+def test_has_manual_changes_detects_edited_config(tmp_path):
+    repo = init_repo(tmp_path)
+    (repo / "config" / "features.yaml").write_text("features: [a]\n", encoding="utf-8")
+    assert "config/features.yaml" in has_manual_changes(repo, ["config"])
+
+def test_has_manual_changes_empty_when_clean(tmp_path):
+    repo = init_repo(tmp_path)
+    assert has_manual_changes(repo, ["config"]) == []
+
+def test_commit_message_summarises_per_feature():
+    msg = build_commit_message({("RAN1", 127): {"waveform": 9, "channel_coding": 7,
+                                                None: 2}})
+    assert msg.startswith("RAN1#127:")
+    assert "+18 events" in msg
+    assert "waveform +9" in msg
+    assert "未归类 +2" in msg
+
+def test_commit_message_multiple_meetings():
+    msg = build_commit_message({("RAN1", 127): {"waveform": 2},
+                                ("RAN2", 131): {"isac": 1}})
+    assert "RAN1#127" in msg and "RAN2#131" in msg
+```
+
+- [ ] **Step 5: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_ops_gitio.py -v`
+Expected: FAIL，`No module named 'ngr.ops.gitio'`
+
+- [ ] **Step 6: 写 `ngr/ops/gitio.py`**
+
+```python
+from __future__ import annotations
+import subprocess
+from pathlib import Path
+
+ATTRIBUTION = "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True,
+                          text=True, encoding="utf-8")
+
+def has_manual_changes(repo: Path, guarded: list[str]) -> list[str]:
+    """检查受保护路径（config/ 等）是否有未提交的手工改动。
+    有的话拒绝自动提交 —— 绝不覆盖用户手改的 features.yaml。"""
+    proc = _git(repo, "status", "--porcelain", "--", *guarded)
+    out = []
+    for line in proc.stdout.splitlines():
+        if len(line) > 3:
+            out.append(line[3:].strip().replace("\\", "/"))
+    return out
+
+def commit_outputs(repo: Path, paths: list[str], message: str) -> bool:
+    """暂存并提交指定路径。无变更时返回 False，不产生空提交。不 push。"""
+    repo = Path(repo)
+    _git(repo, "add", "--", *paths)
+    if not _git(repo, "diff", "--cached", "--quiet").returncode:
+        return False           # returncode 0 表示无差异
+    # 提交信息走 stdin，避免其中的引号与中文在 Windows 上被 shell 吃掉
+    body = f"{message}\n\n{ATTRIBUTION}\n"
+    proc = subprocess.run(["git", "commit", "-q", "-F", "-"], cwd=repo,
+                          input=body, capture_output=True, text=True,
+                          encoding="utf-8")
+    return proc.returncode == 0
+
+def build_commit_message(stats: dict[tuple[str, int], dict[str | None, int]]) -> str:
+    """生成 'RAN1#127: +23 events (waveform +9, coding +7, 未归类 +2)' 这样的提交信息。
+    这样 git log --oneline 本身就是一份进展流水账。"""
+    chunks = []
+    for (wg, meeting), per_feature in sorted(stats.items()):
+        total = sum(per_feature.values())
+        parts = []
+        for slug, n in sorted(per_feature.items(),
+                              key=lambda kv: (-kv[1], kv[0] or "")):
+            parts.append(f"{slug or '未归类'} +{n}")
+        detail = f" ({', '.join(parts)})" if parts else ""
+        chunks.append(f"{wg}#{meeting}: +{total} events{detail}")
+    return "; ".join(chunks) if chunks else "chore: 无新增事件"
+```
+
+- [ ] **Step 7: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_ops_alerts.py tests/test_ops_gitio.py -v`
+Expected: 16 passed
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add ngr/ops/ tests/test_ops_alerts.py tests/test_ops_gitio.py
+git commit -m "feat(ops): 告警横幅、心跳检查、自动提交"
+```
+
+---
+
 <!-- APPEND-HERE -->
