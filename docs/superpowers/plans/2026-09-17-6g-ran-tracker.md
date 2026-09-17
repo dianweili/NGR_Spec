@@ -188,4 +188,241 @@ git commit -m "chore: 站点侦察结果、sources.yaml、测试 fixture"
 
 ---
 
+### Task 2: 项目骨架、路径与数据模型
+
+**Files:**
+- Create: `pyproject.toml`, `.gitignore`（已存在则补充）
+- Create: `ngr/__init__.py`, `ngr/__main__.py`, `ngr/paths.py`, `ngr/models.py`
+- Test: `tests/test_models.py`
+
+**Interfaces:**
+- Consumes: 无
+- Produces: `ngr.paths.P`（路径单例，属性 `root/raw/parsed/state/out/logs/config`，方法 `raw_dir(wg, meeting) -> Path`）；`ngr.models` 的全部数据类
+
+- [ ] **Step 1: 建虚拟环境并装依赖**
+
+```bash
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install --upgrade pip
+.venv/Scripts/python.exe -m pip install requests PyYAML pytest responses
+```
+
+- [ ] **Step 2: 写 `pyproject.toml`**
+
+```toml
+[project]
+name = "ngr"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["requests>=2.32", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "responses>=0.25"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+```
+
+- [ ] **Step 3: 写失败的测试**
+
+```python
+# tests/test_models.py
+from ngr.models import Event, Meeting, LineageSegment
+from ngr.paths import P
+
+def test_meeting_label():
+    m = Meeting(wg="RAN1", number=126, suffix="", url="https://x/")
+    assert m.label == "RAN1#126"
+    assert Meeting(wg="RAN1", number=126, suffix="b", url="").label == "RAN1#126b"
+
+def test_event_id_is_stable():
+    e = Event(wg="RAN1", meeting=126, agenda_item="10.2", seq=17, kind="agreement",
+              text_en="X", agenda_title="Waveform")
+    assert e.id == "RAN1-126-10.2-a017"
+
+def test_event_id_prefix_varies_by_kind():
+    e = Event(wg="RAN1", meeting=126, agenda_item="10.2", seq=3, kind="conclusion",
+              text_en="X", agenda_title="W")
+    assert e.id == "RAN1-126-10.2-c003"
+
+def test_lineage_segment_covers_meeting():
+    seg = LineageSegment(era="6G", release="Rel-20", depth="full",
+                         agenda=["RAN1:10.2"], title_re=None,
+                         meetings={"RAN1": (124, None)})
+    assert seg.covers("RAN1", 124) and seg.covers("RAN1", 999)
+    assert not seg.covers("RAN1", 123)
+    assert not seg.covers("RAN2", 200)
+
+def test_paths_raw_dir():
+    assert P.raw_dir("RAN1", 126) == P.raw / "RAN1" / "126"
+```
+
+- [ ] **Step 4: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_models.py -v`
+Expected: FAIL，`ModuleNotFoundError: No module named 'ngr'`
+
+- [ ] **Step 5: 写 `ngr/paths.py`**
+
+```python
+from __future__ import annotations
+from dataclasses import dataclass
+from pathlib import Path
+
+@dataclass(frozen=True)
+class Paths:
+    root: Path
+
+    @property
+    def config(self) -> Path: return self.root / "config"
+    @property
+    def raw(self) -> Path: return self.root / "data" / "raw"
+    @property
+    def parsed(self) -> Path: return self.root / "data" / "parsed"
+    @property
+    def state(self) -> Path: return self.root / "data" / "state"
+    @property
+    def out(self) -> Path: return self.root / "out"
+    @property
+    def logs(self) -> Path: return self.root / "logs"
+
+    def raw_dir(self, wg: str, meeting: int) -> Path:
+        return self.raw / wg / str(meeting)
+
+    def parsed_dir(self, wg: str, meeting: int) -> Path:
+        return self.parsed / wg / str(meeting)
+
+P = Paths(root=Path(__file__).resolve().parent.parent)
+```
+
+- [ ] **Step 6: 写 `ngr/models.py`**
+
+```python
+from __future__ import annotations
+from dataclasses import dataclass, field
+
+KIND_PREFIX = {"agreement": "a", "conclusion": "c",
+               "working_assumption": "w", "observation": "o", "proposal": "p"}
+
+@dataclass(frozen=True)
+class Meeting:
+    wg: str
+    number: int
+    suffix: str
+    url: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.wg}#{self.number}{self.suffix}"
+
+@dataclass(frozen=True)
+class AgendaItem:
+    item: str          # "10.2"
+    title: str
+
+    @property
+    def depth(self) -> int:
+        return self.item.count(".") + 1
+
+@dataclass(frozen=True)
+class Heading:
+    level: int         # Heading1 -> 1
+    text: str
+    para_index: int
+
+@dataclass
+class RawEvent:
+    """parse 层产物：尚未归属特性。"""
+    kind: str
+    text_en: str
+    para_index: int
+    heading_path: list[str] = field(default_factory=list)
+
+@dataclass
+class Event:
+    """state 层产物：已归属特性与血统。"""
+    wg: str
+    meeting: int
+    agenda_item: str
+    seq: int
+    kind: str
+    text_en: str
+    agenda_title: str
+    meeting_end: str | None = None
+    era: str | None = None
+    release: str | None = None
+    depth: str = "full"
+    feature: str | None = None
+    source: dict = field(default_factory=dict)
+    summary_zh: str | None = None
+    tags: list[str] = field(default_factory=list)
+    impact: str | None = None
+    llm_status: str = "pending"
+    first_seen: str | None = None
+    content_hash: str | None = None
+
+    @property
+    def id(self) -> str:
+        return f"{self.wg}-{self.meeting}-{self.agenda_item}-{KIND_PREFIX[self.kind]}{self.seq:03d}"
+
+@dataclass(frozen=True)
+class LineageSegment:
+    era: str                       # "6G" | "5G-A"
+    release: str
+    depth: str                     # "full" | "origin" | "milestone"
+    agenda: list[str]              # ["RAN1:10.2", "RAN1:10.2.*"]
+    title_re: str | None
+    meetings: dict[str, tuple[int, int | None]]   # {"RAN1": (124, None)}
+
+    def covers(self, wg: str, meeting: int) -> bool:
+        rng = self.meetings.get(wg)
+        if rng is None:
+            return False
+        lo, hi = rng
+        return lo <= meeting and (hi is None or meeting <= hi)
+
+@dataclass(frozen=True)
+class Feature:
+    slug: str
+    name_zh: str
+    lineage: list[LineageSegment]
+
+    @property
+    def has_legacy(self) -> bool:
+        return any(s.era == "5G-A" for s in self.lineage)
+```
+
+- [ ] **Step 7: 写 `ngr/__init__.py` 与 `ngr/__main__.py`**
+
+```python
+# ngr/__init__.py
+__version__ = "0.1.0"
+```
+
+```python
+# ngr/__main__.py
+from ngr.cli import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+注意：`ngr/cli.py` 到 Task 18 才写。在此之前 `python -m ngr` 会报 ImportError，这是预期的 —— 先建立可测的内核，命令面最后收口。
+
+- [ ] **Step 8: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_models.py -v`
+Expected: 5 passed
+
+- [ ] **Step 9: 补 `.gitignore` 并 commit**
+
+```bash
+printf 'data/raw/\ndata/parsed/\nlogs/\n.venv/\n__pycache__/\n*.pyc\n.pytest_cache/\n' > .gitignore
+git add .gitignore pyproject.toml ngr/ tests/test_models.py
+git commit -m "feat: 项目骨架、路径单例与数据模型"
+```
+
+---
+
 <!-- APPEND-HERE -->
