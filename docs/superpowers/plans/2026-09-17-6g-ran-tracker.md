@@ -3389,4 +3389,344 @@ git commit -m "feat(render): 单文件 HTML 看板与渲染编排"
 
 ---
 
+## Phase 5：extract 层（LLM）
+
+### Task 16: claude CLI 后端、缓存与配额守护
+
+**Files:**
+- Create: `ngr/extract/__init__.py`, `ngr/extract/backend.py`, `ngr/extract/cache.py`, `ngr/extract/budget.py`
+- Test: `tests/test_extract_backend.py`, `tests/test_extract_cache.py`, `tests/test_extract_budget.py`
+
+**Interfaces:**
+- Consumes: `ngr.config.ExtractConfig`
+- Produces:
+  - `ClaudeCli(model: str, effort: str)`，方法 `.call(prompt: str) -> CliResult`
+  - `CliResult`：`.text: str`、`.usage: dict`、`.cost_usd: float`
+  - `LlmError`、`LlmRateLimited(LlmError)`
+  - `cache_key(model, prompt_version, effort, text) -> str`、`LlmCache(dir)` 带 `.get(key)` `.put(key, value)`
+  - `Budget(max_calls)`，`.check()`（超限抛 `BudgetExhausted`）、`.spend(result)`、`.log(path)`
+
+- [ ] **Step 1: 写后端的失败测试**
+
+```python
+# tests/test_extract_backend.py
+import json, subprocess, pytest
+from ngr.extract.backend import ClaudeCli, LlmError, LlmRateLimited
+
+def fake_run(stdout="", returncode=0, stderr=""):
+    def _run(cmd, **kw):
+        _run.cmd, _run.input = cmd, kw.get("input")
+        return subprocess.CompletedProcess(cmd, returncode, stdout, stderr)
+    return _run
+
+OK = json.dumps({"result": '{"ok":true}',
+                 "total_cost_usd": 0.0095,
+                 "usage": {"input_tokens": 2, "output_tokens": 8,
+                           "cache_read_input_tokens": 14936,
+                           "cache_creation_input_tokens": 1400}})
+
+def test_call_passes_prompt_via_stdin(monkeypatch):
+    run = fake_run(OK)
+    monkeypatch.setattr(subprocess, "run", run)
+    ClaudeCli("sonnet", "low").call("PROMPT")
+    assert run.input == "PROMPT"
+    assert "PROMPT" not in run.cmd, "prompt 绝不能走 argv —— Windows 命令行上限约 32K"
+
+def test_call_uses_required_flags(monkeypatch):
+    run = fake_run(OK)
+    monkeypatch.setattr(subprocess, "run", run)
+    ClaudeCli("sonnet", "low").call("x")
+    cmd = run.cmd
+    assert cmd[:2] == ["claude", "-p"]
+    for flag in ["--output-format", "json", "--model", "sonnet",
+                 "--effort", "low", "--restricted", "--disable-slash-commands"]:
+        assert flag in cmd
+
+def test_call_never_uses_bare(monkeypatch):
+    """--bare 只认 ANTHROPIC_API_KEY，会绕开 Max 订阅的 OAuth 认证。"""
+    run = fake_run(OK)
+    monkeypatch.setattr(subprocess, "run", run)
+    ClaudeCli("sonnet", "low").call("x")
+    assert "--bare" not in run.cmd
+
+def test_call_returns_text_and_usage(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", fake_run(OK))
+    res = ClaudeCli("sonnet", "low").call("x")
+    assert res.text == '{"ok":true}'
+    assert res.cost_usd == 0.0095
+    assert res.usage["cache_read_input_tokens"] == 14936
+
+def test_nonzero_exit_raises(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", fake_run("", 1, "boom"))
+    with pytest.raises(LlmError, match="boom"):
+        ClaudeCli("sonnet", "low").call("x")
+
+def test_rate_limit_message_raises_ratelimited(monkeypatch):
+    monkeypatch.setattr(subprocess, "run",
+                        fake_run("", 1, "Claude usage limit reached. Try again later"))
+    with pytest.raises(LlmRateLimited):
+        ClaudeCli("sonnet", "low").call("x")
+
+def test_unparseable_stdout_raises(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", fake_run("not json"))
+    with pytest.raises(LlmError, match="JSON"):
+        ClaudeCli("sonnet", "low").call("x")
+
+def test_timeout_raises_llm_error(monkeypatch):
+    def boom(cmd, **kw): raise subprocess.TimeoutExpired(cmd, 600)
+    monkeypatch.setattr(subprocess, "run", boom)
+    with pytest.raises(LlmError, match="超时"):
+        ClaudeCli("sonnet", "low").call("x")
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_backend.py -v`
+Expected: FAIL，`No module named 'ngr.extract'`
+
+- [ ] **Step 3: 写 `ngr/extract/backend.py`**
+
+```python
+from __future__ import annotations
+import json, subprocess
+from dataclasses import dataclass, field
+
+TIMEOUT_SECONDS = 900
+RATE_LIMIT_HINTS = ("usage limit", "rate limit", "too many requests", "429")
+
+class LlmError(Exception):
+    pass
+
+class LlmRateLimited(LlmError):
+    pass
+
+@dataclass
+class CliResult:
+    text: str
+    usage: dict = field(default_factory=dict)
+    cost_usd: float = 0.0
+
+class ClaudeCli:
+    """通过 `claude -p` 调用，消耗 Max 订阅额度。
+
+    三条硬约束：
+      1. prompt 走 stdin —— Windows argv 上限约 32K，一批 40 条 agreement 远超；
+      2. 禁用 --bare —— 该模式只认 ANTHROPIC_API_KEY，不读 OAuth，会绕开订阅认证；
+      3. 带 --restricted 与 --disable-slash-commands —— 这是纯文本变换，
+         不需要工具，也不能让 skills 插手批处理。
+    """
+
+    def __init__(self, model: str, effort: str):
+        self.model, self.effort = model, effort
+
+    @property
+    def cmd(self) -> list[str]:
+        return ["claude", "-p", "--output-format", "json",
+                "--model", self.model, "--effort", self.effort,
+                "--restricted", "--disable-slash-commands"]
+
+    def call(self, prompt: str) -> CliResult:
+        try:
+            proc = subprocess.run(self.cmd, input=prompt, capture_output=True,
+                                  text=True, encoding="utf-8",
+                                  timeout=TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired as exc:
+            raise LlmError(f"claude -p 超时（{TIMEOUT_SECONDS}s）") from exc
+
+        if proc.returncode != 0:
+            err = (proc.stderr or "").strip()
+            if any(h in err.lower() for h in RATE_LIMIT_HINTS):
+                raise LlmRateLimited(f"额度受限: {err}")
+            raise LlmError(f"claude -p 退出码 {proc.returncode}: {err}")
+
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise LlmError(f"claude -p 输出不是 JSON: {proc.stdout[:200]}") from exc
+
+        return CliResult(text=payload.get("result", ""),
+                         usage=payload.get("usage", {}),
+                         cost_usd=float(payload.get("total_cost_usd", 0.0)))
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_backend.py -v`
+Expected: 8 passed
+
+- [ ] **Step 5: 写缓存与配额的失败测试**
+
+```python
+# tests/test_extract_cache.py
+from ngr.extract.cache import cache_key, LlmCache
+
+def test_key_depends_on_all_inputs():
+    a = cache_key("sonnet", "v1", "low", "TEXT")
+    assert a != cache_key("opus", "v1", "low", "TEXT")
+    assert a != cache_key("sonnet", "v2", "low", "TEXT")
+    assert a != cache_key("sonnet", "v1", "high", "TEXT")
+    assert a != cache_key("sonnet", "v1", "low", "OTHER")
+
+def test_key_is_stable_across_runs():
+    assert cache_key("sonnet", "v1", "low", "T") == cache_key("sonnet", "v1", "low", "T")
+
+def test_cache_roundtrip(tmp_path):
+    c = LlmCache(tmp_path)
+    k = cache_key("sonnet", "v1", "low", "T")
+    assert c.get(k) is None
+    c.put(k, {"summary_zh": "摘要"})
+    assert LlmCache(tmp_path).get(k) == {"summary_zh": "摘要"}
+
+def test_cache_tolerates_corrupt_file(tmp_path):
+    c = LlmCache(tmp_path)
+    k = cache_key("sonnet", "v1", "low", "T")
+    c.put(k, {"a": 1})
+    next(tmp_path.glob("*.json")).write_text("{ broken", encoding="utf-8")
+    assert LlmCache(tmp_path).get(k) is None
+```
+
+```python
+# tests/test_extract_budget.py
+import json, pytest
+from ngr.extract.backend import CliResult
+from ngr.extract.budget import Budget, BudgetExhausted
+
+def test_check_passes_under_limit():
+    b = Budget(max_calls=2)
+    b.check(); b.spend(CliResult("x", {"output_tokens": 5}, 0.01))
+    b.check()
+
+def test_check_raises_when_exhausted():
+    b = Budget(max_calls=1)
+    b.check(); b.spend(CliResult("x", {}, 0.01))
+    with pytest.raises(BudgetExhausted):
+        b.check()
+
+def test_totals_accumulate():
+    b = Budget(max_calls=5)
+    b.spend(CliResult("x", {"output_tokens": 5}, 0.01))
+    b.spend(CliResult("y", {"output_tokens": 7}, 0.02))
+    assert b.calls == 2
+    assert round(b.cost_usd, 4) == 0.03
+
+def test_log_appends_jsonl(tmp_path):
+    b = Budget(max_calls=5)
+    b.spend(CliResult("x", {"output_tokens": 5}, 0.01), task="summary")
+    p = tmp_path / "usage.jsonl"
+    b.log(p); b.log(p)
+    lines = p.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+    assert json.loads(lines[0])["task"] == "summary"
+```
+
+- [ ] **Step 6: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_cache.py tests/test_extract_budget.py -v`
+Expected: FAIL，模块不存在
+
+- [ ] **Step 7: 写 `ngr/extract/cache.py`**
+
+```python
+from __future__ import annotations
+import hashlib, json, logging
+from pathlib import Path
+
+log = logging.getLogger(__name__)
+
+def cache_key(model: str, prompt_version: str, effort: str, text: str) -> str:
+    """把模型、prompt 版本、effort 一并计入 —— 任一变化都应重算。"""
+    blob = "\x00".join([model, prompt_version, effort, text])
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+class LlmCache:
+    """按输入哈希缓存 LLM 结果，进 git —— 换台机器也能复用，不重复消耗额度。"""
+
+    def __init__(self, directory: Path):
+        self.dir = Path(directory)
+
+    def _path(self, key: str) -> Path:
+        return self.dir / f"{key}.json"
+
+    def get(self, key: str) -> dict | None:
+        p = self._path(key)
+        if not p.exists():
+            return None
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            log.warning("缓存文件损坏，忽略: %s", p)
+            return None
+
+    def put(self, key: str, value: dict) -> None:
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self._path(key).write_text(
+            json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8")
+```
+
+- [ ] **Step 8: 写 `ngr/extract/budget.py`**
+
+```python
+from __future__ import annotations
+import json, time
+from pathlib import Path
+from ngr.extract.backend import CliResult
+
+class BudgetExhausted(Exception):
+    """本次运行的调用上限已用尽。属正常结束，不是错误。"""
+
+class Budget:
+    """配额守护。额度是订阅制下的稀缺资源，一次运行绝不允许无限制消耗。"""
+
+    def __init__(self, max_calls: int):
+        self.max_calls = max_calls
+        self.calls = 0
+        self.cost_usd = 0.0
+        self.input_tokens = 0
+        self.output_tokens = 0
+        self._entries: list[dict] = []
+
+    def check(self) -> None:
+        if self.calls >= self.max_calls:
+            raise BudgetExhausted(
+                f"已达本次运行上限 {self.max_calls} 次调用，剩余工作留到下次")
+
+    def spend(self, result: CliResult, task: str = "") -> None:
+        self.calls += 1
+        self.cost_usd += result.cost_usd
+        u = result.usage or {}
+        self.input_tokens += int(u.get("input_tokens", 0)) \
+            + int(u.get("cache_read_input_tokens", 0)) \
+            + int(u.get("cache_creation_input_tokens", 0))
+        self.output_tokens += int(u.get("output_tokens", 0))
+        self._entries.append({
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task,
+            "cost_usd": result.cost_usd, "usage": u,
+        })
+
+    def log(self, path: Path) -> None:
+        """追加写 usage_log.jsonl。注意：订阅模式下 cost_usd 是按 list price
+        折算的用量代理值，不是账单。"""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            for entry in self._entries:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        self._entries.clear()
+```
+
+- [ ] **Step 9: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_extract_cache.py tests/test_extract_budget.py -v`
+Expected: 8 passed
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add ngr/extract/ tests/test_extract_backend.py tests/test_extract_cache.py tests/test_extract_budget.py
+git commit -m "feat(extract): claude CLI 后端、结果缓存、配额守护"
+```
+
+---
+
 <!-- APPEND-HERE -->
