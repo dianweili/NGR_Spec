@@ -3124,4 +3124,269 @@ git commit -m "feat(render): dashboard / 特性页 / 会议简报"
 
 ---
 
+### Task 15: 单文件 HTML 看板
+
+> **里程碑：本任务完成后，`ngr run --no-llm` 能产出完整可读的看板 —— 工具已经有用了，只是没有中文摘要。**
+
+**Files:**
+- Create: `ngr/render/site.py`, `ngr/render/runner.py`
+- Test: `tests/test_render_site.py`
+
+**Interfaces:**
+- Consumes: `render_dashboard`、`render_feature_page`、`render_report`
+- Produces:
+  - `render_site(events, features, feat_state, *, generated) -> str`（完整 HTML 文本）
+  - `render_all(events, features, feat_state, out_dir, *, banner=None, unmapped=None) -> list[Path]`
+
+- [ ] **Step 1: 开始写代码前先读配色与图表规范**
+
+本任务要画热力图、状态表和筛选器。**先调用 `dataviz` skill 读取规范，再写第一行图表代码或选定任何颜色。** 不要凭感觉配色 —— 看板要在浅色/深色两种主题下都可读。
+
+- [ ] **Step 2: 写失败的测试**
+
+```python
+# tests/test_render_site.py
+import json, re
+from ngr.models import Feature, LineageSegment
+from ngr.render.site import render_site
+from ngr.render.runner import render_all
+
+def seg(era): return LineageSegment(era=era, release="Rel-20", depth="full",
+                                    agenda=["RAN1:10.2"], title_re=None,
+                                    meetings={"RAN1": (124, None)})
+WAVE = Feature(slug="waveform", name_zh="6GR 波形", lineage=[seg("6G")])
+FS = {"waveform": {"stage": "收敛中", "open_issues": [], "summary": "s"}}
+
+def E(**kw):
+    base = dict(id="RAN1-126-10.2-a001", wg="RAN1", meeting=126, agenda_item="10.2",
+                agenda_title="Waveform", kind="agreement", era="6G", release="Rel-20",
+                depth="full", feature="waveform", text_en="Adopt X.",
+                summary_zh="采纳 X。", tags=[], impact="high", llm_status="ok",
+                first_seen="2026-08-25", meeting_end="2026-08-21", source={})
+    base.update(kw); return base
+
+def test_site_is_self_contained():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-17")
+    assert html.lstrip().startswith("<!DOCTYPE html>")
+    assert "<script src=" not in html and "<link rel=\"stylesheet\"" not in html
+
+def test_site_embeds_data_as_json():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-17")
+    m = re.search(r'id="ngr-data"[^>]*>(.*?)</script>', html, re.S)
+    assert m, "数据必须内联为 JSON"
+    data = json.loads(m.group(1))
+    assert data["events"][0]["id"] == "RAN1-126-10.2-a001"
+    assert data["features"][0]["slug"] == "waveform"
+
+def test_site_escapes_html_in_event_text():
+    html = render_site([E(text_en="<script>alert(1)</script>")], [WAVE], FS,
+                       generated="2026-09-17")
+    assert "<script>alert(1)</script>" not in html
+
+def test_site_declares_dark_mode():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-17")
+    assert "prefers-color-scheme: dark" in html
+
+def test_site_has_viewport_for_mobile():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-17")
+    assert 'name="viewport"' in html
+
+def test_site_renders_with_zero_events():
+    html = render_site([], [WAVE], FS, generated="2026-09-17")
+    assert "<!DOCTYPE html>" in html.lstrip()[:20]
+
+def test_render_all_writes_expected_files(tmp_path):
+    paths = render_all([E()], [WAVE], FS, tmp_path)
+    names = {p.relative_to(tmp_path).as_posix() for p in paths}
+    assert "dashboard.md" in names
+    assert "features/waveform.md" in names
+    assert "site/index.html" in names
+    assert any(n.startswith("reports/") for n in names)
+
+def test_render_all_is_deterministic(tmp_path):
+    render_all([E()], [WAVE], FS, tmp_path, generated="2026-09-17")
+    first = (tmp_path / "dashboard.md").read_bytes()
+    render_all([E()], [WAVE], FS, tmp_path, generated="2026-09-17")
+    assert (tmp_path / "dashboard.md").read_bytes() == first
+
+def test_render_all_writes_empty_alerts_when_no_banner(tmp_path):
+    render_all([E()], [WAVE], FS, tmp_path)
+    assert (tmp_path / "ALERTS.md").read_text(encoding="utf-8").strip() == ""
+```
+
+- [ ] **Step 3: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_render_site.py -v`
+Expected: FAIL，`No module named 'ngr.render.site'`
+
+- [ ] **Step 4: 写 `ngr/render/site.py`**
+
+按 Step 1 读到的 dataviz 规范确定配色与图表形式。骨架如下，**颜色 token 用规范里的值替换 `PLACEHOLDER` 注释处**：
+
+```python
+from __future__ import annotations
+import html as html_mod, json
+from dataclasses import asdict
+from ngr.models import Feature
+
+def _payload(events: list[dict], features: list[Feature], feat_state: dict,
+             generated: str) -> dict:
+    return {
+        "generated": generated,
+        "features": [{"slug": f.slug, "name_zh": f.name_zh,
+                      "has_legacy": f.has_legacy,
+                      "stage": feat_state.get(f.slug, {}).get("stage"),
+                      "open_issues": feat_state.get(f.slug, {}).get("open_issues", [])}
+                     for f in features],
+        "events": events,
+    }
+
+def render_site(events: list[dict], features: list[Feature], feat_state: dict,
+                *, generated: str) -> str:
+    data = json.dumps(_payload(events, features, feat_state, generated),
+                      ensure_ascii=False, sort_keys=True)
+    # </script> 出现在数据里会提前闭合脚本标签
+    data = data.replace("</", r"<\/")
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6G RAN 进展看板</title>
+<style>
+  :root {{
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --line: #e0e0e0;
+    --accent: #2563eb;   /* 按 dataviz 规范替换为品牌色 */
+  }}
+  @media (prefers-color-scheme: dark) {{
+    :root:not([data-theme="light"]) {{
+      --bg: #141414; --fg: #eaeaea; --muted: #999; --line: #303030;
+    }}
+  }}
+  :root[data-theme="dark"] {{
+    --bg: #141414; --fg: #eaeaea; --muted: #999; --line: #303030;
+  }}
+  body {{ background: var(--bg); color: var(--fg); margin: 0;
+         padding: 0 16px 48px; font: 15px/1.6 system-ui, sans-serif; }}
+  table {{ border-collapse: collapse; width: 100%; }}
+  th, td {{ border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }}
+  details {{ border-bottom: 1px solid var(--line); padding: 6px 0; }}
+  pre {{ overflow-x: auto; background: color-mix(in srgb, var(--fg) 5%, transparent);
+         padding: 10px; border-radius: 6px; }}
+  .filters {{ display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }}
+</style>
+</head>
+<body>
+<h1>6G (Rel-20) RAN 进展看板</h1>
+<div class="filters" id="filters"></div>
+<div id="board"></div>
+<script type="application/json" id="ngr-data">{data}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('ngr-data').textContent);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
+let filterFeature = null;
+
+function render() {{
+  const rows = DATA.features.map(f => {{
+    const evs = DATA.events.filter(e => e.feature === f.slug);
+    const agr = evs.filter(e => e.kind === 'agreement');
+    const n6 = agr.filter(e => e.era === '6G').length;
+    const nl = agr.filter(e => e.era === '5G-A').length;
+    return `<tr><td><a href="#" data-slug="${{esc(f.slug)}}">${{esc(f.name_zh)}}</a></td>
+      <td>${{esc(f.stage || '—')}}</td>
+      <td>${{f.has_legacy ? '5G-A→6G' : '6G 原生'}}</td>
+      <td>${{n6}} / ${{nl}}</td>
+      <td>${{(f.open_issues || []).length}}</td></tr>`;
+  }}).join('');
+
+  const shown = DATA.events.filter(e => !filterFeature || e.feature === filterFeature);
+  const items = shown.sort((a, b) => b.meeting - a.meeting).map(e =>
+    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{e.meeting}}]
+       ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || e.text_en.slice(0, 90))}}</summary>
+     <pre>${{esc(e.text_en)}}</pre></details>`).join('');
+
+  document.getElementById('board').innerHTML =
+    `<table><thead><tr><th>特性</th><th>阶段</th><th>血统</th>
+     <th>累计 Agr. (6G/5G-A)</th><th>未决</th></tr></thead><tbody>${{rows}}</tbody></table>
+     <h2>事件（${{shown.length}} 条）</h2>${{items || '<p>无</p>'}}`;
+
+  document.querySelectorAll('[data-slug]').forEach(a => a.onclick = ev => {{
+    ev.preventDefault();
+    filterFeature = filterFeature === a.dataset.slug ? null : a.dataset.slug;
+    render();
+  }});
+}}
+render();
+</script>
+</body>
+</html>
+"""
+```
+
+- [ ] **Step 5: 写 `ngr/render/runner.py`**
+
+```python
+from __future__ import annotations
+import time
+from pathlib import Path
+from ngr.models import Feature
+from ngr.render.markdown import render_dashboard, render_feature_page, render_report
+from ngr.render.site import render_site
+
+def render_all(events: list[dict], features: list[Feature], feat_state: dict,
+               out_dir: Path, *, banner: str | None = None,
+               unmapped: list[str] | None = None,
+               generated: str | None = None) -> list[Path]:
+    generated = generated or time.strftime("%Y-%m-%d")
+    out_dir = Path(out_dir)
+    (out_dir / "features").mkdir(parents=True, exist_ok=True)
+    (out_dir / "reports").mkdir(parents=True, exist_ok=True)
+    (out_dir / "site").mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+
+    def write(rel: str, text: str) -> None:
+        p = out_dir / rel
+        p.write_text(text, encoding="utf-8", newline="\n")
+        written.append(p)
+
+    write("dashboard.md", render_dashboard(events, features, feat_state,
+                                           banner=banner, unmapped=unmapped,
+                                           generated=generated))
+    write("ALERTS.md", (banner + "\n") if banner else "")
+
+    for feat in features:
+        write(f"features/{feat.slug}.md",
+              render_feature_page(feat.slug, events, feat, feat_state.get(feat.slug, {})))
+
+    names = {f.slug: f.name_zh for f in features}
+    for wg, meeting in sorted({(e["wg"], e["meeting"]) for e in events}):
+        date = next((e.get("meeting_end") for e in events
+                     if e["wg"] == wg and e["meeting"] == meeting and e.get("meeting_end")),
+                    generated)
+        write(f"reports/{date}-{wg}-{meeting}.md",
+              render_report(wg, meeting, events, names))
+
+    write("site/index.html", render_site(events, features, feat_state, generated=generated))
+    return written
+```
+
+- [ ] **Step 6: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_render_site.py -v`
+Expected: 9 passed
+
+- [ ] **Step 7: 肉眼验收**
+
+用 fixture 跑一遍并在浏览器里打开 `out/site/index.html`：点击特性名能筛选、展开能看到英文原文、切换系统深色主题后仍可读。
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add ngr/render/site.py ngr/render/runner.py tests/test_render_site.py
+git commit -m "feat(render): 单文件 HTML 看板与渲染编排"
+```
+
+---
+
 <!-- APPEND-HERE -->
