@@ -1544,4 +1544,202 @@ git commit -m "feat(parse): agenda.csv 解析"
 
 ---
 
+### Task 8: docx 段落、heading 与表格抽取
+
+不用 `python-docx`：它把表格和段落分成两棵树，拿不到二者的**原始先后顺序**，而 agreement 块的边界恰恰依赖顺序。直接读 `word/document.xml` 反而更简单可靠。
+
+**Files:**
+- Create: `ngr/parse/docx.py`
+- Test: `tests/test_parse_docx.py`
+
+**Interfaces:**
+- Consumes: `ngr.models.Heading`
+- Produces:
+  - `Block` 数据类：`.kind: str`（`"para"` | `"table"`）、`.text: str`、`.style: str | None`、`.index: int`
+  - `parse_docx(path_or_bytes) -> Document`
+  - `Document` 数据类：`.blocks: list[Block]`、`.headings: list[Heading]`、`.paragraphs: list[str]`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_parse_docx.py
+import pathlib, zipfile, io
+from ngr.parse.docx import parse_docx
+
+def make_docx(body_xml: str) -> bytes:
+    """构造最小 docx：只需要 word/document.xml。"""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("word/document.xml",
+            '<?xml version="1.0"?><w:document '
+            'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            f'<w:body>{body_xml}</w:body></w:document>')
+    return buf.getvalue()
+
+def para(text, style=None):
+    s = f'<w:pPr><w:pStyle w:val="{style}"/></w:pPr>' if style else ""
+    return f'<w:p>{s}<w:r><w:t>{text}</w:t></w:r></w:p>'
+
+def test_extracts_paragraph_text():
+    doc = parse_docx(make_docx(para("Hello world")))
+    assert doc.paragraphs == ["Hello world"]
+
+def test_joins_multiple_runs_in_one_paragraph():
+    xml = '<w:p><w:r><w:t>Agree</w:t></w:r><w:r><w:t>ment</w:t></w:r></w:p>'
+    assert parse_docx(make_docx(xml)).paragraphs == ["Agreement"]
+
+def test_headings_carry_level_and_index():
+    doc = parse_docx(make_docx(para("Top", "Heading1") + para("body") + para("Sub", "Heading2")))
+    assert [(h.level, h.text) for h in doc.headings] == [(1, "Top"), (2, "Sub")]
+    assert doc.headings[1].para_index == 2
+
+def test_non_heading_styles_are_not_headings():
+    doc = parse_docx(make_docx(para("x", "BodyText")))
+    assert doc.headings == []
+
+def test_table_becomes_markdown_block_in_document_order():
+    tbl = ('<w:tbl>'
+           '<w:tr><w:tc><w:p><w:r><w:t>SCS</w:t></w:r></w:p></w:tc>'
+           '<w:tc><w:p><w:r><w:t>BW</w:t></w:r></w:p></w:tc></w:tr>'
+           '<w:tr><w:tc><w:p><w:r><w:t>30</w:t></w:r></w:p></w:tc>'
+           '<w:tc><w:p><w:r><w:t>100</w:t></w:r></w:p></w:tc></w:tr>'
+           '</w:tbl>')
+    doc = parse_docx(make_docx(para("Agreement:") + tbl + para("after")))
+    kinds = [b.kind for b in doc.blocks]
+    assert kinds == ["para", "table", "para"]
+    assert doc.blocks[1].text == "| SCS | BW |\n| --- | --- |\n| 30 | 100 |"
+
+def test_table_cell_with_multiple_paragraphs_is_joined():
+    tbl = ('<w:tbl><w:tr><w:tc>'
+           '<w:p><w:r><w:t>a</w:t></w:r></w:p><w:p><w:r><w:t>b</w:t></w:r></w:p>'
+           '</w:tc></w:tr></w:tbl>')
+    assert "a b" in parse_docx(make_docx(tbl)).blocks[0].text
+
+def test_pipe_in_cell_is_escaped():
+    tbl = '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>a|b</w:t></w:r></w:p></w:tc></w:tr></w:tbl>'
+    assert r"a\|b" in parse_docx(make_docx(tbl)).blocks[0].text
+
+def test_empty_paragraphs_are_dropped():
+    assert parse_docx(make_docx('<w:p></w:p>' + para("x"))).paragraphs == ["x"]
+
+def test_real_fixture_structure():
+    """实测 RAN1#126 v010 的确切数字 —— 3GPP 换纪要模板时这里第一个炸。"""
+    doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
+    assert len(doc.paragraphs) == 7803
+    assert len(doc.headings) == 83
+    assert any(h.text == "Rel-20 Study of 6GR" and h.level == 1 for h in doc.headings)
+    assert any(h.text == "Waveform for 6GR air interface" for h in doc.headings)
+
+def test_real_fixture_marker_counts():
+    doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
+    assert sum(1 for p in doc.paragraphs if p.startswith("Agreement")) == 320
+    assert sum(1 for p in doc.paragraphs if p.startswith("Conclusion")) == 29
+    assert sum(1 for p in doc.paragraphs if p.lower().startswith("working assumption")) == 13
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_docx.py -v`
+Expected: FAIL，`No module named 'ngr.parse.docx'`
+
+- [ ] **Step 3: 写 `ngr/parse/docx.py`**
+
+```python
+from __future__ import annotations
+import re, zipfile
+from dataclasses import dataclass, field
+from pathlib import Path
+from ngr.models import Heading
+
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+HEADING_RE = re.compile(r"(?i)^heading\s*(\d+)$")
+
+@dataclass
+class Block:
+    kind: str            # "para" | "table"
+    text: str
+    style: str | None
+    index: int           # 在 blocks 中的下标
+
+@dataclass
+class Document:
+    blocks: list[Block] = field(default_factory=list)
+    headings: list[Heading] = field(default_factory=list)
+
+    @property
+    def paragraphs(self) -> list[str]:
+        return [b.text for b in self.blocks if b.kind == "para"]
+
+def _text_of(el) -> str:
+    return "".join(t.text or "" for t in el.iter(W + "t"))
+
+def _cell_text(tc) -> str:
+    parts = [_text_of(p).strip() for p in tc.findall(W + "p")]
+    return " ".join(x for x in parts if x).replace("|", r"\|")
+
+def _table_to_markdown(tbl) -> str:
+    rows = []
+    for tr in tbl.findall(W + "tr"):
+        rows.append([_cell_text(tc) for tc in tr.findall(W + "tc")])
+    if not rows:
+        return ""
+    width = max(len(r) for r in rows)
+    rows = [r + [""] * (width - len(r)) for r in rows]
+    lines = ["| " + " | ".join(rows[0]) + " |",
+             "| " + " | ".join(["---"] * width) + " |"]
+    lines += ["| " + " | ".join(r) + " |" for r in rows[1:]]
+    return "\n".join(lines)
+
+def parse_docx(source: Path | bytes) -> Document:
+    """按文档顺序抽出段落与表格。用 ElementTree 而非 python-docx，
+    因为后者拿不到段落与表格的原始交错顺序，而 agreement 块的边界依赖它。"""
+    import xml.etree.ElementTree as ET
+
+    data = source.read_bytes() if isinstance(source, Path) else source
+    with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+        xml = z.read("word/document.xml")
+    body = ET.fromstring(xml).find(W + "body")
+
+    doc = Document()
+    para_index = 0
+    for el in list(body):
+        tag = el.tag
+        if tag == W + "p":
+            text = _text_of(el).strip()
+            if not text:
+                continue
+            pstyle = el.find(f"{W}pPr/{W}pStyle")
+            style = pstyle.get(W + "val") if pstyle is not None else None
+            doc.blocks.append(Block("para", text, style, len(doc.blocks)))
+            if style:
+                m = HEADING_RE.match(style)
+                if m:
+                    doc.headings.append(
+                        Heading(level=int(m.group(1)), text=text, para_index=para_index))
+            para_index += 1
+        elif tag == W + "tbl":
+            md = _table_to_markdown(el)
+            if md:
+                doc.blocks.append(Block("table", md, None, len(doc.blocks)))
+    return doc
+```
+
+> `Heading.para_index` 是**段落序号**（只数 `para` 块），而 `Block.index` 是**块序号**（段落与表格统一编号）。两者不同，不要混用：对齐用前者，块边界用后者。
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_docx.py -v`
+Expected: 10 passed
+
+如果 `test_real_fixture_structure` 的数字对不上，先检查 fixture 是否是 `Draft_Minutes_report_RAN1#126_v010.docx` 本身（而非其他版本），再调解析逻辑 —— 不要直接改断言数字。
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add ngr/parse/docx.py tests/test_parse_docx.py
+git commit -m "feat(parse): docx 段落/heading/表格抽取"
+```
+
+---
+
 <!-- APPEND-HERE -->
