@@ -5183,4 +5183,615 @@ git commit -m "feat(cli): 命令面、管线编排与退出码"
 
 ---
 
-<!-- APPEND-HERE -->
+### Task 21: doctor、计划任务与首次回填
+
+**Files:**
+- Create: `ngr/ops/doctor.py`, `scripts/install-task.ps1`, `README.md`
+- Test: `tests/test_ops_doctor.py`
+
+**Interfaces:**
+- Consumes: `load_sources`、`load_features`、`ClaudeCli`、`Http`
+- Produces: `check_all(*, probe_network=False) -> list[Check]`、`run_doctor(probe_network=False) -> int`、`Check`：`.name` `.ok` `.detail`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_ops_doctor.py
+from ngr.ops import doctor
+from ngr.ops.doctor import check_all, run_doctor
+
+def test_all_checks_have_names(monkeypatch):
+    monkeypatch.setattr(doctor, "_which", lambda n: "C:/claude.exe")
+    checks = check_all()
+    assert checks and all(c.name for c in checks)
+
+def test_reports_missing_claude_cli(monkeypatch):
+    monkeypatch.setattr(doctor, "_which", lambda n: None)
+    bad = [c for c in check_all() if not c.ok]
+    assert any("claude" in c.name.lower() for c in bad)
+
+def test_reports_bad_config(monkeypatch, tmp_path):
+    monkeypatch.setattr(doctor, "_which", lambda n: "x")
+    monkeypatch.setattr(doctor, "load_sources",
+                        lambda: (_ for _ in ()).throw(RuntimeError("坏配置")))
+    bad = [c for c in check_all() if not c.ok]
+    assert any("配置" in c.name for c in bad)
+
+def test_skips_network_probe_by_default(monkeypatch):
+    monkeypatch.setattr(doctor, "_which", lambda n: "x")
+    called = []
+    monkeypatch.setattr(doctor, "_probe_3gpp", lambda: called.append(1) or True)
+    check_all(probe_network=False)
+    assert called == []
+
+def test_runs_network_probe_when_asked(monkeypatch):
+    monkeypatch.setattr(doctor, "_which", lambda n: "x")
+    monkeypatch.setattr(doctor, "_probe_3gpp", lambda: True)
+    assert any("3GPP" in c.name for c in check_all(probe_network=True))
+
+def test_run_doctor_returns_zero_when_all_ok(monkeypatch, capsys):
+    monkeypatch.setattr(doctor, "check_all",
+                        lambda **kw: [doctor.Check("A", True, "ok")])
+    assert run_doctor() == 0
+    assert "A" in capsys.readouterr().out
+
+def test_run_doctor_returns_one_on_failure(monkeypatch):
+    monkeypatch.setattr(doctor, "check_all",
+                        lambda **kw: [doctor.Check("A", False, "缺失")])
+    assert run_doctor() == 1
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_ops_doctor.py -v`
+Expected: FAIL，`No module named 'ngr.ops.doctor'`
+
+- [ ] **Step 3: 写 `ngr/ops/doctor.py`**
+
+```python
+from __future__ import annotations
+import shutil
+from dataclasses import dataclass
+from ngr.config import load_features, load_sources
+from ngr.ops.gitio import has_manual_changes
+from ngr.paths import P
+
+@dataclass
+class Check:
+    name: str
+    ok: bool
+    detail: str = ""
+
+def _which(name: str) -> str | None:
+    return shutil.which(name)
+
+def _probe_3gpp() -> bool:
+    from ngr.fetch.client import Http
+    cfg = load_sources()
+    Http(cfg.http).get("https://www.3gpp.org/ftp/tsg_ran/")
+    return True
+
+def check_all(*, probe_network: bool = False) -> list[Check]:
+    checks: list[Check] = []
+
+    path = _which("claude")
+    checks.append(Check("claude CLI 可用", bool(path), path or "未在 PATH 中找到 claude"))
+
+    try:
+        cfg = load_sources()
+        checks.append(Check("配置 sources.yaml", True, f"{len(cfg.wgs)} 个工作组"))
+    except Exception as exc:
+        checks.append(Check("配置 sources.yaml", False, str(exc)))
+        cfg = None
+
+    try:
+        feats = load_features()
+        legacy = sum(1 for f in feats if f.has_legacy)
+        checks.append(Check("配置 features.yaml", True,
+                            f"{len(feats)} 个特性，其中 {legacy} 个有 5G-A 血统"))
+    except Exception as exc:
+        checks.append(Check("配置 features.yaml", False, str(exc)))
+
+    for label, d in [("state 目录", P.state), ("out 目录", P.out)]:
+        checks.append(Check(label, d.exists(), str(d)))
+
+    manual = has_manual_changes(P.root, ["config"])
+    checks.append(Check("config/ 无未提交改动", not manual,
+                        ", ".join(manual) if manual else "干净"))
+
+    if probe_network and cfg is not None:
+        try:
+            _probe_3gpp()
+            checks.append(Check("3GPP 站点可达", True, "HTTP 200"))
+        except Exception as exc:
+            checks.append(Check("3GPP 站点可达", False, str(exc)))
+
+    return checks
+
+def run_doctor(probe_network: bool = False) -> int:
+    checks = check_all(probe_network=probe_network)
+    for c in checks:
+        print(f"[{'OK ' if c.ok else 'FAIL'}] {c.name}: {c.detail}")
+    failed = [c for c in checks if not c.ok]
+    if failed:
+        print(f"\n{len(failed)} 项未通过")
+        return 1
+    print("\n全部通过")
+    return 0
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_ops_doctor.py -v`
+Expected: 7 passed
+
+- [ ] **Step 5: 写 `scripts/install-task.ps1`**
+
+```powershell
+# 注册每日 07:00 的计划任务。需在项目根目录下以普通用户身份运行。
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $PSScriptRoot
+$python = Join-Path $root ".venv\Scripts\python.exe"
+
+if (-not (Test-Path $python)) {
+    throw "未找到 $python，请先创建虚拟环境并安装依赖"
+}
+
+$cmd = "cd '$root'; & '$python' -m ngr run"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -WindowStyle Hidden -Command `"$cmd`""
+$trigger = New-ScheduledTaskTrigger -Daily -At 7:00am
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable `
+    -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 3)
+
+Register-ScheduledTask -TaskName "NGR_Spec" -Action $action -Trigger $trigger `
+    -Settings $settings -Description "6G RAN 进展跟踪：每日抓取与渲染" -Force
+
+Write-Host "已注册计划任务 NGR_Spec（每日 07:00）"
+Write-Host "手动触发一次： Start-ScheduledTask -TaskName NGR_Spec"
+Write-Host "查看上次结果： Get-ScheduledTaskInfo -TaskName NGR_Spec"
+```
+
+`-StartWhenAvailable` 很重要：笔记本 07:00 常在休眠，没有这个参数当天就整场跳过。
+
+- [ ] **Step 6: 自检并试跑**
+
+```bash
+.venv/Scripts/python.exe -m ngr doctor
+```
+
+Expected: 全部通过。若 `claude CLI 可用` 失败，确认 `claude` 在 PATH 中。
+
+- [ ] **Step 7: 首次回填（先不花额度）**
+
+```bash
+.venv/Scripts/python.exe -m ngr backfill --wg RAN1 --from 124 --to 127 --no-llm
+.venv/Scripts/python.exe -m ngr lineage-report
+```
+
+对着血统报告检查：**每个 6G 血统段都应有命中**。有命中为 0 的段就去调 `config/features.yaml` 的锚点，然后 `ngr remap` 重看 —— 这一步不联网、不花额度，可以反复来。
+
+- [ ] **Step 8: 回填 5G-A 血统段并校准正则**
+
+```bash
+.venv/Scripts/python.exe -m ngr backfill --wg RAN1 --from 112 --to 123 --no-llm
+.venv/Scripts/python.exe -m ngr lineage-report > lineage.txt
+```
+
+这一步耗时最长（十几次会议、每次一份约 1 MB 的 docx，按 0.5 s 间隔限速）。看 `lineage.txt` 里 5G-A 各段命中的 heading 是否确实是你要的议题；不对就改 `title_re` → `ngr remap` → 再看。**反复到满意为止，然后才开 LLM。**
+
+- [ ] **Step 9: 开 LLM 跑摘要**
+
+```bash
+.venv/Scripts/python.exe -m ngr enrich
+```
+
+`max_calls_per_run=60` 会在用满后干净退出。按 spec §6.4 估算，全量回填约需 72 次调用，所以**跑两次**即可完成。第二次跑时已完成的部分走缓存，不重复消耗。
+
+跑完检查用量：
+
+把下面的内容存成 `scripts/usage.py` 后运行 `.venv/Scripts/python.exe scripts/usage.py`：
+
+```python
+import json, pathlib
+rows = [json.loads(line) for line in
+        pathlib.Path("data/state/usage_log.jsonl").read_text(encoding="utf-8").splitlines()]
+total = sum(r["cost_usd"] for r in rows)
+by_task = {}
+for r in rows:
+    by_task[r["task"]] = by_task.get(r["task"], 0.0) + r["cost_usd"]
+print(f"{len(rows)} 次调用，list 等价合计 ${total:.2f}")
+for task, cost in sorted(by_task.items(), key=lambda kv: -kv[1]):
+    print(f"  {task:16s} ${cost:.2f}")
+```
+
+提醒：订阅模式下 `cost_usd` 是按 list price 折算的**用量代理值，不是账单**。
+
+- [ ] **Step 10: 写 `README.md`**
+
+至少包含：一句话用途、安装步骤、六个命令各自什么时候用、`config/features.yaml` 怎么加特性和血统段、出问题先跑 `ngr doctor`、退出码含义表、以及"网页发布需要在 Claude Code 会话里手动要求"这条约束。
+
+- [ ] **Step 11: 装计划任务并验证**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-task.ps1
+Start-ScheduledTask -TaskName NGR_Spec
+Get-ScheduledTaskInfo -TaskName NGR_Spec     # LastTaskResult 应为 0
+```
+
+- [ ] **Step 12: 最终验收**
+
+- `.venv/Scripts/python.exe -m pytest` 全绿
+- `out/dashboard.md` 顶部无告警横幅，特性表有数据
+- 至少一个有 5G-A 血统的特性页含「5G-A 源头」一节
+- 浏览器打开 `out/site/index.html` 正常，深色模式可读
+- `git log --oneline` 能看到自动生成的进展流水账
+
+- [ ] **Step 13: Commit**
+
+```bash
+git add ngr/ops/doctor.py scripts/install-task.ps1 README.md tests/test_ops_doctor.py
+git commit -m "feat(ops): doctor 自检、计划任务安装脚本、README"
+```
+
+---
+
+### Task 22: 未归类议程项与按需深挖
+
+补齐 spec 中两项尚未实现的要求：§3.3 的 `unmapped_policy: report`（未映射的 6GR 议程项要列出来等人确认）与 §4 的按需深挖命令。
+
+**Files:**
+- Create: `ngr/mapping/unmapped.py`, `ngr/fetch/docs.py`
+- Modify: `ngr/cli.py`（加 `fetch-docs` 子命令）、`ngr/pipeline.py`（把 unmapped 传给渲染）
+- Test: `tests/test_mapping_unmapped.py`, `tests/test_fetch_docs.py`
+
+**Interfaces:**
+- Consumes: `match_event`、`parse_listing`、`Http`
+- Produces:
+  - `collect_unmapped(features, parsed_meetings, *, sixg_roots) -> list[str]`
+  - `fetch_docs(http, meeting, cfg, agenda_prefix, out_dir) -> list[Path]`
+
+- [ ] **Step 1: 写未归类收集的失败测试**
+
+```python
+# tests/test_mapping_unmapped.py
+from ngr.models import Feature, LineageSegment
+from ngr.mapping.unmapped import collect_unmapped
+
+def seg(agenda):
+    return LineageSegment(era="6G", release="Rel-20", depth="full", agenda=agenda,
+                          title_re=None, meetings={"RAN1": (124, None)})
+
+FEATS = [Feature(slug="waveform", name_zh="波形",
+                 lineage=[seg(["RAN1:10.2", "RAN1:10.2.*"])])]
+
+def parsed(events):
+    return {"wg": "RAN1", "meeting": 126, "events": events}
+
+def ev(item, title, path=None):
+    return {"kind": "agreement", "text_en": "x", "para_index": 1,
+            "agenda_item": item, "agenda_title": title,
+            "heading_path": path or ["Rel-20 Study of 6GR", title]}
+
+def test_unmapped_6g_items_are_reported():
+    out = collect_unmapped(FEATS, [parsed([ev("10.8", "ISAC")])], sixg_roots=["10"])
+    assert out == ["RAN1:10.8 ISAC"]
+
+def test_mapped_items_are_not_reported():
+    assert collect_unmapped(FEATS, [parsed([ev("10.2", "Waveform")])],
+                            sixg_roots=["10"]) == []
+
+def test_non_6g_items_are_ignored():
+    """第 9 章是 Rel-20 的 5G-A 演进，不算 6GR 未归类。"""
+    out = collect_unmapped(FEATS, [parsed([ev("9.1", "AI/ML", ["Release 20 NR", "AI/ML"])])],
+                           sixg_roots=["10"])
+    assert out == []
+
+def test_child_items_are_rolled_up_to_parent():
+    out = collect_unmapped(FEATS, [parsed([ev("10.8.1", "Evaluations"),
+                                           ev("10.8.2", "Integration")])],
+                           sixg_roots=["10"])
+    assert out == ["RAN1:10.8 (2 个子项未归类)"]
+
+def test_result_is_sorted_and_deduped():
+    out = collect_unmapped(FEATS, [parsed([ev("10.9", "NTN"), ev("10.7", "WUS"),
+                                           ev("10.9", "NTN")])],
+                           sixg_roots=["10"])
+    assert out == ["RAN1:10.7 WUS", "RAN1:10.9 NTN"]
+
+def test_events_without_agenda_item_are_skipped():
+    """5G-A 老会议没有议程号，不进未归类清单（它们靠正则归集）。"""
+    assert collect_unmapped(FEATS, [parsed([ev(None, "X", ["Rel-19", "X"])])],
+                            sixg_roots=["10"]) == []
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_mapping_unmapped.py -v`
+Expected: FAIL，`No module named 'ngr.mapping.unmapped'`
+
+- [ ] **Step 3: 写 `ngr/mapping/unmapped.py`**
+
+```python
+from __future__ import annotations
+from collections import defaultdict
+from ngr.mapping.lineage import match_event
+from ngr.models import Feature
+
+def _root_of(item: str) -> str:
+    return item.split(".")[0]
+
+def _parent_of(item: str) -> str:
+    parts = item.split(".")
+    return ".".join(parts[:2]) if len(parts) > 2 else item
+
+def collect_unmapped(features: list[Feature], parsed_meetings: list[dict],
+                     *, sixg_roots: list[str]) -> list[str]:
+    """列出 6GR 议程下没有被任何特性归集的议程项。
+    只报 6GR 根下的项 —— 第 9 章那类 Rel-20 5G-A 演进不在跟踪范围内，
+    除非用户主动为它写了血统段。"""
+    roots = set(sixg_roots)
+    missing: dict[str, tuple[str, set[str]]] = defaultdict(lambda: ("", set()))
+
+    for parsed in parsed_meetings:
+        wg, meeting = parsed["wg"], parsed["meeting"]
+        for raw in parsed["events"]:
+            item = raw.get("agenda_item")
+            if not item or _root_of(item) not in roots:
+                continue
+            if match_event(features, wg, meeting, item, raw.get("heading_path") or []):
+                continue
+            parent = _parent_of(item)
+            key = f"{wg}:{parent}"
+            title, children = missing[key]
+            children.add(item)
+            missing[key] = (title or raw.get("agenda_title", ""), children)
+
+    out = []
+    for key in sorted(missing):
+        title, children = missing[key]
+        if len(children) > 1:
+            out.append(f"{key} ({len(children)} 个子项未归类)")
+        else:
+            out.append(f"{key} {title}".rstrip())
+    return out
+```
+
+- [ ] **Step 4: 写按需深挖的失败测试**
+
+```python
+# tests/test_fetch_docs.py
+import io, zipfile
+from unittest.mock import Mock
+from ngr.config import WgConfig
+from ngr.models import Meeting
+from ngr.fetch.docs import fetch_docs
+
+WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)", hard_floor=112,
+              agenda_csv_since=124, artifacts=[])
+MTG = Meeting(wg="RAN1", number=127, suffix="",
+              url="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_127/")
+
+def make_zip(name: str, body: bytes) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr(name, body)
+    return buf.getvalue()
+
+def docx_bytes(text: str) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("word/document.xml",
+            '<?xml version="1.0"?><w:document '
+            'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            f'<w:body><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>')
+    return buf.getvalue()
+
+def _http(listing_names, files):
+    http = Mock()
+    base = MTG.url + "Docs/"
+    def get(url):
+        if url == base:
+            return b"".join(f'<a href="{base}{n}">{n}</a>'.encode() for n in listing_names)
+        return files[url]
+    http.get.side_effect = get
+    return http
+
+def test_downloads_only_matching_agenda_items(tmp_path):
+    base = MTG.url + "Docs/"
+    tdocs = {"R1-2700001.zip": "10.2", "R1-2700002.zip": "10.8"}
+    files = {base + n: make_zip(n.replace(".zip", ".docx"), docx_bytes("body"))
+             for n in tdocs}
+    http = _http(list(tdocs), files)
+    got = fetch_docs(http, MTG, WG, agenda_prefix="10.2",
+                     out_dir=tmp_path, tdoc_agenda=tdocs)
+    assert len(got) == 1 and "R1-2700001" in got[0].name
+
+def test_extracts_text_from_zip(tmp_path):
+    base = MTG.url + "Docs/"
+    tdocs = {"R1-2700001.zip": "10.2"}
+    files = {base + "R1-2700001.zip":
+             make_zip("R1-2700001.docx", docx_bytes("Proposal 1 text"))}
+    http = _http(list(tdocs), files)
+    got = fetch_docs(http, MTG, WG, agenda_prefix="10.2",
+                     out_dir=tmp_path, tdoc_agenda=tdocs)
+    assert "Proposal 1 text" in got[0].read_text(encoding="utf-8")
+
+def test_skips_already_downloaded(tmp_path):
+    base = MTG.url + "Docs/"
+    tdocs = {"R1-2700001.zip": "10.2"}
+    files = {base + "R1-2700001.zip":
+             make_zip("R1-2700001.docx", docx_bytes("x"))}
+    fetch_docs(_http(list(tdocs), files), MTG, WG, agenda_prefix="10.2",
+               out_dir=tmp_path, tdoc_agenda=tdocs)
+    http2 = _http(list(tdocs), files)
+    fetch_docs(http2, MTG, WG, agenda_prefix="10.2",
+               out_dir=tmp_path, tdoc_agenda=tdocs)
+    assert all("R1-2700001.zip" not in c.args[0] for c in http2.get.call_args_list)
+
+def test_returns_empty_when_no_match(tmp_path):
+    base = MTG.url + "Docs/"
+    tdocs = {"R1-2700001.zip": "10.2"}
+    files = {base + "R1-2700001.zip": make_zip("a.docx", docx_bytes("x"))}
+    got = fetch_docs(_http(list(tdocs), files), MTG, WG, agenda_prefix="10.9",
+                     out_dir=tmp_path, tdoc_agenda=tdocs)
+    assert got == []
+```
+
+- [ ] **Step 5: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_docs.py -v`
+Expected: FAIL，`No module named 'ngr.fetch.docs'`
+
+- [ ] **Step 6: 写 `ngr/fetch/docs.py`**
+
+```python
+from __future__ import annotations
+import io, logging, zipfile
+from pathlib import Path
+from ngr.config import WgConfig
+from ngr.fetch.listing import parse_listing
+from ngr.models import Meeting
+from ngr.parse.docx import parse_docx
+
+log = logging.getLogger(__name__)
+
+def _matches(agenda_item: str | None, prefix: str) -> bool:
+    if not agenda_item:
+        return False
+    return agenda_item == prefix or agenda_item.startswith(prefix + ".")
+
+def fetch_docs(http, meeting: Meeting, cfg: WgConfig, *, agenda_prefix: str,
+               out_dir: Path, tdoc_agenda: dict[str, str]) -> list[Path]:
+    """按需深挖：只下载指定议程项下的 TDoc 正文，解压抽文本存盘。
+
+    日常定时任务绝不走这条路径 —— 单次 RAN1 会议有 1700+ 个 zip。
+    tdoc_agenda 把文件名映射到议程项，由调用方从会议文稿清单构造。
+    """
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    docs_url = meeting.url + "Docs/"
+    names = parse_listing(http.get(docs_url), docs_url)
+
+    written: list[Path] = []
+    for name in names:
+        if not _matches(tdoc_agenda.get(name), agenda_prefix):
+            continue
+        target = out_dir / (name.removesuffix(".zip") + ".txt")
+        if target.exists():
+            continue
+        try:
+            blob = http.get(docs_url + name)
+            with zipfile.ZipFile(io.BytesIO(blob)) as z:
+                docx_names = [n for n in z.namelist() if n.lower().endswith(".docx")]
+                if not docx_names:
+                    continue
+                doc = parse_docx(z.read(docx_names[0]))
+            target.write_text("\n".join(doc.paragraphs), encoding="utf-8")
+            written.append(target)
+        except (zipfile.BadZipFile, KeyError) as exc:
+            log.warning("%s 解压失败: %s", name, exc)
+    return written
+```
+
+- [ ] **Step 7: 接进 CLI 与管线**
+
+在 `ngr/cli.py` 里加子命令：
+
+```python
+    p_docs = sub.add_parser("fetch-docs", help="按需深挖：下载指定议程项的 TDoc 正文")
+    p_docs.add_argument("--wg", required=True)
+    p_docs.add_argument("--meeting", type=int, required=True)
+    p_docs.add_argument("--agenda", required=True, help="议程项前缀，如 10.2")
+```
+
+在 `main()` 的分支里加：
+
+```python
+        elif args.cmd == "fetch-docs":
+            from ngr.pipeline import run_fetch_docs
+            n = run_fetch_docs(wg=args.wg, meeting=args.meeting, agenda=args.agenda)
+            logging.info("已下载 %d 篇文稿正文", n)
+            return EXIT_OK
+```
+
+在 `ngr/pipeline.py` 末尾加：
+
+```python
+def run_fetch_docs(*, wg: str, meeting: int, agenda: str) -> int:
+    """从已抓取的 docs_listing.html 取文件名，按议程项过滤后下载正文。
+
+    议程项映射来自纪要里每篇文稿的归属；当前实现按 TDoc 号在纪要正文中
+    出现的位置推断其议程项 —— 这对深挖场景足够，不追求 100% 准确。
+    """
+    from ngr.fetch.docs import fetch_docs
+    cfg = load_sources()
+    wgcfg = cfg.wgs[wg]
+    http = Http(cfg.http)
+    mtg = next(m for m in discover_meetings(http, wg, wgcfg) if m.number == meeting)
+
+    payload = _load_json(P.parsed_dir(wg, meeting) / "events.json", {})
+    tdoc_agenda: dict[str, str] = {}
+    for ev in payload.get("events", []):
+        item = ev.get("agenda_item")
+        if not item:
+            continue
+        for token in ev["text_en"].split():
+            token = token.strip("(),.;:[]")
+            if token.startswith(("R1-", "R2-", "R3-", "R4-")):
+                tdoc_agenda.setdefault(token + ".zip", item)
+
+    written = fetch_docs(http, mtg, wgcfg, agenda_prefix=agenda,
+                         out_dir=P.raw_dir(wg, meeting) / "docs",
+                         tdoc_agenda=tdoc_agenda)
+    return len(written)
+```
+
+在 `run_pipeline` 的渲染调用前加入未归类收集：
+
+```python
+    from ngr.mapping.unmapped import collect_unmapped
+    parsed_all = [_load_json(p, {}) for p in sorted(P.parsed.rglob("events.json"))]
+    sixg_roots = ["10"]        # 与 features.yaml 中 6G 段的议程根一致
+    unmapped = collect_unmapped(features, [p for p in parsed_all if p], sixg_roots=sixg_roots)
+```
+
+并把 `unmapped=unmapped` 传给 `render_all`（`run_pipeline_remap` 里同样处理）。
+
+- [ ] **Step 8: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_mapping_unmapped.py tests/test_fetch_docs.py -v`
+Expected: 10 passed
+
+- [ ] **Step 9: 跑全部测试**
+
+Run: `.venv/Scripts/python.exe -m pytest -v`
+Expected: 全绿
+
+- [ ] **Step 10: 验证未归类清单真的出现在看板上**
+
+```bash
+.venv/Scripts/python.exe -m ngr remap
+```
+
+打开 `out/dashboard.md`，应能看到「⚠️ 待归类议程项」一节，列出 6GR 议程下你还没写进 `features.yaml` 的议题（如 NTN、WUS、多载波等）。逐个决定加不加特性，加完 `ngr remap` 重看。
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add ngr/mapping/unmapped.py ngr/fetch/docs.py ngr/cli.py ngr/pipeline.py tests/test_mapping_unmapped.py tests/test_fetch_docs.py
+git commit -m "feat: 未归类议程项收集与按需深挖命令"
+```
+
+---
+
+## 计划自检结论
+
+**spec 覆盖**：§1–§10 全部有对应任务。§3.3 `unmapped_policy` 与 §4 按需深挖由 Task 22 补齐（首次自检时发现的缺口）。
+
+**一个贯穿全程的约束**（spec §6.3 优化 3，实现时别丢）：`extract` 阶段必须在单次进程内连续跑完，落在同一个 1 小时 ephemeral 缓存窗口里 —— 每次 `claude -p` 有约 16K token 的固定开销，跨窗口跑就是重复付。`run_pipeline` 与 `run_pipeline_enrich` 天然满足；**不要把 extract 拆成多次独立调用**。
+
+**任务依赖链**：1 → 2 → 3 →（4 → 5 → 6）→（7 → 8 → 9 → 10 → 11）→（12 → 13）→（14 → 15）→（16 → 17 → 18）→（19 → 20）→ 21 → 22。括号内为同一 Phase，需顺序执行。
+
+**两个可交付里程碑**：Task 13（事件入库）、Task 15（看板可读，工具已有用）。
+
