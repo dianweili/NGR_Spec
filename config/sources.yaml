@@ -4,9 +4,18 @@
 # 字段说明：
 #   path              相对 https://www.3gpp.org/ftp/ 的工作组根目录（末尾不带斜杠）
 #   dir_re            该工作组下会议目录名的正则，捕获组1=会议号，捕获组2=后缀（b/bis/-e等）
+#                     ⚠️ 不是全量兼容：2026-09-17 实测各组根目录，未匹配条目为
+#                        RAN1 TSGR1_100b_e / RAN2 - / RAN3 TSGR3_107-cancelled /
+#                        RAN4 TSGR4_57AH,58AH,59AH,94_eBis（另各组有一个 *_AH/_AHs/_AHGs 容器目录，
+#                        它不是会议目录，不匹配是正确行为）。带编号的这些全部低于各组 hard_floor，
+#                        当前取数范围内无影响。若将来下调任一组 hard_floor，必须重跑这个匹配检查。
 #   hard_floor        硬下限会议号：血统段的 meetings 区间再怎么配置也不得回溯到此之前
 #   agenda_csv_since  从这次会议号起，Agenda/ 目录下确认存在 agenda.csv（实测边界，见下）；
 #                      早于此值的会议一律退到 title_re 锚定，fetch 层也不应尝试拉取 agenda.csv
+#                     ⚠️ 低于该值的会议有两种形态，fetch 层都要容忍，不得当异常抛出或退避重试：
+#                        (a) Agenda/ 存在但没有 agenda.csv（如 RAN1 #120、#123）；
+#                        (b) 该会议压根没有 Agenda 子目录，直接 403（实测 RAN1 #118/#119/#121/#122，
+#                            四次会议根目录均 200 且只有 Docs/Inbox/Invitation/LS/Report）。
 #   artifacts         每次会议固定抓取的产物种类
 #                     ⚠️ minutes_docx 不等于"目录里一定有 .docx"：2026-09-17 实测 RAN1 #112–#122 的纪要
 #                        全部以 zip 包裹分发（Final_Minutes_report_RAN1#<n>_v100.zip），#126 才是裸 .docx。
