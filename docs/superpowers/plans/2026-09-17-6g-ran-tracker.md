@@ -425,4 +425,294 @@ git commit -m "feat: 项目骨架、路径单例与数据模型"
 
 ---
 
+### Task 3: 配置加载与校验
+
+配置写错必须在启动时炸，而不是跑到一半才发现血统区间是空的。
+
+**Files:**
+- Create: `ngr/config.py`, `config/features.yaml`
+- Test: `tests/test_config.py`
+
+**Interfaces:**
+- Consumes: `ngr.models.{LineageSegment, Feature}`
+- Produces:
+  - `load_sources(path=None) -> SourcesConfig`，含 `.wgs: dict[str, WgConfig]`、`.http: HttpConfig`、`.extract: ExtractConfig`
+  - `load_features(path=None) -> list[Feature]`
+  - `ConfigError(Exception)`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_config.py
+import pytest, textwrap
+from ngr.config import load_sources, load_features, ConfigError
+
+def write(tmp_path, name, body):
+    p = tmp_path / name
+    p.write_text(textwrap.dedent(body), encoding="utf-8")
+    return p
+
+SOURCES_OK = """
+    sources:
+      RAN1:
+        path: tsg_ran/WG1_RL1
+        dir_re: 'TSGR1_(\\d+)([a-z]*)'
+        hard_floor: 112
+        agenda_csv_since: 124
+        artifacts: [agenda_csv, minutes_docx]
+    http:
+      user_agent: "UA"
+      concurrency: 2
+      delay_seconds: 0.5
+      retry_backoff: [2, 8, 30]
+      timeout: { connect: 10, read: 300 }
+    extract:
+      backend: cli
+      max_calls_per_run: 60
+      batch_size: 40
+      model_bulk: sonnet
+      model_digest: opus
+"""
+
+def test_load_sources(tmp_path):
+    cfg = load_sources(write(tmp_path, "s.yaml", SOURCES_OK))
+    assert cfg.wgs["RAN1"].hard_floor == 112
+    assert cfg.http.concurrency == 2
+    assert cfg.extract.batch_size == 40
+
+def test_sources_rejects_unknown_backend(tmp_path):
+    bad = SOURCES_OK.replace("backend: cli", "backend: api")
+    with pytest.raises(ConfigError, match="backend"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+FEATURES_OK = """
+    features:
+      - slug: isac
+        name_zh: ISAC 通感一体
+        lineage:
+          - era: 5G-A
+            release: Rel-19
+            anchor: { title_re: "(?i)ISAC" }
+            meetings: { RAN1: [116, 126] }
+            depth: origin
+          - era: 6G
+            release: Rel-20
+            anchor: { agenda: ["RAN1:10.8", "RAN1:10.8.*"] }
+            meetings: { RAN1: [124, null] }
+            depth: full
+    default_depth: origin
+"""
+
+def test_load_features(tmp_path):
+    feats = load_features(write(tmp_path, "f.yaml", FEATURES_OK))
+    assert len(feats) == 1
+    f = feats[0]
+    assert f.slug == "isac" and f.has_legacy
+    assert f.lineage[1].meetings["RAN1"] == (124, None)
+    assert f.lineage[0].depth == "origin"
+
+def test_features_rejects_bad_depth(tmp_path):
+    bad = FEATURES_OK.replace("depth: origin", "depth: deep")
+    with pytest.raises(ConfigError, match="depth"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+def test_features_rejects_segment_with_no_anchor(tmp_path):
+    bad = FEATURES_OK.replace('anchor: { title_re: "(?i)ISAC" }', "anchor: {}")
+    with pytest.raises(ConfigError, match="anchor"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+def test_features_rejects_invalid_regex(tmp_path):
+    bad = FEATURES_OK.replace('"(?i)ISAC"', '"(?i)ISAC("')
+    with pytest.raises(ConfigError, match="正则"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+def test_features_rejects_duplicate_slug(tmp_path):
+    bad = FEATURES_OK + FEATURES_OK.split("features:")[1]
+    with pytest.raises(ConfigError, match="slug"):
+        load_features(write(tmp_path, "f.yaml", bad))
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_config.py -v`
+Expected: FAIL，`No module named 'ngr.config'`
+
+- [ ] **Step 3: 写 `ngr/config.py`**
+
+```python
+from __future__ import annotations
+import re
+from dataclasses import dataclass
+from pathlib import Path
+import yaml
+from ngr.models import Feature, LineageSegment
+from ngr.paths import P
+
+VALID_DEPTHS = {"full", "origin", "milestone"}
+VALID_BACKENDS = {"cli", "none"}
+
+class ConfigError(Exception):
+    pass
+
+@dataclass(frozen=True)
+class WgConfig:
+    path: str
+    dir_re: str
+    hard_floor: int
+    agenda_csv_since: int | None
+    artifacts: list[str]
+
+@dataclass(frozen=True)
+class HttpConfig:
+    user_agent: str
+    concurrency: int
+    delay_seconds: float
+    retry_backoff: list[int]
+    connect_timeout: float
+    read_timeout: float
+
+@dataclass(frozen=True)
+class ExtractConfig:
+    backend: str
+    max_calls_per_run: int
+    batch_size: int
+    model_bulk: str
+    model_digest: str
+
+@dataclass(frozen=True)
+class SourcesConfig:
+    wgs: dict[str, WgConfig]
+    http: HttpConfig
+    extract: ExtractConfig
+
+def _require(d: dict, key: str, where: str):
+    if key not in d:
+        raise ConfigError(f"{where} 缺少必填项 '{key}'")
+    return d[key]
+
+def load_sources(path: Path | None = None) -> SourcesConfig:
+    path = path or P.config / "sources.yaml"
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+
+    wgs = {}
+    for name, raw in _require(data, "sources", "sources.yaml").items():
+        where = f"sources.{name}"
+        try:
+            re.compile(_require(raw, "dir_re", where))
+        except re.error as exc:
+            raise ConfigError(f"{where}.dir_re 不是合法正则: {exc}") from exc
+        wgs[name] = WgConfig(
+            path=_require(raw, "path", where),
+            dir_re=raw["dir_re"],
+            hard_floor=int(_require(raw, "hard_floor", where)),
+            agenda_csv_since=raw.get("agenda_csv_since"),
+            artifacts=list(_require(raw, "artifacts", where)),
+        )
+    if not wgs:
+        raise ConfigError("sources.yaml 未定义任何工作组")
+
+    h = _require(data, "http", "sources.yaml")
+    http = HttpConfig(
+        user_agent=_require(h, "user_agent", "http"),
+        concurrency=int(h.get("concurrency", 2)),
+        delay_seconds=float(h.get("delay_seconds", 0.5)),
+        retry_backoff=list(h.get("retry_backoff", [2, 8, 30])),
+        connect_timeout=float(h.get("timeout", {}).get("connect", 10)),
+        read_timeout=float(h.get("timeout", {}).get("read", 300)),
+    )
+    if "Mozilla" not in http.user_agent:
+        raise ConfigError("http.user_agent 必须伪装浏览器，否则 3GPP 返回 403")
+
+    e = _require(data, "extract", "sources.yaml")
+    backend = _require(e, "backend", "extract")
+    if backend not in VALID_BACKENDS:
+        raise ConfigError(f"extract.backend 只能是 {sorted(VALID_BACKENDS)}，得到 '{backend}'")
+    extract = ExtractConfig(
+        backend=backend,
+        max_calls_per_run=int(e.get("max_calls_per_run", 60)),
+        batch_size=int(e.get("batch_size", 40)),
+        model_bulk=e.get("model_bulk", "sonnet"),
+        model_digest=e.get("model_digest", "opus"),
+    )
+    return SourcesConfig(wgs=wgs, http=http, extract=extract)
+
+def _parse_segment(raw: dict, where: str, default_depth: str) -> LineageSegment:
+    anchor = raw.get("anchor") or {}
+    agenda = list(anchor.get("agenda", []))
+    title_re = anchor.get("title_re")
+    if not agenda and not title_re:
+        raise ConfigError(f"{where}.anchor 必须至少给出 agenda 或 title_re 之一")
+    if title_re:
+        try:
+            re.compile(title_re)
+        except re.error as exc:
+            raise ConfigError(f"{where}.anchor.title_re 不是合法正则: {exc}") from exc
+
+    depth = raw.get("depth", default_depth)
+    if depth not in VALID_DEPTHS:
+        raise ConfigError(f"{where}.depth 只能是 {sorted(VALID_DEPTHS)}，得到 '{depth}'")
+
+    meetings_raw = _require(raw, "meetings", where)
+    meetings: dict[str, tuple[int, int | None]] = {}
+    for wg, rng in meetings_raw.items():
+        if not isinstance(rng, list) or len(rng) != 2:
+            raise ConfigError(f"{where}.meetings.{wg} 必须是 [起, 止] 两元列表，止可为 null")
+        lo, hi = rng
+        if hi is not None and int(hi) < int(lo):
+            raise ConfigError(f"{where}.meetings.{wg} 区间倒置: [{lo}, {hi}]")
+        meetings[wg] = (int(lo), None if hi is None else int(hi))
+    if not meetings:
+        raise ConfigError(f"{where}.meetings 不能为空")
+
+    return LineageSegment(
+        era=_require(raw, "era", where), release=_require(raw, "release", where),
+        depth=depth, agenda=agenda, title_re=title_re, meetings=meetings,
+    )
+
+def load_features(path: Path | None = None) -> list[Feature]:
+    path = path or P.config / "features.yaml"
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    default_depth = data.get("default_depth", "origin")
+    if default_depth not in VALID_DEPTHS:
+        raise ConfigError(f"default_depth 只能是 {sorted(VALID_DEPTHS)}")
+
+    feats, seen = [], set()
+    for i, raw in enumerate(_require(data, "features", "features.yaml")):
+        slug = _require(raw, "slug", f"features[{i}]")
+        if slug in seen:
+            raise ConfigError(f"重复的特性 slug: '{slug}'")
+        seen.add(slug)
+        segs_raw = _require(raw, "lineage", f"features[{slug}]")
+        if not segs_raw:
+            raise ConfigError(f"features[{slug}].lineage 不能为空")
+        segs = [_parse_segment(s, f"features[{slug}].lineage[{j}]", default_depth)
+                for j, s in enumerate(segs_raw)]
+        feats.append(Feature(slug=slug, name_zh=_require(raw, "name_zh", f"features[{slug}]"),
+                             lineage=segs))
+    return feats
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_config.py -v`
+Expected: 7 passed
+
+- [ ] **Step 5: 写首版 `config/features.yaml`**
+
+用 spec §3.3 的示例作为起点，但 **5G-A 段的 `title_re` 必须改用 Task 1 Step 4 侦察到的真实 heading 文本**，不要照抄 spec 里的推测值。首版先只写 `waveform`、`channel_coding`、`isac`、`ai_air_interface` 四个特性 —— 其余等 Task 13 的 `lineage-report` 跑出来看到未归类清单后再补。
+
+- [ ] **Step 6: 验证真实配置能加载**
+
+Run: `.venv/Scripts/python.exe -c "from ngr.config import load_sources, load_features; s=load_sources(); f=load_features(); print(len(s.wgs), '个工作组,', len(f), '个特性')"`
+Expected: 打印工作组数与特性数，无异常
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add ngr/config.py config/features.yaml tests/test_config.py
+git commit -m "feat: 配置加载与校验"
+```
+
+---
+
 <!-- APPEND-HERE -->
