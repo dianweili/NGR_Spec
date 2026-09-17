@@ -4762,4 +4762,425 @@ git commit -m "feat(ops): 告警横幅、心跳检查、自动提交"
 
 ---
 
+### Task 20: CLI 命令面与退出码
+
+**Files:**
+- Create: `ngr/cli.py`, `ngr/pipeline.py`
+- Test: `tests/test_cli.py`
+
+**Interfaces:**
+- Consumes: 前面全部模块
+- Produces:
+  - `main(argv=None) -> int`
+  - `run_pipeline(*, wgs=None, use_llm=True, force=False, meetings=None) -> PipelineResult`
+  - `PipelineResult`：`.exit_code` `.alerts` `.new_events` `.llm_calls` `.stats_by_meeting`
+  - 退出码常量 `EXIT_OK=0` `EXIT_PARSE=2` `EXIT_LLM=3` `EXIT_GIT=4`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_cli.py
+import pytest
+from ngr import cli
+from ngr.cli import main, EXIT_OK, EXIT_PARSE, EXIT_LLM, EXIT_GIT
+from ngr.parse.runner import ParseError
+
+class FakeResult:
+    def __init__(self, **kw):
+        self.exit_code = kw.get("exit_code", EXIT_OK)
+        self.alerts = kw.get("alerts", [])
+        self.new_events = kw.get("new_events", 0)
+        self.llm_calls = kw.get("llm_calls", 0)
+        self.stats_by_meeting = kw.get("stats_by_meeting", {})
+
+def test_run_returns_zero_on_success(monkeypatch):
+    monkeypatch.setattr(cli, "run_pipeline", lambda **kw: FakeResult())
+    assert main(["run"]) == EXIT_OK
+
+def test_run_no_llm_flag_disables_llm(monkeypatch):
+    seen = {}
+    def fake(**kw): seen.update(kw); return FakeResult()
+    monkeypatch.setattr(cli, "run_pipeline", fake)
+    main(["run", "--no-llm"])
+    assert seen["use_llm"] is False
+
+def test_run_defaults_to_llm_enabled(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_pipeline", lambda **kw: seen.update(kw) or FakeResult())
+    main(["run"])
+    assert seen["use_llm"] is True
+
+def test_parse_error_exits_two(monkeypatch):
+    def boom(**kw): raise ParseError("模板变了")
+    monkeypatch.setattr(cli, "run_pipeline", boom)
+    assert main(["run"]) == EXIT_PARSE
+
+def test_llm_rate_limit_exits_three(monkeypatch):
+    monkeypatch.setattr(cli, "run_pipeline",
+                        lambda **kw: FakeResult(exit_code=EXIT_LLM))
+    assert main(["run"]) == EXIT_LLM
+
+def test_manual_config_changes_exit_four(monkeypatch):
+    monkeypatch.setattr(cli, "run_pipeline",
+                        lambda **kw: FakeResult(exit_code=EXIT_GIT,
+                                                alerts=["config/features.yaml 有手工改动"]))
+    assert main(["run"]) == EXIT_GIT
+
+def test_backfill_passes_meeting_range(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_pipeline", lambda **kw: seen.update(kw) or FakeResult())
+    main(["backfill", "--wg", "RAN1", "--from", "112", "--to", "127"])
+    assert seen["wgs"] == ["RAN1"] and seen["meetings"] == (112, 127)
+
+def test_remap_skips_fetch_and_llm(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_remap", lambda **kw: seen.update(kw) or FakeResult())
+    assert main(["remap"]) == EXIT_OK
+    assert seen == {}
+
+def test_lineage_report_prints(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "build_lineage_report", lambda: "# 血统命中对照表\n- x")
+    assert main(["lineage-report"]) == EXIT_OK
+    assert "血统命中对照表" in capsys.readouterr().out
+
+def test_enrich_runs_llm_only(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_enrich", lambda **kw: seen.update(kw) or FakeResult())
+    assert main(["enrich"]) == EXIT_OK
+
+def test_doctor_returns_its_own_code(monkeypatch):
+    monkeypatch.setattr(cli, "run_doctor", lambda: 1)
+    assert main(["doctor"]) == 1
+
+def test_unknown_command_errors():
+    with pytest.raises(SystemExit):
+        main(["nonsense"])
+
+def test_no_command_shows_help(capsys):
+    with pytest.raises(SystemExit):
+        main([])
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_cli.py -v`
+Expected: FAIL，`No module named 'ngr.cli'`
+
+- [ ] **Step 3: 写 `ngr/pipeline.py`**
+
+```python
+from __future__ import annotations
+import json, logging, time
+from collections import defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path
+from ngr.config import load_features, load_sources
+from ngr.extract.backend import ClaudeCli
+from ngr.extract.budget import Budget
+from ngr.extract.cache import LlmCache
+from ngr.extract.digest import digest_features
+from ngr.extract.runner import extract_all
+from ngr.fetch.client import Http, RateLimited
+from ngr.fetch.discover import discover_meetings, fetch_window
+from ngr.fetch.manifest import Manifest
+from ngr.fetch.runner import fetch_meeting
+from ngr.mapping.runner import map_meeting, merge_events, write_state
+from ngr.parse.runner import ParseError, parse_meeting, write_parsed
+from ngr.ops.alerts import RunRecord, append_run, build_banner, load_runs
+from ngr.ops.gitio import build_commit_message, commit_outputs, has_manual_changes
+from ngr.paths import P
+from ngr.render.runner import render_all
+
+log = logging.getLogger(__name__)
+EXIT_OK, EXIT_PARSE, EXIT_LLM, EXIT_GIT = 0, 2, 3, 4
+GUARDED = ["config"]
+FREEZE_LAG = 2      # 落后最新会议 2 场以上且已成功解析 → 冻结
+
+@dataclass
+class PipelineResult:
+    exit_code: int = EXIT_OK
+    alerts: list[str] = field(default_factory=list)
+    new_events: int = 0
+    llm_calls: int = 0
+    stats_by_meeting: dict = field(default_factory=dict)
+
+def _load_json(path: Path, default):
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return default
+
+def run_pipeline(*, wgs=None, use_llm=True, force=False,
+                 meetings: tuple[int, int] | None = None) -> PipelineResult:
+    started = time.time()
+    cfg = load_sources()
+    features = load_features()
+    res = PipelineResult()
+
+    manual = has_manual_changes(P.root, GUARDED)
+    if manual:
+        res.alerts.append(f"{', '.join(manual)} 有未提交的手工改动，已跳过自动提交")
+        res.exit_code = EXIT_GIT
+
+    http = Http(cfg.http)
+    events = _load_json(P.state / "events.json", [])
+    today = time.strftime("%Y-%m-%d")
+    stats_by_meeting: dict = defaultdict(lambda: defaultdict(int))
+
+    for wg, wgcfg in cfg.wgs.items():
+        if wgs and wg not in wgs:
+            continue
+        window = fetch_window(features, wg, wgcfg)
+        if window is None:
+            continue
+        lo, hi = meetings if meetings else window
+
+        try:
+            all_meetings = discover_meetings(http, wg, wgcfg)
+        except RateLimited as exc:
+            res.alerts.append(f"{wg} 会议发现被限流: {exc}")
+            continue
+
+        latest = max((m.number for m in all_meetings), default=0)
+        for mtg in all_meetings:
+            if mtg.number < lo or (hi is not None and mtg.number > hi):
+                continue
+            raw_dir = P.raw_dir(wg, mtg.number)
+            try:
+                fetched = fetch_meeting(http, mtg, wgcfg, raw_dir=raw_dir, force=force)
+            except RateLimited as exc:
+                res.alerts.append(f"{mtg.label} 抓取被限流: {exc}")
+                continue
+            if fetched.skipped_reason == "frozen":
+                continue
+            if "minutes_docx" in fetched.missing:
+                continue          # 会议尚未上传纪要，属正常
+
+            agenda_required = (wgcfg.agenda_csv_since is not None
+                               and mtg.number >= wgcfg.agenda_csv_since)
+            parsed = parse_meeting(raw_dir, mtg, agenda_required=agenda_required)
+            write_parsed(parsed, P.parsed_dir(wg, mtg.number))
+
+            payload = _load_json(P.parsed_dir(wg, mtg.number) / "events.json", {})
+            incoming = map_meeting(payload, features)
+            events, stats = merge_events(events, incoming, today=today)
+            res.new_events += stats.added
+            for ev in incoming:
+                if stats.added:
+                    stats_by_meeting[(wg, mtg.number)][ev.feature] += 1
+
+            if mtg.number <= latest - FREEZE_LAG:
+                man = Manifest(raw_dir); man.mark_frozen(); man.save()
+
+    feat_state = _load_json(P.state / "features_state.json", {})
+    if use_llm and cfg.extract.backend == "cli":
+        budget = Budget(cfg.extract.max_calls_per_run)
+        cache = LlmCache(P.state / "llm_cache")
+        factory = lambda model, effort: ClaudeCli(model, effort)
+        ex = extract_all(events, cfg.extract, cli_factory=factory,
+                         cache=cache, budget=budget)
+        feat_state = digest_features(features, events, feat_state, cfg.extract,
+                                     cli_factory=factory, cache=cache, budget=budget)
+        budget.log(P.state / "usage_log.jsonl")
+        res.llm_calls = budget.calls
+        if ex.rate_limited:
+            res.alerts.append("LLM 额度受限，部分摘要未完成，下次运行自动补")
+            res.exit_code = max(res.exit_code, EXIT_LLM)
+        if ex.failed:
+            res.alerts.append(f"{ex.failed} 条摘要生成失败，事件本身已入库")
+
+    write_state(events, P.state / "events.json")
+    (P.state / "features_state.json").write_text(
+        json.dumps(feat_state, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8")
+
+    runs = load_runs(P.state / "run_history.json")
+    banner = build_banner(res.alerts, runs, today)
+    render_all(events, features, feat_state, P.out, banner=banner)
+
+    res.stats_by_meeting = {k: dict(v) for k, v in stats_by_meeting.items()}
+    if not manual and res.new_events:
+        commit_outputs(P.root, ["data/state", "out"],
+                       build_commit_message(res.stats_by_meeting))
+
+    append_run(P.state / "run_history.json",
+               RunRecord(started=time.strftime("%Y-%m-%dT%H:%M:%S"),
+                         duration_s=round(time.time() - started, 1),
+                         new_events=res.new_events, llm_calls=res.llm_calls,
+                         exit_code=res.exit_code, message="; ".join(res.alerts)))
+    return res
+```
+
+- [ ] **Step 4: 写 `ngr/cli.py`**
+
+```python
+from __future__ import annotations
+import argparse, logging, sys, time
+from ngr.config import load_features
+from ngr.mapping.report import lineage_report
+from ngr.ops.doctor import run_doctor
+from ngr.parse.runner import ParseError
+from ngr.paths import P
+from ngr.pipeline import (EXIT_GIT, EXIT_LLM, EXIT_OK, EXIT_PARSE,
+                          PipelineResult, run_pipeline)
+
+def _setup_logging() -> None:
+    P.logs.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stderr),
+                  logging.FileHandler(P.logs / f"ngr-{time.strftime('%Y-%m-%d')}.log",
+                                      encoding="utf-8")])
+
+def run_remap(**kwargs) -> PipelineResult:
+    """只重跑 map + render：不联网、不调 LLM。改完 features.yaml 后用它。"""
+    from ngr.pipeline import run_pipeline_remap
+    return run_pipeline_remap(**kwargs)
+
+def run_enrich(**kwargs) -> PipelineResult:
+    """只补跑 extract：给积压的待摘要事件补摘要。"""
+    from ngr.pipeline import run_pipeline_enrich
+    return run_pipeline_enrich(**kwargs)
+
+def build_lineage_report() -> str:
+    import json
+    features = load_features()
+    parsed = []
+    for path in sorted(P.parsed.rglob("events.json")):
+        parsed.append(json.loads(path.read_text(encoding="utf-8")))
+    return lineage_report(features, parsed)
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="ngr", description="6G RAN 进展跟踪")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_run = sub.add_parser("run", help="抓取→解析→归集→摘要→渲染→提交")
+    p_run.add_argument("--no-llm", action="store_true", help="跳过 LLM，零额度消耗")
+    p_run.add_argument("--wg", action="append", help="只处理指定工作组，可重复")
+    p_run.add_argument("--force", action="store_true", help="忽略 frozen 标记")
+
+    p_bf = sub.add_parser("backfill", help="回填历史会议，可中断续跑")
+    p_bf.add_argument("--wg", required=True)
+    p_bf.add_argument("--from", dest="frm", type=int, required=True)
+    p_bf.add_argument("--to", dest="to", type=int, required=True)
+    p_bf.add_argument("--no-llm", action="store_true")
+
+    sub.add_parser("remap", help="只重跑 map+render（改完 features.yaml 用）")
+    sub.add_parser("lineage-report", help="打印血统命中对照表")
+    sub.add_parser("enrich", help="只补跑 LLM 摘要")
+    sub.add_parser("doctor", help="自检")
+
+    args = parser.parse_args(argv)
+    _setup_logging()
+
+    try:
+        if args.cmd == "run":
+            res = run_pipeline(wgs=args.wg, use_llm=not args.no_llm, force=args.force)
+        elif args.cmd == "backfill":
+            res = run_pipeline(wgs=[args.wg], use_llm=not args.no_llm,
+                               meetings=(args.frm, args.to))
+        elif args.cmd == "remap":
+            res = run_remap()
+        elif args.cmd == "enrich":
+            res = run_enrich()
+        elif args.cmd == "lineage-report":
+            print(build_lineage_report())
+            return EXIT_OK
+        elif args.cmd == "doctor":
+            return run_doctor()
+        else:
+            parser.error(f"未知命令: {args.cmd}")
+    except ParseError as exc:
+        logging.error("解析断言失败，已保留 raw 且未写 state: %s", exc)
+        return EXIT_PARSE
+
+    for alert in res.alerts:
+        logging.warning("%s", alert)
+    logging.info("完成：新增 %d 条事件，LLM 调用 %d 次", res.new_events, res.llm_calls)
+    return res.exit_code
+```
+
+- [ ] **Step 5: 补 `run_pipeline_remap` 与 `run_pipeline_enrich`**
+
+在 `ngr/pipeline.py` 末尾追加。两者都是 `run_pipeline` 的裁剪版，共用同样的读写与渲染尾巴：
+
+```python
+def run_pipeline_remap() -> PipelineResult:
+    """跳过 fetch 与 parse，直接从 data/parsed 重新归集。秒级完成，零额度。"""
+    features = load_features()
+    res = PipelineResult()
+    today = time.strftime("%Y-%m-%d")
+    events: list[dict] = []
+    stats_by_meeting: dict = defaultdict(lambda: defaultdict(int))
+
+    for path in sorted(P.parsed.rglob("events.json")):
+        payload = _load_json(path, {})
+        if not payload:
+            continue
+        incoming = map_meeting(payload, features)
+        events, stats = merge_events(events, incoming, today=today)
+        res.new_events += stats.added
+        for ev in incoming:
+            stats_by_meeting[(payload["wg"], payload["meeting"])][ev.feature] += 1
+
+    feat_state = _load_json(P.state / "features_state.json", {})
+    write_state(events, P.state / "events.json")
+    runs = load_runs(P.state / "run_history.json")
+    render_all(events, features, feat_state, P.out,
+               banner=build_banner(res.alerts, runs, today))
+    res.stats_by_meeting = {k: dict(v) for k, v in stats_by_meeting.items()}
+    return res
+
+def run_pipeline_enrich() -> PipelineResult:
+    """只补跑 LLM：给积压的 pending / failed 事件补摘要。"""
+    cfg = load_sources()
+    features = load_features()
+    res = PipelineResult()
+    events = _load_json(P.state / "events.json", [])
+    feat_state = _load_json(P.state / "features_state.json", {})
+
+    budget = Budget(cfg.extract.max_calls_per_run)
+    cache = LlmCache(P.state / "llm_cache")
+    factory = lambda model, effort: ClaudeCli(model, effort)
+    ex = extract_all(events, cfg.extract, cli_factory=factory, cache=cache, budget=budget)
+    feat_state = digest_features(features, events, feat_state, cfg.extract,
+                                 cli_factory=factory, cache=cache, budget=budget)
+    budget.log(P.state / "usage_log.jsonl")
+    res.llm_calls = budget.calls
+    if ex.rate_limited:
+        res.alerts.append("LLM 额度受限，剩余摘要下次继续")
+        res.exit_code = EXIT_LLM
+
+    write_state(events, P.state / "events.json")
+    (P.state / "features_state.json").write_text(
+        json.dumps(feat_state, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8")
+    today = time.strftime("%Y-%m-%d")
+    runs = load_runs(P.state / "run_history.json")
+    render_all(events, features, feat_state, P.out,
+               banner=build_banner(res.alerts, runs, today))
+    return res
+```
+
+- [ ] **Step 6: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_cli.py -v`
+Expected: 13 passed
+
+- [ ] **Step 7: 跑全部测试**
+
+Run: `.venv/Scripts/python.exe -m pytest -v`
+Expected: 全绿
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add ngr/cli.py ngr/pipeline.py tests/test_cli.py
+git commit -m "feat(cli): 命令面、管线编排与退出码"
+```
+
+---
+
 <!-- APPEND-HERE -->
