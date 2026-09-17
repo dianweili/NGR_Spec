@@ -2856,4 +2856,272 @@ git commit -m "feat(map): 血统归集、state 合并、lineage-report"
 
 ---
 
+## Phase 4：render 层
+
+### Task 14: Markdown 渲染
+
+**Files:**
+- Create: `ngr/render/__init__.py`, `ngr/render/markdown.py`
+- Test: `tests/test_render_markdown.py`
+
+**Interfaces:**
+- Consumes: `state/events.json`、`state/features_state.json`、`ngr.models.Feature`
+- Produces:
+  - `render_dashboard(events, features, feat_state, *, banner=None, generated=...) -> str`
+  - `render_feature_page(slug, events, feature, feat_state) -> str`
+  - `render_report(wg, meeting, events, feature_names) -> str`
+  - `tdoc_url(wg, meeting, filename) -> str`
+
+- [ ] **Step 1: 写失败的测试**
+
+```python
+# tests/test_render_markdown.py
+from ngr.models import Feature, LineageSegment
+from ngr.render.markdown import render_dashboard, render_feature_page, render_report
+
+def seg(era, depth="full"):
+    return LineageSegment(era=era, release="Rel-20", depth=depth, agenda=["RAN1:10.2"],
+                          title_re=None, meetings={"RAN1": (124, None)})
+
+WAVE = Feature(slug="waveform", name_zh="6GR 波形与帧结构", lineage=[seg("6G")])
+ISAC = Feature(slug="isac", name_zh="ISAC 通感一体",
+               lineage=[seg("5G-A", "origin"), seg("6G")])
+
+def E(**kw):
+    base = dict(id="RAN1-126-10.2-a001", wg="RAN1", meeting=126, agenda_item="10.2",
+                agenda_title="Waveform", kind="agreement", era="6G", release="Rel-20",
+                depth="full", feature="waveform", text_en="Adopt X.",
+                summary_zh="采纳 X。", tags=["OFDM"], impact="high", llm_status="ok",
+                first_seen="2026-08-25", meeting_end="2026-08-21",
+                source={"minutes_version": 10, "para": 10})
+    base.update(kw)
+    return base
+
+FS = {"waveform": {"stage": "收敛中", "open_issues": ["A", "B"], "summary": "正在收敛。"},
+      "isac": {"stage": "讨论中", "open_issues": [], "summary": "刚起步。",
+               "legacy_summary": "Rel-19 只做了信道建模，波形未定。"}}
+
+def test_dashboard_has_table_row_per_feature():
+    md = render_dashboard([E()], [WAVE, ISAC], FS)
+    assert "6GR 波形与帧结构" in md and "ISAC 通感一体" in md
+    assert "收敛中" in md
+
+def test_dashboard_marks_lineage_column():
+    md = render_dashboard([E()], [WAVE, ISAC], FS)
+    assert "6G 原生" in md and "5G-A→6G" in md
+
+def test_dashboard_splits_counts_by_era():
+    evs = [E(), E(id="x2", era="5G-A", depth="origin", feature="isac", meeting=120)]
+    md = render_dashboard(evs, [WAVE, ISAC], FS)
+    assert "1 / 0" in md or "1/0" in md      # waveform: 6G 1 条, 5G-A 0 条
+
+def test_dashboard_open_issue_count():
+    md = render_dashboard([E()], [WAVE], FS)
+    assert "| 2 |" in md
+
+def test_dashboard_banner_is_first_line_when_present():
+    md = render_dashboard([E()], [WAVE], FS, banner="⚠️ 解析失败")
+    assert md.splitlines()[0].startswith("⚠️")
+
+def test_dashboard_lists_unmapped_section():
+    md = render_dashboard([E()], [WAVE], FS, unmapped=["RAN1:10.7 NTN"])
+    assert "待归类" in md and "10.7" in md
+
+def test_feature_page_orders_sections():
+    evs = [E(), E(id="x2", era="5G-A", depth="origin", meeting=120,
+                  summary_zh=None, llm_status="skipped_by_depth")]
+    md = render_feature_page("waveform", evs, WAVE, FS["waveform"])
+    i_now = md.index("当前进展")
+    i_6g = md.index("6GR 演进")
+    i_leg = md.index("5G-A 历史事件")
+    assert i_now < i_6g < i_leg
+
+def test_feature_page_shows_legacy_summary_only_when_present():
+    md_isac = render_feature_page("isac", [E(feature="isac")], ISAC, FS["isac"])
+    assert "5G-A 源头" in md_isac
+    md_wave = render_feature_page("waveform", [E()], WAVE, FS["waveform"])
+    assert "5G-A 源头" not in md_wave
+
+def test_feature_page_marks_era_on_each_event():
+    md = render_feature_page("waveform", [E()], WAVE, FS["waveform"])
+    assert "[6G/Rel-20 RAN1#126]" in md
+
+def test_feature_page_always_shows_english_original():
+    md = render_feature_page("waveform", [E(summary_zh=None, llm_status="failed")],
+                             WAVE, FS["waveform"])
+    assert "Adopt X." in md, "摘要可以缺，原文绝不能丢"
+
+def test_feature_page_legacy_events_have_no_summary_but_have_text():
+    evs = [E(id="x2", era="5G-A", depth="origin", meeting=120, summary_zh=None,
+             llm_status="skipped_by_depth", text_en="Legacy decision.")]
+    md = render_feature_page("waveform", evs, WAVE, FS["waveform"])
+    assert "Legacy decision." in md
+
+def test_report_groups_by_feature():
+    md = render_report("RAN1", 126, [E()], {"waveform": "6GR 波形与帧结构"})
+    assert "RAN1 #126" in md and "6GR 波形与帧结构" in md and "采纳 X。" in md
+
+def test_report_includes_source_link():
+    md = render_report("RAN1", 126, [E()], {"waveform": "6GR 波形与帧结构"})
+    assert "3gpp.org" in md
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_render_markdown.py -v`
+Expected: FAIL，`No module named 'ngr.render'`
+
+- [ ] **Step 3: 写 `ngr/render/markdown.py`**
+
+```python
+from __future__ import annotations
+import time
+from collections import defaultdict
+from ngr.models import Feature
+
+WG_PATH = {"RAN1": "tsg_ran/WG1_RL1/TSGR1_%d", "RAN2": "tsg_ran/WG2_RL2/TSGR2_%d",
+           "RAN3": "tsg_ran/WG3_Iu/TSGR3_%d", "RAN4": "tsg_ran/WG4_Radio/TSGR4_%d",
+           "RANP": "tsg_ran/TSG_RAN/TSGR_%d"}
+
+def meeting_url(wg: str, meeting: int) -> str:
+    tmpl = WG_PATH.get(wg)
+    return f"https://www.3gpp.org/ftp/{tmpl % meeting}/" if tmpl else ""
+
+def _era_tag(e: dict) -> str:
+    return f"[{e.get('era')}/{e.get('release')} {e['wg']}#{e['meeting']}]"
+
+def _by_feature(events: list[dict]) -> dict[str, list[dict]]:
+    out = defaultdict(list)
+    for e in events:
+        out[e.get("feature")].append(e)
+    return out
+
+def feat_wg(events: list[dict]) -> str:
+    """该特性最近活动所在的工作组；多组时取最新会议那条的组。"""
+    if not events:
+        return ""
+    return max(events, key=lambda e: e["meeting"])["wg"]
+
+def render_dashboard(events: list[dict], features: list[Feature],
+                     feat_state: dict, *, banner: str | None = None,
+                     unmapped: list[str] | None = None,
+                     generated: str | None = None) -> str:
+    generated = generated or time.strftime("%Y-%m-%d")
+    grouped = _by_feature(events)
+    latest_meeting = max((e["meeting"] for e in events), default=None)
+
+    lines: list[str] = []
+    if banner:
+        lines += [banner, ""]
+    lines += ["# 6G (Rel-20) RAN 进展看板", "",
+              f"> 生成于 {generated}"
+              + (f" · 最新会议 RAN1#{latest_meeting}" if latest_meeting else ""), "",
+              "| 特性 | 阶段 | 血统 | 累计 Agr. (6G/5G-A) | 本期新增 | 最近活动 | 未决 |",
+              "|---|---|---|---|---|---|---|"]
+
+    for feat in features:
+        evs = grouped.get(feat.slug, [])
+        st = feat_state.get(feat.slug, {})
+        agr = [e for e in evs if e["kind"] == "agreement"]
+        n6 = sum(1 for e in agr if e.get("era") == "6G")
+        nl = sum(1 for e in agr if e.get("era") == "5G-A")
+        this = sum(1 for e in evs if e["meeting"] == latest_meeting) if latest_meeting else 0
+        last = max((e["meeting"] for e in evs), default=None)
+        lineage = "5G-A→6G" if feat.has_legacy else "6G 原生"
+        last_cell = f"{feat_wg(evs)}#{last}" if last is not None else "—"
+        lines.append(
+            f"| [{feat.name_zh}](features/{feat.slug}.md) | {st.get('stage', '—')} "
+            f"| {lineage} | {n6} / {nl} | **+{this}** | {last_cell} "
+            f"| {len(st.get('open_issues', []))} |")
+
+    if latest_meeting is not None:
+        lines += ["", f"## 本期新增（最近一次会议 #{latest_meeting}）", ""]
+        fresh = [e for e in events if e["meeting"] == latest_meeting]
+        if not fresh:
+            lines.append("_无_")
+        for feat in features:
+            items = [e for e in fresh if e.get("feature") == feat.slug]
+            if not items:
+                continue
+            lines.append(f"- **{feat.name_zh}**：新增 {len(items)} 条")
+            for e in items[:3]:
+                lines.append(f"  - {e.get('summary_zh') or e['text_en'][:80]}")
+
+    if unmapped:
+        lines += ["", f"## ⚠️ 待归类议程项（{len(unmapped)} 个）", ""]
+        lines += [f"- `{u}` — 请在 `config/features.yaml` 中确认归属" for u in unmapped]
+
+    return "\n".join(lines) + "\n"
+
+def render_feature_page(slug: str, events: list[dict], feature: Feature,
+                        state: dict) -> str:
+    mine = [e for e in events if e.get("feature") == slug]
+    six = sorted([e for e in mine if e.get("era") == "6G"],
+                 key=lambda e: (-e["meeting"], e["id"]))
+    legacy = sorted([e for e in mine if e.get("era") == "5G-A"],
+                    key=lambda e: (-e["meeting"], e["id"]))
+
+    lines = [f"# {feature.name_zh}", "",
+             f"**当前进展** · 阶段：{state.get('stage', '—')}", "",
+             state.get("summary", "_尚无综述_"), ""]
+
+    issues = state.get("open_issues") or []
+    if issues:
+        lines += ["**未决问题**", ""] + [f"- {i}" for i in issues] + [""]
+
+    if feature.has_legacy and state.get("legacy_summary"):
+        lines += ["## 5G-A 源头", "", state["legacy_summary"], ""]
+
+    lines += ["## 6GR 演进", ""]
+    lines += _render_events(six, with_summary=True) or ["_暂无_", ""]
+
+    if legacy:
+        lines += ["## 5G-A 历史事件", "",
+                  "<details><summary>展开（原文，无中文摘要）</summary>", ""]
+        lines += _render_events(legacy, with_summary=False)
+        lines += ["</details>", ""]
+
+    return "\n".join(lines) + "\n"
+
+def _render_events(events: list[dict], *, with_summary: bool) -> list[str]:
+    lines = []
+    for e in events:
+        lines.append(f"### {_era_tag(e)} `{e['kind']}` {e['agenda_item']} {e['agenda_title']}")
+        if with_summary and e.get("summary_zh"):
+            lines += ["", e["summary_zh"]]
+        elif with_summary and e.get("llm_status") == "failed":
+            lines += ["", "_（摘要生成失败，见下方原文）_"]
+        lines += ["", "```text", e["text_en"], "```",
+                  f"[原文出处]({meeting_url(e['wg'], e['meeting'])}) · `{e['id']}`", ""]
+    return lines
+
+def render_report(wg: str, meeting: int, events: list[dict],
+                  feature_names: dict[str, str]) -> str:
+    mine = [e for e in events if e["wg"] == wg and e["meeting"] == meeting]
+    grouped = _by_feature(mine)
+    lines = [f"# {wg} #{meeting} 增量简报", "",
+             f"> 共 {len(mine)} 条事件 · [会议目录]({meeting_url(wg, meeting)})", ""]
+    for slug, evs in sorted(grouped.items(), key=lambda kv: kv[0] or ""):
+        lines += [f"## {feature_names.get(slug, slug)}（{len(evs)} 条）", ""]
+        for e in evs:
+            lines.append(f"- **{e['kind']}** {e['agenda_item']} — "
+                         f"{e.get('summary_zh') or e['text_en'][:100]}")
+        lines.append("")
+    return "\n".join(lines) + "\n"
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `.venv/Scripts/python.exe -m pytest tests/test_render_markdown.py -v`
+Expected: 13 passed
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add ngr/render/ tests/test_render_markdown.py
+git commit -m "feat(render): dashboard / 特性页 / 会议简报"
+```
+
+---
+
 <!-- APPEND-HERE -->
