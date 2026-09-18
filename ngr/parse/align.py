@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import difflib
+import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
 
 from ngr.models import AgendaItem, Heading
+
+log = logging.getLogger(__name__)
 
 FUZZY_THRESHOLD = 0.90
 DEPTH_TOLERANCE = 1  # heading 层级与议程深度允许 ±1 偏移
@@ -35,8 +38,19 @@ class Alignment:
 
     @property
     def unmatched_ratio(self) -> float:
+        """未对上的比例，分母只含**参与对齐**的 heading（不含 skipped 的 Annex）。
+
+        分母为 0 时返回 **1.0 而不是 0.0**。0/0 在数学上无定义，这里是一个刻意的
+        策略选择：分母为 0 意味着"一条都没对上"，而不是"全对上了"。
+        Task 11 用 `ratio > MAX_UNMATCHED_RATIO` 当质量门禁，若此时返回 0.0，
+        一份 heading 抽取彻底失效（或只剩 Annex）的纪要会拿到比正常值（12.2%）
+        **还要好看**的分数被放行 —— 探针被自己的边界条件反噬。
+
+        也不要改用 `float("nan")` 当哨兵：`nan > 0.20` 恒为 False，
+        门禁照样放行，比返回 0.0 更隐蔽。
+        """
         total = len(self.by_heading) + len(self.unaligned)
-        return len(self.unaligned) / total if total else 0.0
+        return len(self.unaligned) / total if total else 1.0
 
 
 def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
@@ -46,6 +60,13 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
     exact: dict[str, list[AgendaItem]] = {}
     for item in agenda:
         exact.setdefault(normalize(item.title), []).append(item)
+    # 两个议程项归一化后撞成同一个 key 时，下面的候选池会"先到先得"，
+    # 后一个议程项永远拿不到 heading —— 这违背"宁可少归类，不可错归类"。
+    # 实测 RAN1#126 的 66 条议程项无冲突，所以不改行为，只出声：
+    # 探针的价值来自平时沉默，真出现了才好顺着日志查。
+    dup = {k: [i.item for i in v] for k, v in exact.items() if len(v) > 1}
+    if dup:
+        log.warning("议程标题归一化后重名，可能错归类: %s", dup)
     used: set[str] = set()
     seen: dict[str, AgendaItem] = {}  # 归一化标题 -> 已分配给它的议程项
     norm_keys = list(exact.keys())

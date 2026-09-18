@@ -1,3 +1,5 @@
+import logging
+
 from ngr.models import AgendaItem, Heading
 from ngr.parse.align import align, normalize
 
@@ -79,6 +81,29 @@ def test_empty_agenda_marks_all_unaligned():
     al = align([], [H(1, "X", 0)])
     assert al.unmatched_ratio == 1.0 and al.by_heading == {}
 
+
+def test_no_eligible_heading_reads_as_fully_unmatched():
+    """分母为 0 时必须是 1.0 而不是 0.0。
+
+    heading 抽取彻底失效、或纪要里只剩 Annex 结构性标题时，"一条都没对上"
+    绝不能被报成"全对上了" —— Task 11 用 `ratio > 0.20` 当质量门禁，
+    返回 0.0 会让这类纪要拿到比正常值（12.2%）还好看的分数被放行。
+    也不能用 nan 当哨兵：`nan > 0.20` 恒为 False，门禁照样放行。"""
+    ag = [A("10.2", "Waveform")]
+    assert align(ag, []).unmatched_ratio == 1.0
+    only_annex = align(ag, [H(1, "Annex A-1:	List of Tdocs", 0)])
+    assert len(only_annex.skipped) == 1
+    assert only_annex.by_heading == {} and only_annex.unaligned == []
+    assert only_annex.unmatched_ratio == 1.0
+    assert align([], []).unmatched_ratio == 1.0
+
+def test_duplicate_normalised_agenda_titles_warn(caplog):
+    """两个议程项归一化后重名时会"先到先得"，后一个永远拿不到 heading。
+    实测 RAN1#126 的 66 条议程项无冲突，所以不改行为，只出声。"""
+    ag = [A("10.2", "Waveform - Air Interface"), A("10.3", "Waveform Air Interface")]
+    with caplog.at_level(logging.WARNING):
+        align(ag, [H(2, "Waveform Air Interface", 0)])
+    assert "归一化后重名" in caplog.text
 
 def test_real_fixture_alignment():
     import pathlib

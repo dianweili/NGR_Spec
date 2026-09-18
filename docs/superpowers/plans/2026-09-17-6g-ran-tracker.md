@@ -2538,14 +2538,25 @@ git commit -m "feat(parse): agreement 块提取"
 
 ```python
 # tests/test_parse_align.py
+import logging
+
 from ngr.models import AgendaItem, Heading
 from ngr.parse.align import align, normalize
 
-def A(item, title): return AgendaItem(item=item, title=title)
-def H(level, text, i=0): return Heading(level=level, text=text, para_index=i)
+
+def A(item, title):
+    return AgendaItem(item=item, title=title)
+
+
+def H(level, text, i=0):
+    return Heading(level=level, text=text, para_index=i)
+
 
 def test_normalize_strips_case_punct_and_space():
-    assert normalize("  Waveform for 6GR  air-interface! ") == normalize("waveform for 6gr airinterface")
+    assert normalize("  Waveform for 6GR  air-interface! ") == normalize(
+        "waveform for 6gr airinterface"
+    )
+
 
 def test_exact_match():
     ag = [A("10.2", "Waveform for 6GR air interface")]
@@ -2553,10 +2564,12 @@ def test_exact_match():
     assert al.by_heading[5].item == "10.2"
     assert al.unmatched_ratio == 0.0
 
+
 def test_fuzzy_match_above_threshold():
     ag = [A("10.3", "Channel coding and modulation for 6GR interface")]
     al = align(ag, [H(2, "Channel coding and modulation for 6GR  interface", 7)])
     assert al.by_heading[7].item == "10.3"
+
 
 def test_fuzzy_below_threshold_is_rejected():
     ag = [A("10.2", "Waveform for 6GR air interface")]
@@ -2564,17 +2577,20 @@ def test_fuzzy_below_threshold_is_rejected():
     assert 3 not in al.by_heading
     assert al.unaligned[0].text == "Totally different topic"
 
+
 def test_depth_mismatch_is_rejected():
     """标题对得上但层级对不上 —— 拒绝，这是模板变动的信号。"""
-    ag = [A("10.2", "Waveform")]                  # depth 2
-    al = align(ag, [H(4, "Waveform", 1)])         # Heading4
+    ag = [A("10.2", "Waveform")]  # depth 2
+    al = align(ag, [H(4, "Waveform", 1)])  # Heading4
     assert 1 not in al.by_heading
+
 
 def test_depth_match_allows_one_level_offset():
     """纪要常把 Heading1 用在 depth-1 议程项上，允许 ±1 的偏移。"""
     ag = [A("10.2", "Waveform")]
     al = align(ag, [H(3, "Waveform", 1)])
     assert al.by_heading[1].item == "10.2"
+
 
 def test_same_title_headings_share_one_agenda_item():
     """同名 heading 是同一个议程项的重复出现（分组标题 + 同名子标题），两处都要对上。
@@ -2585,6 +2601,7 @@ def test_same_title_headings_share_one_agenda_item():
     assert {v.item for v in al.by_heading.values()} == {"10.2"}
     assert al.unaligned == []
 
+
 def test_different_titles_cannot_claim_same_item():
     """标题不同的两个小节不得抢同一个议程项 —— used 守的是这个。
     "Waveforms" 与 "Waveform" 的 difflib 相似度 0.94，会越过模糊阈值。"""
@@ -2593,19 +2610,47 @@ def test_different_titles_cannot_claim_same_item():
     assert len(al.by_heading) == 1
     assert [h.text for h in al.unaligned] == ["Waveforms"]
 
+
 def test_unmatched_ratio_computed():
     ag = [A("1", "Opening")]
     al = align(ag, [H(1, "Opening", 0), H(1, "Mystery", 1)])
     assert al.unmatched_ratio == 0.5
 
+
 def test_empty_agenda_marks_all_unaligned():
     al = align([], [H(1, "X", 0)])
     assert al.unmatched_ratio == 1.0 and al.by_heading == {}
 
+
+def test_no_eligible_heading_reads_as_fully_unmatched():
+    """分母为 0 时必须是 1.0 而不是 0.0。
+
+    heading 抽取彻底失效、或纪要里只剩 Annex 结构性标题时，"一条都没对上"
+    绝不能被报成"全对上了" —— Task 11 用 `ratio > 0.20` 当质量门禁，
+    返回 0.0 会让这类纪要拿到比正常值（12.2%）还好看的分数被放行。
+    也不能用 nan 当哨兵：`nan > 0.20` 恒为 False，门禁照样放行。"""
+    ag = [A("10.2", "Waveform")]
+    assert align(ag, []).unmatched_ratio == 1.0
+    only_annex = align(ag, [H(1, "Annex A-1:	List of Tdocs", 0)])
+    assert len(only_annex.skipped) == 1
+    assert only_annex.by_heading == {} and only_annex.unaligned == []
+    assert only_annex.unmatched_ratio == 1.0
+    assert align([], []).unmatched_ratio == 1.0
+
+def test_duplicate_normalised_agenda_titles_warn(caplog):
+    """两个议程项归一化后重名时会"先到先得"，后一个永远拿不到 heading。
+    实测 RAN1#126 的 66 条议程项无冲突，所以不改行为，只出声。"""
+    ag = [A("10.2", "Waveform - Air Interface"), A("10.3", "Waveform Air Interface")]
+    with caplog.at_level(logging.WARNING):
+        align(ag, [H(2, "Waveform Air Interface", 0)])
+    assert "归一化后重名" in caplog.text
+
 def test_real_fixture_alignment():
     import pathlib
+
     from ngr.parse.agenda import parse_agenda
     from ngr.parse.docx import parse_docx
+
     ag = parse_agenda(pathlib.Path("tests/fixtures/RAN1_126/agenda.csv").read_bytes())
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
     al = align(ag, doc.headings)
@@ -2627,26 +2672,36 @@ Expected: FAIL，`No module named 'ngr.parse.align'`
 
 ```python
 from __future__ import annotations
-import difflib, re, unicodedata
+
+import difflib
+import logging
+import re
+import unicodedata
 from dataclasses import dataclass, field
+
 from ngr.models import AgendaItem, Heading
 
+log = logging.getLogger(__name__)
+
 FUZZY_THRESHOLD = 0.90
-DEPTH_TOLERANCE = 1          # heading 层级与议程深度允许 ±1 偏移
+DEPTH_TOLERANCE = 1  # heading 层级与议程深度允许 ±1 偏移
 
 _PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
 _SPACE = re.compile(r"\s+")
+
 
 def normalize(text: str) -> str:
     t = unicodedata.normalize("NFKC", text).lower()
     t = _PUNCT.sub("", t)
     return _SPACE.sub(" ", t).strip()
 
+
 # "Annex A-1:"…"Annex H:" 是纪要的结构性附录（Tdoc 清单、参会者名单、会议日程表），
 # 不是议程项，永远不会出现在 agenda.csv 里。实测 RAN1#126 有 9 条。
 # 把它们计入未对齐率，会让这个"静默失败探针"常年停在 20%+ 的高位 ——
 # 真正的对齐崩溃反而淹没在固定噪声里，探针就白设了。
 ANNEX_RE = re.compile(r"(?i)^annex\b")
+
 
 @dataclass
 class Alignment:
@@ -2656,8 +2711,20 @@ class Alignment:
 
     @property
     def unmatched_ratio(self) -> float:
+        """未对上的比例，分母只含**参与对齐**的 heading（不含 skipped 的 Annex）。
+
+        分母为 0 时返回 **1.0 而不是 0.0**。0/0 在数学上无定义，这里是一个刻意的
+        策略选择：分母为 0 意味着"一条都没对上"，而不是"全对上了"。
+        Task 11 用 `ratio > MAX_UNMATCHED_RATIO` 当质量门禁，若此时返回 0.0，
+        一份 heading 抽取彻底失效（或只剩 Annex）的纪要会拿到比正常值（12.2%）
+        **还要好看**的分数被放行 —— 探针被自己的边界条件反噬。
+
+        也不要改用 `float("nan")` 当哨兵：`nan > 0.20` 恒为 False，
+        门禁照样放行，比返回 0.0 更隐蔽。
+        """
         total = len(self.by_heading) + len(self.unaligned)
-        return len(self.unaligned) / total if total else 0.0
+        return len(self.unaligned) / total if total else 1.0
+
 
 def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
     """把纪要 heading 对回议程号。三道关：标题归一化精确匹配 →
@@ -2666,8 +2733,15 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
     exact: dict[str, list[AgendaItem]] = {}
     for item in agenda:
         exact.setdefault(normalize(item.title), []).append(item)
+    # 两个议程项归一化后撞成同一个 key 时，下面的候选池会"先到先得"，
+    # 后一个议程项永远拿不到 heading —— 这违背"宁可少归类，不可错归类"。
+    # 实测 RAN1#126 的 66 条议程项无冲突，所以不改行为，只出声：
+    # 探针的价值来自平时沉默，真出现了才好顺着日志查。
+    dup = {k: [i.item for i in v] for k, v in exact.items() if len(v) > 1}
+    if dup:
+        log.warning("议程标题归一化后重名，可能错归类: %s", dup)
     used: set[str] = set()
-    seen: dict[str, AgendaItem] = {}     # 归一化标题 -> 已分配给它的议程项
+    seen: dict[str, AgendaItem] = {}  # 归一化标题 -> 已分配给它的议程项
     norm_keys = list(exact.keys())
 
     for h in headings:
@@ -2710,7 +2784,7 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
 - [ ] **Step 4: 跑测试确认通过**
 
 Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_align.py -v`
-Expected: 10 passed
+Expected: 13 passed
 
 若真实 fixture 的未对齐率超过 20%，先打印未对齐清单看是什么：
 
