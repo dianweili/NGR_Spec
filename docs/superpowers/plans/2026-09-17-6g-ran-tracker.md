@@ -1469,6 +1469,7 @@ Expected: 19 passed
 ```python
 # tests/test_fetch_runner.py
 from unittest.mock import Mock
+from urllib.parse import quote
 from ngr.config import WgConfig
 from ngr.models import Meeting
 from ngr.fetch.manifest import Manifest
@@ -1491,7 +1492,15 @@ def _http(listings: dict[str, bytes], files: dict[str, bytes]):
     return http
 
 def _listing(dir_url, names):
-    return b"".join(f'<a href="{dir_url}{n}">{n}</a>'.encode() for n in names)
+    """模拟真实 IIS 目录列表：href 里的文件名是百分号转义的。
+
+    实测 3GPP 的 Report 目录 HTML 写的是
+    `href=".../Final_Minutes_report_RAN1%23112_v100.zip"` —— `#` 是 `%23`，
+    因为 `#` 在 URL 里是片段分隔符。parse_listing 的捕获类排除 `#` 正是为此，
+    随后用 unquote() 还原。助手若不转义，文件名会在 `#` 处被截断，
+    这条链路就测不到真实行为了。"""
+    return b"".join(
+        f'<a href="{dir_url}{quote(n)}">{n}</a>'.encode() for n in names)
 
 def test_fetch_meeting_downloads_agenda_and_latest_minutes(tmp_path):
     base = MTG.url
@@ -1639,8 +1648,13 @@ def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
             head = http.head(url)
             if man.needs_fetch(local, head):
                 data = http.get(url)
-                if art == "minutes_docx":
-                    data = unwrap_docx(data)   # 老会议是 zip 包裹的 docx
+                if art == "minutes_docx" and chosen.lower().endswith(".zip"):
+                    # 只有 zip 才需要剥壳，裸 .docx 直通。
+                    # 无条件调用在真实数据上也能跑（.docx 本身就是合法 zip，
+                    # unwrap_docx 检测到 word/document.xml 会原样返回），但
+                    # "只有 zip 需要剥壳"语义更准确，也让测试不必为每个
+                    # .docx 场景构造合法 zip 字节。
+                    data = unwrap_docx(data)
                 man.record(local, url, head, data)
                 res.changed = True
             res.files[art] = raw_dir / local
