@@ -410,7 +410,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-注意：`ngr/cli.py` 到 Task 18 才写。在此之前 `python -m ngr` 会报 ImportError，这是预期的 —— 先建立可测的内核，命令面最后收口。
+注意：`ngr/cli.py` 到 Task 20 才写。在此之前 `python -m ngr` 会报 ImportError，这是预期的 —— 先建立可测的内核，命令面最后收口。
 
 - [ ] **Step 8: 跑测试确认通过**
 
@@ -1992,7 +1992,7 @@ Expected: FAIL，`No module named 'ngr.parse.events'`
 ```python
 from __future__ import annotations
 import re
-from ngr.models import RawEvent
+from ngr.models import KIND_PREFIX, RawEvent
 from ngr.parse.docx import Document
 
 MARKERS = {
@@ -2002,6 +2002,10 @@ MARKERS = {
     "observation": r"observations?",
     "proposal": r"proposals?",
 }
+# MARKERS 与 KIND_PREFIX 必须同步：前者决定能解析出哪些 kind，后者决定 Event.id 的前缀。
+# 任一方新增而另一方漏改，会在 Event.id 上炸成运行期 KeyError —— 宁可在导入期就失败。
+assert set(MARKERS) == set(KIND_PREFIX), (
+    f"MARKERS 与 KIND_PREFIX 不同步: {set(MARKERS) ^ set(KIND_PREFIX)}")
 # 标记必须在段首，后跟冒号/句点/行末 —— 避免 "The agreement was reached" 被误判
 MARKER_RE = re.compile(
     r"^\s*(?:" + "|".join(f"(?P<{k}>{v})" for k, v in MARKERS.items()) + r")"
