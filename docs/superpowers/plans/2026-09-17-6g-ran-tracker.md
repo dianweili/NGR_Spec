@@ -1081,7 +1081,8 @@ from ngr.models import Feature, LineageSegment
 from ngr.fetch.discover import discover_meetings, fetch_window
 
 WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)",
-              hard_floor=112, agenda_csv_since=124, artifacts=["agenda_csv"])
+              hard_floor=112, agenda_csv_since=124,
+              minutes_re=r"(?i)minutes.*\.(docx|zip)$", artifacts=["agenda_csv"])
 
 def _feature(slug, segs):
     return Feature(slug=slug, name_zh=slug, lineage=segs)
@@ -1445,7 +1446,8 @@ from ngr.fetch.manifest import Manifest
 from ngr.fetch.runner import fetch_meeting
 
 WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)", hard_floor=112,
-              agenda_csv_since=124, artifacts=["agenda_csv", "minutes_docx", "docs_listing"])
+              agenda_csv_since=124, minutes_re=r"(?i)minutes.*\.(docx|zip)$", 
+              artifacts=["agenda_csv", "minutes_docx", "docs_listing"])
 MTG = Meeting(wg="RAN1", number=126, suffix="",
               url="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/")
 
@@ -5801,7 +5803,7 @@ from ngr.models import Meeting
 from ngr.fetch.docs import fetch_docs
 
 WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)", hard_floor=112,
-              agenda_csv_since=124, artifacts=[])
+              agenda_csv_since=124, minutes_re=r"(?i)minutes.*\.(docx|zip)$", artifacts=[])
 MTG = Meeting(wg="RAN1", number=127, suffix="",
               url="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_127/")
 
