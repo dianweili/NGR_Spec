@@ -22,6 +22,16 @@ def test_fetch_window_clamped_by_hard_floor():
     feats = [_feature("a", [_seg(100, 120)])]
     assert fetch_window(feats, "RAN1", WG) == (112, 120)
 
+def test_fetch_window_none_when_all_segments_below_hard_floor():
+    """全部血统段被 hard_floor 钳没时必须返回 None，不能返回 lo > hi 的倒置区间 ——
+    倒置区间类型合法但语义非法，下游分不清是"没覆盖"还是"被钳没了"。"""
+    feats = [_feature("a", [_seg(90, 100)])]          # hard_floor = 112
+    assert fetch_window(feats, "RAN1", WG) is None
+
+def test_fetch_window_survives_when_one_segment_reaches_above_floor():
+    feats = [_feature("a", [_seg(90, 100)]), _feature("b", [_seg(95, 120)])]
+    assert fetch_window(feats, "RAN1", WG) == (112, 120)
+
 def test_fetch_window_none_when_wg_not_covered():
     feats = [_feature("a", [_seg(116, 126, wg="RAN2")])]
     assert fetch_window(feats, "RAN1", WG) is None
