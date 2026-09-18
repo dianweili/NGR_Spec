@@ -1255,12 +1255,14 @@ def test_pick_latest_minutes_finds_zip_only_meeting():
     assert pick_latest_minutes(names, RAN1_RE) == "Final_Minutes_report_RAN1#112_v100.zip"
 
 def test_pick_latest_minutes_prefers_docx_over_zip_at_same_version():
-    names = ["Minutes_report_RAN1#123_v100.zip", "Minutes_report_RAN1#123_v100.docx"]
-    assert pick_latest_minutes(names, RAN1_RE) == "Minutes_report_RAN1#123_v100.docx"
+    names = ["Draft_Minutes_report_RAN1#123_v100.zip",
+             "Draft_Minutes_report_RAN1#123_v100.docx"]
+    assert pick_latest_minutes(names, RAN1_RE) == "Draft_Minutes_report_RAN1#123_v100.docx"
 
 def test_pick_latest_minutes_version_beats_format():
-    names = ["Minutes_report_RAN1#123_v100.zip", "Minutes_report_RAN1#123_v010.docx"]
-    assert pick_latest_minutes(names, RAN1_RE) == "Minutes_report_RAN1#123_v100.zip"
+    names = ["Draft_Minutes_report_RAN1#123_v100.zip",
+             "Draft_Minutes_report_RAN1#123_v010.docx"]
+    assert pick_latest_minutes(names, RAN1_RE) == "Draft_Minutes_report_RAN1#123_v100.zip"
 
 def test_pick_latest_minutes_returns_none_when_absent():
     assert pick_latest_minutes(["Archive", "notes.txt"], RAN1_RE) is None
@@ -1455,7 +1457,7 @@ class Manifest:
 - [ ] **Step 4: 跑测试确认通过**
 
 Run: `.venv/Scripts/python.exe -m pytest tests/test_fetch_manifest.py -v`
-Expected: 9 passed
+Expected: 19 passed
 
 - [ ] **Step 5: 写抓取编排的失败测试**
 
