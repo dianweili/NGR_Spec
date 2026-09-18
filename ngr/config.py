@@ -66,6 +66,19 @@ def _require(d: dict, key: str, where: str):
         raise ConfigError(f"{where} 缺少必填项 '{key}'")
     return d[key]
 
+def _to_int(value, path: str) -> int:
+    """把 value 转成 int，转不动时抛 ConfigError 并带上完整字段路径，
+    不让用户看着一句裸的 `invalid literal for int()` 猜是哪个字段。"""
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"{path} 必须是整数，得到 {value!r}") from exc
+
+def _to_int_or_none(value, path: str) -> int | None:
+    if value is None:
+        return None
+    return _to_int(value, path)
+
 def load_sources(path: Path | None = None) -> SourcesConfig:
     path = path or P.config / "sources.yaml"
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
@@ -85,13 +98,14 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
         wgs[name] = WgConfig(
             path=_require(raw, "path", where),
             dir_re=raw["dir_re"],
-            hard_floor=int(_require(raw, "hard_floor", where)),
-            agenda_csv_since=raw.get("agenda_csv_since"),
+            hard_floor=_to_int(_require(raw, "hard_floor", where), f"{where}.hard_floor"),
+            agenda_csv_since=_to_int_or_none(raw.get("agenda_csv_since"), f"{where}.agenda_csv_since"),
             minutes_re=minutes_re,
             artifacts=list(_require(raw, "artifacts", where)),
             report_dirs=list(raw.get("report_dirs", [raw.get("report_dir", "Report")])),
             ls_dirs=list(raw.get("ls_dirs", ["LS"])),
-            latest_meeting_with_content=raw.get("latest_meeting_with_content"),
+            latest_meeting_with_content=_to_int_or_none(
+                raw.get("latest_meeting_with_content"), f"{where}.latest_meeting_with_content"),
         )
     if not wgs:
         raise ConfigError("sources.yaml 未定义任何工作组")
@@ -143,10 +157,12 @@ def _parse_segment(raw: dict, where: str, default_depth: str) -> LineageSegment:
     for wg, rng in meetings_raw.items():
         if not isinstance(rng, list) or len(rng) != 2:
             raise ConfigError(f"{where}.meetings.{wg} 必须是 [起, 止] 两元列表，止可为 null")
-        lo, hi = rng
-        if hi is not None and int(hi) < int(lo):
+        lo_raw, hi_raw = rng
+        lo = _to_int(lo_raw, f"{where}.meetings.{wg}[0]")
+        hi = _to_int_or_none(hi_raw, f"{where}.meetings.{wg}[1]")
+        if hi is not None and hi < lo:
             raise ConfigError(f"{where}.meetings.{wg} 区间倒置: [{lo}, {hi}]")
-        meetings[wg] = (int(lo), None if hi is None else int(hi))
+        meetings[wg] = (lo, hi)
     if not meetings:
         raise ConfigError(f"{where}.meetings 不能为空")
 
@@ -175,4 +191,6 @@ def load_features(path: Path | None = None) -> list[Feature]:
                 for j, s in enumerate(segs_raw)]
         feats.append(Feature(slug=slug, name_zh=_require(raw, "name_zh", f"features[{slug}]"),
                              lineage=segs))
+    if not feats:
+        raise ConfigError("features.yaml 未定义任何特性")
     return feats

@@ -73,6 +73,64 @@ def test_sources_rejects_unknown_backend(tmp_path):
     with pytest.raises(ConfigError, match="backend"):
         load_sources(write(tmp_path, "s.yaml", bad))
 
+def test_sources_rejects_invalid_dir_re(tmp_path):
+    bad = SOURCES_OK.replace("dir_re: 'TSGR1_(\\d+)([a-z]*)'", "dir_re: 'TSGR1_(\\d+)([a-z]*'")
+    with pytest.raises(ConfigError, match="dir_re"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+def test_sources_requires_path(tmp_path):
+    body = SOURCES_OK.replace("        path: tsg_ran/WG1_RL1\n", "")
+    with pytest.raises(ConfigError, match="path"):
+        load_sources(write(tmp_path, "s.yaml", body))
+
+def test_sources_requires_hard_floor(tmp_path):
+    body = SOURCES_OK.replace("        hard_floor: 112\n", "")
+    with pytest.raises(ConfigError, match="hard_floor"):
+        load_sources(write(tmp_path, "s.yaml", body))
+
+def test_sources_requires_artifacts(tmp_path):
+    body = SOURCES_OK.replace("        artifacts: [agenda_csv, minutes_docx]\n", "")
+    with pytest.raises(ConfigError, match="artifacts"):
+        load_sources(write(tmp_path, "s.yaml", body))
+
+def test_sources_rejects_non_integer_hard_floor(tmp_path):
+    """裸的 ValueError（invalid literal for int()）定位不到是哪个字段，必须包成 ConfigError。"""
+    bad = SOURCES_OK.replace("hard_floor: 112", "hard_floor: abc")
+    with pytest.raises(ConfigError, match="hard_floor"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+SOURCES_MISSING_HTTP = """
+    sources:
+      RAN1:
+        path: tsg_ran/WG1_RL1
+        dir_re: 'TSGR1_(\\d+)([a-z]*)'
+        hard_floor: 112
+        minutes_re: '(?i)^Draft_Minutes.*\\.(docx|zip)$'
+        artifacts: [agenda_csv, minutes_docx]
+    extract:
+      backend: cli
+"""
+
+def test_sources_requires_http_section(tmp_path):
+    with pytest.raises(ConfigError, match="http"):
+        load_sources(write(tmp_path, "s.yaml", SOURCES_MISSING_HTTP))
+
+SOURCES_MISSING_EXTRACT = """
+    sources:
+      RAN1:
+        path: tsg_ran/WG1_RL1
+        dir_re: 'TSGR1_(\\d+)([a-z]*)'
+        hard_floor: 112
+        minutes_re: '(?i)^Draft_Minutes.*\\.(docx|zip)$'
+        artifacts: [agenda_csv, minutes_docx]
+    http:
+      user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0.0.0"
+"""
+
+def test_sources_requires_extract_section(tmp_path):
+    with pytest.raises(ConfigError, match="extract"):
+        load_sources(write(tmp_path, "s.yaml", SOURCES_MISSING_EXTRACT))
+
 FEATURES_OK = """
     features:
       - slug: isac
@@ -100,7 +158,19 @@ def test_load_features(tmp_path):
     assert f.lineage[0].depth == "origin"
 
 def test_features_rejects_bad_depth(tmp_path):
-    bad = FEATURES_OK.replace("depth: origin", "depth: deep")
+    """只改段内 depth 这一处，不能碰顶层 default_depth —— 否则两个校验分支会被同时命中，
+    测试永远分不清是哪条分支在生效（这条曾经就是这么写错的，已改用精确到多行的替换目标）。"""
+    bad = FEATURES_OK.replace(
+        "meetings: { RAN1: [116, 126] }\n            depth: origin",
+        "meetings: { RAN1: [116, 126] }\n            depth: deep",
+    )
+    assert "default_depth: deep" not in bad  # 断言隔离生效：顶层 default_depth 必须原封不动
+    with pytest.raises(ConfigError, match="depth"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+def test_features_rejects_bad_default_depth(tmp_path):
+    """顶层 default_depth 的校验分支与段内 depth 分开测，两者各有各的覆盖。"""
+    bad = FEATURES_OK.replace("default_depth: origin", "default_depth: deep")
     with pytest.raises(ConfigError, match="depth"):
         load_features(write(tmp_path, "f.yaml", bad))
 
@@ -132,3 +202,22 @@ FEATURES_DUP_SLUG = """
 def test_features_rejects_duplicate_slug(tmp_path):
     with pytest.raises(ConfigError, match="slug"):
         load_features(write(tmp_path, "f.yaml", FEATURES_DUP_SLUG))
+
+def test_features_rejects_reversed_meetings_range(tmp_path):
+    bad = FEATURES_OK.replace("meetings: { RAN1: [116, 126] }", "meetings: { RAN1: [126, 116] }")
+    with pytest.raises(ConfigError, match="meetings"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+def test_features_rejects_meetings_not_two_element_list(tmp_path):
+    bad = FEATURES_OK.replace("meetings: { RAN1: [116, 126] }", "meetings: { RAN1: [116] }")
+    with pytest.raises(ConfigError, match="meetings"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+FEATURES_EMPTY = """
+    features: []
+    default_depth: origin
+"""
+
+def test_features_rejects_empty_features_list(tmp_path):
+    with pytest.raises(ConfigError, match="features"):
+        load_features(write(tmp_path, "f.yaml", FEATURES_EMPTY))

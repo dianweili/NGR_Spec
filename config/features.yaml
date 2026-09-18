@@ -60,12 +60,17 @@ features:
         depth: origin
       # Rel-19 WI 阶段：同一条正则同时命中 WI 全名（#116-121，挂在 "H1 Release 19" 章下）、
       # #122 的 "Maintenance on..." 与 "...enhancements"（Phase 2）。持续到今，区间开放。
+      # depth 用默认的 origin，不例外给 full：spec 硬约束是"5G-A 血统段默认 origin，
+      # 6GR 段一律 full"。这一段是纯 5G-A 演进，且区间开放（[116, null]），
+      # 若配 full 会让此后每次 RAN1 会议都对这个 5G-A 老特性做逐条中文摘要，
+      # 正是该约束要避免的额度消耗场景。没有证据支撑"这条 5G-A 演进与 6G AI-native
+      # 关系特别紧密、值得例外全量摘要"，所以按默认值处理，不搞例外。
       - era: 5G-A
         release: Rel-19
         anchor:
           title_re: '(?i)(?:artificial\s+intelligence\s*\(AI\)\s*/\s*machine\s+learning\s*\(ML\)|AI\s*/\s*ML)\s+for\s+NR\s+air\s+interface'
         meetings: { RAN1: [116, null] }
-        depth: full
+        depth: origin
 
   # Waveform：纯 6G 新题，5G-A 没有对应前身，不写 5G-A 段。
   - slug: waveform
