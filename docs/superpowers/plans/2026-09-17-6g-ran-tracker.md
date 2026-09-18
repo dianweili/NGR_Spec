@@ -1099,6 +1099,16 @@ def test_fetch_window_clamped_by_hard_floor():
     feats = [_feature("a", [_seg(100, 120)])]
     assert fetch_window(feats, "RAN1", WG) == (112, 120)
 
+def test_fetch_window_none_when_all_segments_below_hard_floor():
+    """全部血统段被 hard_floor 钳没时必须返回 None，不能返回 lo > hi 的倒置区间 ——
+    倒置区间类型合法但语义非法，下游分不清是"没覆盖"还是"被钳没了"。"""
+    feats = [_feature("a", [_seg(90, 100)])]          # hard_floor = 112
+    assert fetch_window(feats, "RAN1", WG) is None
+
+def test_fetch_window_survives_when_one_segment_reaches_above_floor():
+    feats = [_feature("a", [_seg(90, 100)]), _feature("b", [_seg(95, 120)])]
+    assert fetch_window(feats, "RAN1", WG) == (112, 120)
+
 def test_fetch_window_none_when_wg_not_covered():
     feats = [_feature("a", [_seg(116, 126, wg="RAN2")])]
     assert fetch_window(feats, "RAN1", WG) is None
@@ -1133,11 +1143,12 @@ Expected: FAIL，`No module named 'ngr.fetch.discover'`
 
 ```python
 from __future__ import annotations
-import re
+import logging, re
 from ngr.config import WgConfig
 from ngr.fetch.listing import parse_listing
 from ngr.models import Feature, Meeting
 
+log = logging.getLogger(__name__)
 BASE = "https://www.3gpp.org/ftp/"
 
 def discover_meetings(http, wg: str, cfg: WgConfig) -> list[Meeting]:
@@ -1173,7 +1184,18 @@ def fetch_window(features: list[Feature], wg: str,
     if not lows:
         return None
     low = max(min(lows), cfg.hard_floor)
-    return (low, None) if unbounded else (low, max(highs))
+    if unbounded:
+        return (low, None)
+    high = max(highs)
+    if high < low:
+        # 该组的血统段全部落在 hard_floor 之下，被钳位成空。
+        # 必须归一化为 None，不能返回 (low, high) 这种 lo > hi 的倒置区间 ——
+        # 类型合法但语义非法，下游按 range(lo, hi+1) 消费会得到空循环或负数统计，
+        # 且分不清是"没有特性覆盖这个组"还是"被 hard_floor 钳没了"。
+        log.warning("%s 的血统段全部低于 hard_floor=%d（最高 %d），本组无可抓取区间",
+                    wg, cfg.hard_floor, high)
+        return None
+    return (low, high)
 ```
 
 - [ ] **Step 8: 跑测试确认通过**
