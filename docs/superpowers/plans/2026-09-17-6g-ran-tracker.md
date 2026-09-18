@@ -1468,6 +1468,7 @@ Expected: 19 passed
 
 ```python
 # tests/test_fetch_runner.py
+import pytest
 from unittest.mock import Mock
 from urllib.parse import quote
 from ngr.config import WgConfig
@@ -1556,6 +1557,49 @@ def test_fetch_meeting_force_ignores_frozen(tmp_path):
     res = fetch_meeting(http, MTG, WG, raw_dir=tmp_path, force=True)
     assert res.changed
 
+def test_manifest_saved_when_rate_limited_midway(tmp_path):
+    """限流中断时，本次已成功抓到的 artifact 必须落进 manifest。
+    否则文件在磁盘上却查不到记录，下次重试会重新下载 —— 限流引发重复下载、
+    重复下载又加剧限流。"""
+    from ngr.fetch.client import RateLimited
+    base = MTG.url
+    listings = {
+        base: _listing(base, ["Agenda", "Report"]),
+        base + "Agenda/": _listing(base + "Agenda/", ["agenda.csv"]),
+        base + "Report/": _listing(base + "Report/", ["Draft_Minutes_report_RAN1#126_v010.docx"]),
+    }
+    files = {base + "Agenda/agenda.csv": b"csv"}
+    http = _http(listings, files)
+    calls = {"n": 0}
+    def head(url):
+        calls["n"] += 1
+        if calls["n"] > 1:                      # 第二个 artifact 撞限流
+            raise RateLimited("rate limited")
+        return {"etag": '"e"', "length": 3}
+    http.head.side_effect = head
+
+    with pytest.raises(RateLimited):
+        fetch_meeting(http, MTG, WG, raw_dir=tmp_path)
+
+    assert (tmp_path / "agenda.csv").exists()
+    assert (tmp_path / "_manifest.json").exists(), "已成功的 artifact 必须落盘"
+    assert "agenda.csv" in Manifest(tmp_path).load()["files"]
+
+def test_report_dirs_picks_first_existing_candidate(tmp_path):
+    """report_dirs 是**有序**候选列表：两个都存在时取列表里排前面的那个。
+    实测 RAN4 老会议用复数 Reports、新会议用单数 Report。"""
+    from dataclasses import replace
+    base = MTG.url
+    wg = replace(WG, report_dirs=["Reports", "Report"], artifacts=["minutes_docx"])
+    listings = {
+        base: _listing(base, ["Report", "Reports"]),
+        base + "Reports/": _listing(base + "Reports/", ["Draft_Minutes_report_RAN1#126_v100.docx"]),
+        base + "Report/": _listing(base + "Report/", ["Draft_Minutes_report_RAN1#126_v010.docx"]),
+    }
+    files = {base + "Reports/Draft_Minutes_report_RAN1#126_v100.docx": b"doc"}
+    res = fetch_meeting(_http(listings, files), MTG, wg, raw_dir=tmp_path)
+    assert res.changed and "minutes_docx" in res.files
+
 def test_fetch_meeting_no_redownload_when_unchanged(tmp_path):
     base = MTG.url
     listings = {base: _listing(base, ["Report"]),
@@ -1623,58 +1667,64 @@ def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
     res = FetchResult()
     root_names = parse_listing(http.get(meeting.url), meeting.url)
 
-    for art in cfg.artifacts:
-        if art in ARTIFACTS:
-            subdir, local, chooser = ARTIFACTS[art]
-            if art == "minutes_docx":
-                # 纪要的子目录名与识别正则都按组配置：实测各组命名毫无共性，
-                # 且同一组的目录名会随年代变（RAN4 老会议 Reports / 新会议 Report）
-                hit = next((d for d in cfg.report_dirs if d.rstrip("/") in root_names), None)
-                if hit is None:
-                    res.missing.append(art)
-                    continue
-                subdir = hit.rstrip("/") + "/"
-                chooser = lambda names: pick_latest_minutes(names, cfg.minutes_re)
-            if subdir.rstrip("/") not in root_names:
-                res.missing.append(art)
-                continue
-            sub_url = meeting.url + subdir
-            names = parse_listing(http.get(sub_url), sub_url)
-            chosen = chooser(names)
-            if chosen is None:
-                res.missing.append(art)
-                continue
-            url = sub_url + chosen
-            head = http.head(url)
-            if man.needs_fetch(local, head):
-                data = http.get(url)
-                if art == "minutes_docx" and chosen.lower().endswith(".zip"):
-                    # 只有 zip 才需要剥壳，裸 .docx 直通。
-                    # 无条件调用在真实数据上也能跑（.docx 本身就是合法 zip，
-                    # unwrap_docx 检测到 word/document.xml 会原样返回），但
-                    # "只有 zip 需要剥壳"语义更准确，也让测试不必为每个
-                    # .docx 场景构造合法 zip 字节。
-                    data = unwrap_docx(data)
-                man.record(local, url, head, data)
-                res.changed = True
-            res.files[art] = raw_dir / local
+    # 循环体用 try/finally 包住：中途抛 RateLimited 时，本次已 record() 成功的
+    # artifact 必须落进 manifest。否则文件虽在磁盘上却查不到记录，下次重试会重新
+    # 下载一遍 —— 限流引发重复下载、重复下载又加剧限流，方向正好反了。
+    try:
+      for art in cfg.artifacts:
+          if art in ARTIFACTS:
+              subdir, local, chooser = ARTIFACTS[art]
+              if art == "minutes_docx":
+                  # 纪要的子目录名与识别正则都按组配置：实测各组命名毫无共性，
+                  # 且同一组的目录名会随年代变（RAN4 老会议 Reports / 新会议 Report）
+                  hit = next((d for d in cfg.report_dirs if d.rstrip("/") in root_names), None)
+                  if hit is None:
+                      res.missing.append(art)
+                      continue
+                  subdir = hit.rstrip("/") + "/"
+                  chooser = lambda names: pick_latest_minutes(names, cfg.minutes_re)
+              if subdir.rstrip("/") not in root_names:
+                  res.missing.append(art)
+                  continue
+              sub_url = meeting.url + subdir
+              names = parse_listing(http.get(sub_url), sub_url)
+              chosen = chooser(names)
+              if chosen is None:
+                  res.missing.append(art)
+                  continue
+              url = sub_url + chosen
+              head = http.head(url)
+              if man.needs_fetch(local, head):
+                  data = http.get(url)
+                  if art == "minutes_docx" and chosen.lower().endswith(".zip"):
+                      # 只有 zip 才需要剥壳，裸 .docx 直通。
+                      # 无条件调用在真实数据上也能跑（.docx 本身就是合法 zip，
+                      # unwrap_docx 检测到 word/document.xml 会原样返回），但
+                      # "只有 zip 需要剥壳"语义更准确，也让测试不必为每个
+                      # .docx 场景构造合法 zip 字节。
+                      data = unwrap_docx(data)
+                  man.record(local, url, head, data)
+                  res.changed = True
+              res.files[art] = raw_dir / local
 
-        elif art in LISTING_ARTIFACTS:
-            subdir, local = LISTING_ARTIFACTS[art]
-            if subdir.rstrip("/") not in root_names:
-                res.missing.append(art)
-                continue
-            sub_url = meeting.url + subdir
-            data = http.get(sub_url)
-            head = {"etag": None, "length": len(data)}
-            if man.needs_fetch(local, head):
-                man.record(local, sub_url, head, data)
-                res.changed = True
-            res.files[art] = raw_dir / local
-        else:
-            log.warning("未知 artifact 类型: %s", art)
+          elif art in LISTING_ARTIFACTS:
+              subdir, local = LISTING_ARTIFACTS[art]
+              if subdir.rstrip("/") not in root_names:
+                  res.missing.append(art)
+                  continue
+              sub_url = meeting.url + subdir
+              data = http.get(sub_url)
+              head = {"etag": None, "length": len(data)}
+              if man.needs_fetch(local, head):
+                  man.record(local, sub_url, head, data)
+                  res.changed = True
+              res.files[art] = raw_dir / local
+          else:
+              log.warning("未知 artifact 类型: %s", art)
 
-    man.save()
+    finally:
+        man.save()
+
     return res
 ```
 
