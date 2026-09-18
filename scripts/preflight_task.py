@@ -79,6 +79,13 @@ def extract_blocks(section: str) -> dict[str, str]:
 
 
 def main() -> int:
+    # Windows 默认控制台是 GBK，pytest 的输出里常有它编不了的字符
+    # （断言差异里的特殊符号、颜色转义等）。不改这里，脚本会在 print 阶段崩掉 ——
+    # 这正是本项目全局约束反复强调的编码坑，工具自己也得守。
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     ap = argparse.ArgumentParser()
     ap.add_argument("task", type=int)
     ap.add_argument("--keep", action="store_true", help="保留临时目录")
@@ -117,16 +124,21 @@ def main() -> int:
         # 计划里空的 __init__.py 通常不写成代码块（是 mkdir/touch 出来的），
         # 抽取不到。这里为 ngr 下每一级包目录补齐，否则 import 会失败。
         for d in sorted((work / "ngr").rglob("*"), key=lambda x: len(x.parts)):
-            if d.is_dir() and not (d / "__init__.py").exists():
+            if d.name == "__pycache__" or not d.is_dir():
+                continue
+            if not (d / "__init__.py").exists():
                 (d / "__init__.py").write_text("", encoding="utf-8")
                 print(f"  补 {d.relative_to(work).as_posix()}/__init__.py")
 
         print(f"\n跑 pytest（{len(tests)} 个测试文件，{len(impls)} 个实现文件）\n")
+        # errors="replace"：pytest 的输出可能夹带非 UTF-8 字节（二进制 fixture 的
+        # 片段、Windows 控制台转义等），不加会让 text 解码失败、stdout 变成 None。
         proc = subprocess.run(
             [str(VENV_PY), "-m", "pytest", "-q", *tests],
-            cwd=work, capture_output=True, text=True, encoding="utf-8")
-        print(proc.stdout[-6000:])
-        if proc.stderr.strip():
+            cwd=work, capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+        print((proc.stdout or "")[-6000:])
+        if (proc.stderr or "").strip():
             print("--- stderr ---")
             print(proc.stderr[-2000:])
 
