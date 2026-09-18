@@ -1017,6 +1017,12 @@ def test_parse_listing_ignores_deeper_paths():
 def test_parse_listing_tolerates_trailing_slash_in_dir_url():
     assert parse_listing(HTML, DIR.rstrip("/")) == ["Agenda", "Docs", "Report"]
 
+def test_parse_listing_ignores_url_outside_href():
+    """页面正文/注释里出现同一个目录 URL 时不得被当成条目 —— 实测 fixture 里就有这种文字。"""
+    html = (b'<p>note: ' + DIR.encode() + b' retrieved 2026-09-17</p>'
+            b'<a href="' + DIR.encode() + b'R1-1.zip">R1-1.zip</a>')
+    assert parse_listing(html, DIR) == ["R1-1.zip"]
+
 def test_parse_listing_on_fixture_docs():
     """真实 fixture：RAN1#126 的 Docs 目录列表全是 R1-*.zip。"""
     import pathlib
@@ -1039,9 +1045,15 @@ import re
 from urllib.parse import unquote
 
 def parse_listing(html: bytes, dir_url: str) -> list[str]:
-    """从 3GPP 的 HTML 目录列表中取出该目录的直接子条目名（不含更深层路径）。"""
+    """从 3GPP 的 HTML 目录列表中取出该目录的直接子条目名（不含更深层路径）。
+
+    必须锚定到 href 属性，不能在全文里裸匹配 URL —— 页面正文、注释、
+    脚本里都可能出现同一个目录 URL，裸匹配会把它们周围的文字当成文件名。
+    实测 RAN1#126 的 Docs 列表用裸匹配得到 51 条（多出一条是页面里的说明文字），
+    锚定 href 后恰好 50 条且全部是 R1-*.zip。
+    """
     base = dir_url.rstrip("/") + "/"
-    pattern = re.compile(re.escape(base) + r'([^"/?#]+)(?=["/])')
+    pattern = re.compile(r'href=["']' + re.escape(base) + r'([^"'/?#]+)')
     text = html.decode("utf-8", "ignore")
     seen, out = set(), []
     for name in pattern.findall(text):
