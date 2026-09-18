@@ -1848,7 +1848,9 @@ git commit -m "feat(parse): agenda.csv 解析"
 **Interfaces:**
 - Consumes: `ngr.models.Heading`
 - Produces:
-  - `Block` 数据类：`.kind: str`（`"para"` | `"table"`）、`.text: str`、`.style: str | None`、`.index: int`
+  - `Block` 数据类：`.kind: str`（`"para"` | `"table"`）、`.text: str`、`.style: str | None`、`.index: int`、
+    `.cell_paras: list[str]`（仅 table 块有值：表格内各单元格段落的纯文本，按出现顺序。
+    实测有 14 条标记藏在单元格里，不带出来下游就看不到 —— 详见 Step 3 的字段注释）
   - `parse_docx(path_or_bytes) -> Document`
   - `Document` 数据类：`.blocks: list[Block]`、`.headings: list[Heading]`、`.paragraphs: list[str]`
 
@@ -1880,6 +1882,28 @@ def test_extracts_paragraph_text():
 def test_joins_multiple_runs_in_one_paragraph():
     xml = '<w:p><w:r><w:t>Agree</w:t></w:r><w:r><w:t>ment</w:t></w:r></w:p>'
     assert parse_docx(make_docx(xml)).paragraphs == ["Agreement"]
+
+def test_tab_and_break_become_separators():
+    """w:tab / w:br 是独立元素，不补分隔符会把两侧文本焊死。
+    实测 RAN1#126 有 3795 处 tab、48 处 br 落在两段无空白的文本之间。"""
+    xml = ('<w:p><w:r><w:t>Opening of the meeting</w:t><w:tab/><w:t>5</w:t></w:r></w:p>'
+           '<w:p><w:r><w:t>OLLA enabled</w:t><w:br/><w:t>Target BLER 10%</w:t></w:r></w:p>')
+    assert parse_docx(make_docx(xml)).paragraphs == [
+        "Opening of the meeting\t5", "OLLA enabled\nTarget BLER 10%"]
+
+def test_tab_stop_definition_is_not_a_tab_character():
+    """<w:pPr><w:tabs><w:tab/></w:tabs></w:pPr> 是制表位定义，与制表符同名但不是字符。"""
+    xml = ('<w:p><w:pPr><w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs></w:pPr>'
+           '<w:r><w:t>Agreement:</w:t></w:r></w:p>')
+    assert parse_docx(make_docx(xml)).paragraphs == ["Agreement:"]
+
+def test_cell_text_flattens_whitespace_for_markdown():
+    """单元格里的换行必须压成空格，否则一个单元格就能撑断整张表的行结构。"""
+    xml = ('<w:tbl><w:tr><w:tc><w:p><w:r><w:t>line1</w:t><w:br/><w:t>line2</w:t></w:r>'
+           '</w:p></w:tc></w:tr></w:tbl>')
+    blk = parse_docx(make_docx(xml)).blocks[0]
+    assert blk.kind == "table"
+    assert blk.text.splitlines()[0] == "| line1 line2 |"
 
 def test_headings_carry_level_and_index():
     doc = parse_docx(make_docx(para("Top", "Heading1") + para("body") + para("Sub", "Heading2")))
@@ -1991,11 +2015,32 @@ class Document:
     def paragraphs(self) -> list[str]:
         return [b.text for b in self.blocks if b.kind == "para"]
 
+# w:tab / w:br / w:cr 在 Word 里是独立元素，不是 w:t 里的字符。只收集 w:t 会把两侧
+# 文本焊死：实测 RAN1#126 有 3795 处 tab、48 处 br 落在两段无空白的文本之间，
+# "Opening of the meeting" + "5" 被拼成 "...meeting5"。这类错误不报错也不返回空，
+# 只是产出与原文本意不符的段落 —— 必须在这一处补分隔符，不能留给下游猜词边界。
+_SEP = {W + "tab": "\t", W + "br": "\n", W + "cr": "\n"}
+
 def _text_of(el) -> str:
-    return "".join(t.text or "" for t in el.iter(W + "t"))
+    out: list[str] = []
+    def walk(node):
+        for child in node:
+            tag = child.tag
+            if tag == W + "pPr":
+                continue            # 段落属性里的 <w:tab> 是制表位定义，不是制表符
+            if tag == W + "t":
+                out.append(child.text or "")
+            elif tag in _SEP:
+                out.append(_SEP[tag])
+            else:
+                walk(child)         # 文本框等嵌套结构里的 w:t 也要收
+    walk(el)
+    return "".join(out)
 
 def _cell_text(tc) -> str:
-    parts = [_text_of(p).strip() for p in tc.findall(W + "p")]
+    # 单元格文本要塞进 markdown 表格的一行，制表/换行必须压成空格，
+    # 否则一个单元格就能把整张表的行结构撑断。
+    parts = [re.sub(r"\s+", " ", _text_of(p)).strip() for p in tc.findall(W + "p")]
     return " ".join(x for x in parts if x).replace("|", r"\|")
 
 def _cell_paragraphs(tbl) -> list[str]:
@@ -2053,7 +2098,7 @@ def parse_docx(source: Path | bytes) -> Document:
 - [ ] **Step 4: 跑测试确认通过**
 
 Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_docx.py -v`
-Expected: 10 passed
+Expected: 14 passed
 
 如果 `test_real_fixture_structure` 的数字对不上，先检查 fixture 是否是 `Draft_Minutes_report_RAN1#126_v010.docx` 本身（而非其他版本），再调解析逻辑 —— 不要直接改断言数字。
 
@@ -2126,6 +2171,37 @@ def test_table_inside_block_is_kept():
                ("table", "| a | b |\n| --- | --- |\n| 1 | 2 |", None))
     assert "| a | b |" in extract_events(d)[0].text_en
 
+def test_marker_inside_table_cell_is_extracted():
+    """实测 RAN1#126 有 14 条标记装在“用表格画的框”里（12 agreement + 2 working assumption）。
+    只看表格的 markdown 整块会让它们不可见，约 4% 的 agreement 被静默丢弃。"""
+    d = Document()
+    d.blocks.append(Block("table", "| Agreement: |\n| --- |\n| Adopt X |", None, 0,
+                          cell_paras=["Agreement:", "Adopt X"]))
+    evs = extract_events(d)
+    assert [e.kind for e in evs] == ["agreement"]
+    assert evs[0].text_en == "Adopt X"
+
+def test_data_table_without_marker_stays_a_continuation():
+    """没有标记的真数据表仍整块并入上一条事件 —— 单元格扫描不得改变这个行为。"""
+    d = Document()
+    d.blocks.append(Block("para", "Agreement:", None, 0))
+    d.blocks.append(Block("para", "see table", None, 1))
+    d.blocks.append(Block("table", "| a | b |\n| --- | --- |\n| 1 | 2 |", None, 2,
+                          cell_paras=["a", "b", "1", "2"]))
+    evs = extract_events(d)
+    assert len(evs) == 1 and "| a | b |" in evs[0].text_en
+
+def test_marker_with_parenthetical_qualifier():
+    """"Conclusion (RAN#112)" 是引用上级会议结论的真实写法，必须认。"""
+    d = doc_of(("para", "Conclusion (RAN#112)", None), ("para", "X", None))
+    assert [e.kind for e in extract_events(d)] == ["conclusion"]
+
+def test_table_column_header_is_not_a_marker():
+    """Annex E 的表头列名 "Conclusion/Decision" 不是结论。全文仅此一处，
+    若为了它放宽正则去认 "/词"，就会凭空多出一条假事件。"""
+    d = doc_of(("para", "Conclusion/Decision", None), ("para", "Y", None))
+    assert extract_events(d) == []
+
 def test_all_marker_kinds_recognised():
     d = doc_of(("para", "Agreement: x", None), ("para", "Conclusion: y", None),
                ("para", "Working assumption: z", None), ("para", "Observation: w", None),
@@ -2160,8 +2236,10 @@ def test_real_fixture_counts():
     evs = extract_events(doc)
     kinds = [e.kind for e in evs]
     assert kinds.count("agreement") == 320
-    assert kinds.count("conclusion") == 29
+    assert kinds.count("conclusion") == 28
     assert kinds.count("working_assumption") == 13
+    # 320/28/13 是在 Task 8 的 _text_of 修复（w:tab/w:br 补分隔符）之后实测的，
+    # 且已包含藏在表格单元格里的 14 条（12 agreement + 2 working assumption）。
     assert all(e.text_en.strip() for e in evs), "不允许出现空正文的事件"
 
 def test_real_fixture_6g_events_have_heading_path():
@@ -2198,7 +2276,13 @@ assert set(MARKERS) == set(KIND_PREFIX), (
 # 标记必须在段首，后跟冒号/句点/行末 —— 避免 "The agreement was reached" 被误判
 MARKER_RE = re.compile(
     r"^\s*(?:" + "|".join(f"(?P<{k}>{v})" for k, v in MARKERS.items()) + r")"
-    r"\s*(?:\d+[\.\):]?)?\s*(?::|\.\s|$)", re.IGNORECASE)
+    r"\s*(?:\d+[\.\):]?)?"
+    # 括号限定：实测 RAN1#126 里有 "Conclusion (RAN#112)"、"Agreement (RAN1#124bis)"
+    # 这样引用上级会议结论的写法，不认它们会静默漏掉 3 条真标记。
+    # 不要再加 "/\w+" 去认 "Conclusion/Decision" —— 全文唯一一处是 Annex E 表格的列标题
+    # （"Tdoc Number | Title | Source | Conclusion/Decision"），认了就多一条假阳性。
+    r"\s*(?:\([^)]*\))?"
+    r"\s*(?::|\.\s|$)", re.IGNORECASE)
 
 HEADING_STYLE_RE = re.compile(r"(?i)^heading\s*(\d+)$")
 
@@ -2229,7 +2313,28 @@ def extract_events(doc: Document) -> list[RawEvent]:
             current = None                  # heading 终结当前块
             continue
 
-        kind = _marker_kind(block.text) if block.kind == "para" else None
+        # 表格有两种角色：真的数据表，以及“用表格画的框”—— 框里装着一条 agreement。
+        # 实测 RAN1#126 有 14 条标记属后者（12 agreement + 2 working assumption）。
+        # 若只看 block.text（整张表的 markdown），这些标记不可见，约 4% 的 agreement 会被
+        # 静默丢弃：管线不报错，只是少几条记录，产出物上看不出任何异常。
+        if block.kind == "table":
+            if any(_marker_kind(c) for c in block.cell_paras):
+                for cell in block.cell_paras:
+                    k = _marker_kind(cell)
+                    if k:
+                        body = MARKER_RE.sub("", cell, count=1).strip()
+                        # 同一张表里的多条事件共用 block.index：它们本就在同一个块内
+                        current = RawEvent(kind=k, text_en=body, para_index=block.index,
+                                           heading_path=[t for _, t in stack])
+                        events.append(current)
+                    elif current is not None:
+                        current.text_en = (current.text_en + "\n" + cell).strip()
+            elif current is not None:
+                # 真数据表：整块 markdown 并入上一条事件，保持原行为
+                current.text_en = (current.text_en + "\n" + block.text).strip()
+            continue
+
+        kind = _marker_kind(block.text)
         if kind:
             body = MARKER_RE.sub("", block.text, count=1).strip()
             current = RawEvent(kind=kind, text_en=body, para_index=block.index,
@@ -2253,7 +2358,8 @@ Expected: 11 passed
 from ngr.parse.docx import parse_docx; from ngr.parse.events import _marker_kind
 import pathlib
 doc = parse_docx(pathlib.Path('tests/fixtures/RAN1_126/minutes.docx'))
-miss = [p for p in doc.paragraphs if p.startswith('Agreement') and not _marker_kind(p)]
+texts = [x for b in doc.blocks for x in ([b.text] if b.kind == 'para' else b.cell_paras)]
+miss = [x for x in texts if x.startswith('Agreement') and not _marker_kind(x)]
 print('漏判:', miss[:5])"
 ```
 
