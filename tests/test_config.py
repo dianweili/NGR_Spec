@@ -166,6 +166,13 @@ def test_sources_rejects_zero_max_calls_per_run(tmp_path):
     with pytest.raises(ConfigError, match="max_calls_per_run"):
         load_sources(write(tmp_path, "s.yaml", bad))
 
+def test_sources_rejects_non_dict_timeout(tmp_path):
+    """父容器类型错了要显式报错，不能留给后面的 .get() 抛裸 AttributeError。
+    代表性用例：http.timeout 整体写成字符串。"""
+    bad = SOURCES_OK.replace("timeout: { connect: 10, read: 300 }", 'timeout: "fast"')
+    with pytest.raises(ConfigError, match="timeout"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
 FEATURES_OK = """
     features:
       - slug: isac
@@ -256,3 +263,16 @@ FEATURES_EMPTY = """
 def test_features_rejects_empty_features_list(tmp_path):
     with pytest.raises(ConfigError, match="features"):
         load_features(write(tmp_path, "f.yaml", FEATURES_EMPTY))
+
+FEATURES_AS_DICT = """
+    features:
+      isac:
+        name_zh: ISAC 通感一体
+    default_depth: origin
+"""
+
+def test_features_rejects_non_list_features(tmp_path):
+    """父容器类型错了要显式报错，不能留给后面的 enumerate()/循环抛裸异常。
+    代表性用例：顶层 features 写成字典而不是列表。"""
+    with pytest.raises(ConfigError, match="features"):
+        load_features(write(tmp_path, "f.yaml", FEATURES_AS_DICT))

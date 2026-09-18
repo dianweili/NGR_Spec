@@ -66,6 +66,21 @@ def _require(d: dict, key: str, where: str):
         raise ConfigError(f"{where} 缺少必填项 '{key}'")
     return d[key]
 
+def _as_dict(value, path: str) -> dict:
+    """显式的容器类型校验。父容器类型错了（`http: "fast"`、`extract: []`、
+    某个工作组写成字符串……）不显式检查的话，会在后面 `.get()`/`.items()` 那一步
+    抛一句与配置无关的裸 Python 异常（AttributeError 等），排查起来比类型错误更糟。
+    宁可多写几行，也不用 `except Exception` 兜底 —— 那样会把加载器自身的真实 bug
+    也一起伪装成配置错误。"""
+    if not isinstance(value, dict):
+        raise ConfigError(f"{path} 必须是映射，得到 {type(value).__name__}")
+    return value
+
+def _as_list(value, path: str) -> list:
+    if not isinstance(value, list):
+        raise ConfigError(f"{path} 必须是列表，得到 {type(value).__name__}")
+    return value
+
 def _to_int(value, path: str) -> int:
     """把 value 转成 int，转不动时抛 ConfigError 并带上完整字段路径，
     不让用户看着一句裸的 `invalid literal for int()` 猜是哪个字段。"""
@@ -109,9 +124,11 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
     path = path or P.config / "sources.yaml"
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
 
+    sources_raw = _as_dict(_require(data, "sources", "sources.yaml"), "sources")
     wgs = {}
-    for name, raw in _require(data, "sources", "sources.yaml").items():
+    for name, raw in sources_raw.items():
         where = f"sources.{name}"
+        raw = _as_dict(raw, where)
         try:
             re.compile(_require(raw, "dir_re", where))
         except re.error as exc:
@@ -136,20 +153,22 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
     if not wgs:
         raise ConfigError("sources.yaml 未定义任何工作组")
 
-    h = _require(data, "http", "sources.yaml")
+    h = _as_dict(_require(data, "http", "sources.yaml"), "http")
+    timeout_raw = h.get("timeout")
+    timeout = {} if timeout_raw is None else _as_dict(timeout_raw, "http.timeout")
     http = HttpConfig(
         user_agent=_require(h, "user_agent", "http"),
         concurrency=_to_int_min(h.get("concurrency", 1), "http.concurrency", 1),
         delay_seconds=_to_float_min(h.get("delay_seconds", 2.0), "http.delay_seconds", 0.0),
         retry_backoff=_to_number_list(h.get("retry_backoff", [2, 8, 30]), "http.retry_backoff"),
-        connect_timeout=_to_float(h.get("timeout", {}).get("connect", 10), "http.timeout.connect"),
-        read_timeout=_to_float(h.get("timeout", {}).get("read", 300), "http.timeout.read"),
+        connect_timeout=_to_float(timeout.get("connect", 10), "http.timeout.connect"),
+        read_timeout=_to_float(timeout.get("read", 300), "http.timeout.read"),
     )
     if "Mozilla" not in http.user_agent:
         raise ConfigError(
             "http.user_agent 必须伪装浏览器（含 Mozilla），否则 3GPP 的 WAF 返回 403")
 
-    e = _require(data, "extract", "sources.yaml")
+    e = _as_dict(_require(data, "extract", "sources.yaml"), "extract")
     backend = _require(e, "backend", "extract")
     if backend not in VALID_BACKENDS:
         raise ConfigError(f"extract.backend 只能是 {sorted(VALID_BACKENDS)}，得到 '{backend}'")
@@ -163,8 +182,9 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
     return SourcesConfig(wgs=wgs, http=http, extract=extract)
 
 def _parse_segment(raw: dict, where: str, default_depth: str) -> LineageSegment:
-    anchor = raw.get("anchor") or {}
-    agenda = list(anchor.get("agenda", []))
+    anchor_raw = raw.get("anchor")
+    anchor = {} if anchor_raw is None else _as_dict(anchor_raw, f"{where}.anchor")
+    agenda = list(_as_list(anchor.get("agenda", []), f"{where}.anchor.agenda"))
     title_re = anchor.get("title_re")
     if not agenda and not title_re:
         raise ConfigError(f"{where}.anchor 必须至少给出 agenda 或 title_re 之一")
@@ -204,16 +224,20 @@ def load_features(path: Path | None = None) -> list[Feature]:
     if default_depth not in VALID_DEPTHS:
         raise ConfigError(f"default_depth 只能是 {sorted(VALID_DEPTHS)}")
 
+    features_raw = _as_list(_require(data, "features", "features.yaml"), "features")
+
     feats, seen = [], set()
-    for i, raw in enumerate(_require(data, "features", "features.yaml")):
+    for i, raw in enumerate(features_raw):
+        raw = _as_dict(raw, f"features[{i}]")
         slug = _require(raw, "slug", f"features[{i}]")
         if slug in seen:
             raise ConfigError(f"重复的特性 slug: '{slug}'")
         seen.add(slug)
-        segs_raw = _require(raw, "lineage", f"features[{slug}]")
+        segs_raw = _as_list(_require(raw, "lineage", f"features[{slug}]"), f"features[{slug}].lineage")
         if not segs_raw:
             raise ConfigError(f"features[{slug}].lineage 不能为空")
-        segs = [_parse_segment(s, f"features[{slug}].lineage[{j}]", default_depth)
+        segs = [_parse_segment(_as_dict(s, f"features[{slug}].lineage[{j}]"),
+                                f"features[{slug}].lineage[{j}]", default_depth)
                 for j, s in enumerate(segs_raw)]
         feats.append(Feature(slug=slug, name_zh=_require(raw, "name_zh", f"features[{slug}]"),
                              lineage=segs))
