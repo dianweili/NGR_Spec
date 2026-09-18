@@ -722,6 +722,55 @@ parse 层（Task 8–11）至此整体收口。
 
 - 预检 `preflight_task.py 12` → **[PASS] 14 passed**（第一个一次就过的预检）
 
+- 交付 `a5423fd`，**167 passed**（153 → 167），署名正确。
+  独立核实 `grep -rn "claude|llm|LLM|subprocess" ngr/mapping/` 无命中 —— 纯规则要求满足。
+- 实现者按我的要求用了 `--junitxml`，但把 `test_results.xml` 落在了仓库根。已 gitignore
+  （`fdc8a09`）。**这是我的指令引出的副作用**：以后派发里要顺带说明 junit 输出写到 temp。
+- Task 13 预检 → 一开始 [FAIL]：`ngr/mapping/runner.py` 的 `MergeStats` 用了
+  `field(default_factory=list)` 但 import 行只有 `dataclass, asdict`，**导入期就炸**。
+  补 `field` 后 [PASS] 13 passed。这类缺陷预检几乎零成本就能抓到，而下发后才发现要多走一轮往返。
+
+### Task 12 审查：规格符合性 PASS，代码质量 APPROVED（零 Critical 零 Major）
+
+审查用 `ast` 按函数切分 + `difflib` 逐行比对：`lineage.py` 与简报**逐字节相同**；
+测试文件 16 个函数（14 条测试 + 2 个 helper）的 `ast.dump()` 与简报**逐一完全相同**，
+仅有删掉首行路径注释、多一个空行两处纯格式差异。改动范围恰好是简报指定的三个文件。
+
+**穷举实测的边界**（独立脚本，不依赖简报给的测试）：
+- 议程号点分段：`"10.2"` 对 `"10.20"` / `"110.2"` / `"10.2.1"` 均**不误命中**；
+  `"10.2.*"` 对 `"10.2.3"` 命中、对 `"110.2"` / `"10.20"` 不命中。无前缀越界、无漏判。
+- 会议区间：半开 `(124, None)`、闭区间、单点区间的边界点全部正确；
+  **倒置区间 `(130, 100)` 在六个测试点上全部 fail-closed** —— 那正是 Task 6 出现过的
+  缺陷模式（`fetch_window` 倒置区间），这次没有重演。该逻辑在 `models.py`，不在本次 diff 内。
+- 多命中排序用 `sorted()`（Python 保证稳定），输入均为 list 无 dict/set 迭代，结果确定性可复现。
+- 审查还核实"features 按列表顺序、段内 6G 优先"这条规则**在简报 docstring 里就已明文写出**，
+  不是实现者自行发明后偷偷加的。
+
+### Ruling AW —— 审查的 Minor 1 不改：核实后发现上一层早已满足
+
+审查建议"给 features.yaml 加载层加 `title_re` 预编译校验，让错误在启动期暴露且带 feature slug"。
+**核实后发现 Task 3 已经做了**：`ngr/config.py:199-203` 在 `_parse_segment` 里
+`re.compile(title_re)`，失败即抛 `ConfigError`。实测写个 `"(unclosed"` 进 features.yaml：
+
+    ConfigError: features[waveform].lineage[0].anchor.title_re 不是合法正则: missing ), unterminated subpattern
+
+位置精确到 feature slug 与段下标，正是审查想要的效果。审查只看了 mapping 层，没往上看 config 层。
+
+**这条记下来的价值不在结论，在做法**：审查提的建议要先核实是否已被满足，再动手。
+这次核实成本几分钟，省下一次无谓改动；反过来若照单全收，会在 config 层加出第二处重复校验 ——
+正是全局约束反对的"留下两处互相矛盾/重复的表述"。
+
+Minor 2（实现者报告里自述的 commit author 与 `git show` 实际不符）仅提醒自审要对齐真实输出，
+约束项（trailer 文本）已核实一致，无需动作。
+
+**Task 12: complete** —— `a5423fd`，167 passed。
+
+---
+
+## Task 13: map 编排、state 合并与 lineage-report
+
+- 预检 `preflight_task.py 13` → 先 [FAIL]（`field` 未 import，导入期即炸），补后 **[PASS] 13 passed**（`0739dd7`）
+
 ## 当前状态与下一步（压缩/换会话后从这里接手）
 
 > **维护须知**：本段**永远是文件最后一段**。新增执行记录一律插在它**之前**，
