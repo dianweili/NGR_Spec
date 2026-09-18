@@ -1887,9 +1887,11 @@ def test_tab_and_break_become_separators():
     """w:tab / w:br 是独立元素，不补分隔符会把两侧文本焊死。
     实测 RAN1#126 有 3795 处 tab、48 处 br 落在两段无空白的文本之间。"""
     xml = ('<w:p><w:r><w:t>Opening of the meeting</w:t><w:tab/><w:t>5</w:t></w:r></w:p>'
-           '<w:p><w:r><w:t>OLLA enabled</w:t><w:br/><w:t>Target BLER 10%</w:t></w:r></w:p>')
+           '<w:p><w:r><w:t>OLLA enabled</w:t><w:br/><w:t>Target BLER 10%</w:t></w:r></w:p>'
+           '<w:p><w:r><w:t>Case 1</w:t><w:cr/><w:t>Case 2</w:t></w:r></w:p>')
     assert parse_docx(make_docx(xml)).paragraphs == [
-        "Opening of the meeting\t5", "OLLA enabled\nTarget BLER 10%"]
+        "Opening of the meeting\t5", "OLLA enabled\nTarget BLER 10%",
+        "Case 1\nCase 2"]
 
 def test_tab_stop_definition_is_not_a_tab_character():
     """<w:pPr><w:tabs><w:tab/></w:tabs></w:pPr> 是制表位定义，与制表符同名但不是字符。"""
@@ -2044,7 +2046,12 @@ def _cell_text(tc) -> str:
     return " ".join(x for x in parts if x).replace("|", r"\|")
 
 def _cell_paragraphs(tbl) -> list[str]:
-    """表格内所有单元格段落的纯文本，按文档顺序，跳过空段。"""
+    """表格内所有单元格段落的纯文本，按文档顺序，跳过空段。
+
+    这里**有意不做空白压平**，与 _cell_text 不同：_cell_text 的产物要塞进 markdown
+    表格的一行，残留换行会撑断整张表；而 cell_paras 是给下游做标记识别和正文拼接的，
+    text_en 要逐字保留（全局约束），在这里压平就等于改写原文。
+    需要单行呈现的场合（如喂 LLM 的逐行 blob）由使用方自己压平。"""
     return [t for t in (_text_of(p).strip() for p in tbl.iter(W + "p")) if t]
 
 def _table_to_markdown(tbl) -> str:
@@ -4767,7 +4774,7 @@ Expected: FAIL，`No module named 'ngr.extract.digest'`
 
 ```python
 from __future__ import annotations
-import json, logging
+import json, logging, re
 from ngr.config import ExtractConfig
 from ngr.extract.backend import LlmError, LlmRateLimited
 from ngr.extract.budget import BudgetExhausted
@@ -4778,6 +4785,18 @@ from ngr.models import Feature
 log = logging.getLogger(__name__)
 EFFORT_DIGEST = "high"
 MEETINGS_PER_CHUNK = 4
+
+def _one_line(s: str) -> str:
+    """把事件正文压成一行，供 "id:正文" 的逐行 blob 使用。
+
+    blob 的隐含约定是"一行一个事件"。而 text_en 内部**可能本来就有换行** ——
+    parse 层给 w:br/w:cr 补了换行符（实测该 fixture 有 48 处），表格单元格拼进来的
+    文本也可能带换行。一旦某条事件跨占多行，续行就不带 "id:" 前缀，LLM 会把它
+    误归到相邻的下一个 id，产出张冠李戴的摘要 —— 而且看不出任何异常。
+
+    注意这只改变**喂给 LLM 的呈现形式**，不修改落盘的 text_en
+    （全局约束：text_en 逐字保留）。"""
+    return re.sub(r"\s+", " ", s).strip()
 
 LEGACY_SYSTEM = """你在归纳一个 3GPP 特性在 5G-A（Rel-18/19）阶段的历史脉络。
 
@@ -4849,7 +4868,7 @@ def _legacy_summary(feature: Feature, legacy: list[dict], cli, cache, budget) ->
 
     pieces = []
     for chunk in chunks:
-        blob = "\n".join(f"{e['id']}:{e['text_en']}" for e in
+        blob = "\n".join(f"{e['id']}:{_one_line(e['text_en'])}" for e in
                          sorted(chunk, key=lambda x: x["id"]))
         key = cache_key("legacy:" + feature.slug, PROMPT_VERSION, EFFORT_DIGEST, blob)
         hit = cache.get(key)
@@ -4897,8 +4916,9 @@ def digest_features(features: list[Feature], events: list[dict], feat_state: dic
                 if text:
                     entry["legacy_summary"] = text
 
-            blob = "\n".join(f"{e['id']}:{e.get('summary_zh') or e['text_en'][:200]}"
-                             for e in sorted(six, key=lambda x: x["id"]))
+            blob = "\n".join(
+                f"{e['id']}:{_one_line(e.get('summary_zh') or e['text_en'][:200])}"
+                for e in sorted(six, key=lambda x: x["id"]))
             key = cache_key("feature:" + feat.slug, PROMPT_VERSION, EFFORT_DIGEST, blob)
             hit = cache.get(key)
             if hit:

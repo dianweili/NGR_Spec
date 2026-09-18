@@ -27,9 +27,11 @@ def test_tab_and_break_become_separators():
     """w:tab / w:br 是独立元素，不补分隔符会把两侧文本焊死。
     实测 RAN1#126 有 3795 处 tab、48 处 br 落在两段无空白的文本之间。"""
     xml = ('<w:p><w:r><w:t>Opening of the meeting</w:t><w:tab/><w:t>5</w:t></w:r></w:p>'
-           '<w:p><w:r><w:t>OLLA enabled</w:t><w:br/><w:t>Target BLER 10%</w:t></w:r></w:p>')
+           '<w:p><w:r><w:t>OLLA enabled</w:t><w:br/><w:t>Target BLER 10%</w:t></w:r></w:p>'
+           '<w:p><w:r><w:t>Case 1</w:t><w:cr/><w:t>Case 2</w:t></w:r></w:p>')
     assert parse_docx(make_docx(xml)).paragraphs == [
-        "Opening of the meeting\t5", "OLLA enabled\nTarget BLER 10%"]
+        "Opening of the meeting\t5", "OLLA enabled\nTarget BLER 10%",
+        "Case 1\nCase 2"]
 
 def test_tab_stop_definition_is_not_a_tab_character():
     """<w:pPr><w:tabs><w:tab/></w:tabs></w:pPr> 是制表位定义，与制表符同名但不是字符。"""

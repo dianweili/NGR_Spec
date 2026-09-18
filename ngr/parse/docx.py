@@ -61,7 +61,12 @@ def _cell_text(tc) -> str:
     return " ".join(x for x in parts if x).replace("|", r"\|")
 
 def _cell_paragraphs(tbl) -> list[str]:
-    """表格内所有单元格段落的纯文本，按文档顺序，跳过空段。"""
+    """表格内所有单元格段落的纯文本，按文档顺序，跳过空段。
+
+    这里**有意不做空白压平**，与 _cell_text 不同：_cell_text 的产物要塞进 markdown
+    表格的一行，残留换行会撑断整张表；而 cell_paras 是给下游做标记识别和正文拼接的，
+    text_en 要逐字保留（全局约束），在这里压平就等于改写原文。
+    需要单行呈现的场合（如喂 LLM 的逐行 blob）由使用方自己压平。"""
     return [t for t in (_text_of(p).strip() for p in tbl.iter(W + "p")) if t]
 
 def _table_to_markdown(tbl) -> str:
