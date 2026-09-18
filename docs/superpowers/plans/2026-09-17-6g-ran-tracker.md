@@ -1765,6 +1765,8 @@ git commit -m "feat(fetch): manifest 增量、frozen 跳过、会议抓取编排
 ```python
 # tests/test_parse_agenda.py
 import pathlib
+import logging
+
 from ngr.parse.agenda import parse_agenda
 
 def test_parse_agenda_basic():
@@ -1795,6 +1797,30 @@ def test_parse_agenda_on_real_fixture():
     assert by_item["10.2"] == "Waveform for 6GR air interface"
     assert by_item["9"] == "Release 20 NR"     # Rel-20 ≠ 6G，两者并列
     assert len(items) > 50
+
+
+def test_utf8_agenda_decodes_without_warning(caplog):
+    """正常 UTF-8 文件不得产生任何告警 —— 探针的价值来自平时沉默。"""
+    data = '"9.1","波形 Waveform"\n'.encode("utf-8")
+    with caplog.at_level(logging.WARNING):
+        items = parse_agenda(data)
+    assert items[0].title == "波形 Waveform"
+    assert caplog.text == ""
+
+
+def test_non_utf8_agenda_warns_instead_of_silently_mangling(caplog):
+    """非 UTF-8 文件会被解成乱码标题，对不上任何 heading。
+
+    原来一上来就 errors="replace"，这种失真**毫无痕迹** —— 表现出来只是"对齐率低"。
+    下游门禁能兜住全面乱码，但兜不住"只乱几条、比率仍在 20% 阈值内"那种错误却不显眼
+    的结果。所以退让可以，不出声不行。
+    """
+    data = '"9.1","波形"\n'.encode("gbk")
+    with caplog.at_level(logging.WARNING):
+        items = parse_agenda(data)
+    assert items[0].item == "9.1"          # 议程号是 ASCII，照常解析
+    assert items[0].title != "波形"         # 标题已失真
+    assert "不是 UTF-8" in caplog.text
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -1806,12 +1832,37 @@ Expected: FAIL，`No module named 'ngr.parse'`
 
 ```python
 from __future__ import annotations
-import csv, io
+import csv, io, logging
 from ngr.models import AgendaItem
+
+log = logging.getLogger(__name__)
+
+def _decode(data: bytes) -> str:
+    """按 UTF-8 → cp1252 的顺序解码，任何一次退让都要出声。
+
+    原来一上来就 `errors="replace"`，把编码错误静默吞成 "�"：标题变乱码后对不上
+    任何 heading，表现出来只是"这次对齐率有点低"，而真正的原因（文件不是 UTF-8）
+    一点痕迹都没有。下游的 unmatched_ratio 门禁能兜住**全面**乱码（比率触顶 100%），
+    但兜不住"只乱几条、比率仍在 20% 阈值内" —— 那会产出错误却不显眼的对齐结果。
+
+    不直接抛错，是因为 3GPP 的 CSV 确实可能是 cp1252，硬失败会把正常文件挡在门外。
+    退让本身可以接受，**不出声才是缺陷**。
+    """
+    try:
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        pass
+    try:
+        text = data.decode("cp1252")
+    except UnicodeDecodeError:
+        log.warning("agenda.csv 既非 UTF-8 也非 cp1252，退到替换模式解码，标题很可能失真")
+        return data.decode("utf-8-sig", "replace")
+    log.warning("agenda.csv 不是 UTF-8，已按 cp1252 解码，标题可能失真")
+    return text
 
 def parse_agenda(data: bytes) -> list[AgendaItem]:
     """解析 3GPP 的 Agenda/agenda.csv，格式为 "<议程号>","<标题>" 两列无表头。"""
-    text = data.decode("utf-8-sig", "replace")
+    text = _decode(data)
     out = []
     for row in csv.reader(io.StringIO(text)):
         if len(row) < 2:

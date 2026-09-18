@@ -670,6 +670,58 @@ Task 11 自带的 `test_high_unmatched_ratio_raises` 用 `unaligned=[Heading(...
   - zip 缺 `word/document.xml` / docx 被二次 zip 包裹 / XML 损坏，分别抛裸的
     `KeyError` / `BadZipFile` / `ParseError`，不带是哪个文件失败的上下文。
 
+- 交付 `9c9fd5e`，**151 passed**（137 → 151，新增 14 = 简报 10 条 + 实现者自补 4 条畸形输入）。
+  署名正确。实现者报告了一处解读：简报说"各补一条测试"，它用 `parametrize` 展开覆盖了
+  `KeyError` / `BadZipFile` / `ParseError` 三种具体畸形，而不是只测一种 —— **比字面要求更严，接受**。
+  它还主动说明 try/except 只包住 `parse_docx` 一次调用，没有扩大到 `extract_events`/`align`/
+  `parse_agenda`，以免误吞其他层自己的 bug；`docx.py` 未改动。这两点正是我派发时点名的要求，
+  已列入审查的重点核实项，等审查独立确认。
+- Task 12 预检 → **[PASS] 14 passed**
+
+### Task 11 审查：规格符合性 PASS，代码质量 APPROVED（零 Critical 零 Major）
+
+审查用 `ast` 按函数名切分做**逐函数**字符级 diff：简报给定的 10 条测试全部 `identical`
+（含注释、docstring、空行）；`runner.py` 与简报代码块的唯一差异是新增两行 import、
+删掉一句过时注释、以及在 `parse_docx` 外包的 try/except。阈值与异常文案逐字一致。
+
+**三项重点核实全部独立确认**：
+- `docx.py` 未被触碰（`git show --stat` 核对）。
+- try/except **包裹范围正确**：审查把 `runner.align` 换成抛 `KeyError` 的假函数，
+  异常**原样冒出**未被误吞成 `ParseError` —— 证明只裹住了 `parse_docx` 一次调用。
+- `raise ... from e` 保留了异常链。
+
+**对抗性实测"会不会返回看起来正常但实际为空的 ParsedMeeting"**：raw 目录不存在、
+目录为空、minutes 0 字节、agenda.csv 0 字节 —— **全部正确 raise，没有一条静默产出空结果。**
+
+### Ruling AV —— 审查的 Minor 2 立即修：agenda.py 静默吞编码错误
+
+审查发现 `data.decode("utf-8-sig", "replace")` 把编码错误静默吞成 `�`。它同时指出
+下游门禁**今天**能兜住（乱码标题对不上任何 heading，比率触顶 100% 触发硬失败），
+所以判为 Minor、且属 Task 7 遗留不计入 Task 11。
+
+**我裁定立即修，不留到后面。** 审查自己写出了那个兜不住的场景：
+**"乱码几条、比率仍在 20% 阈值内"会产出错误却不显眼的对齐结果** ——
+这正是本项目定义的最坏情形（静默错误 > 崩溃）。依赖下游门禁兜底是概率性的，不是保证。
+
+修法：`_decode()` 按 UTF-8 → cp1252 顺序解码，**任何一次退让都打 warning**。
+不直接抛错，是因为 3GPP 的 CSV 确实可能是 cp1252，硬失败会把正常文件挡在门外 ——
+**退让本身可以接受，不出声才是缺陷**。补两条测试：正常 UTF-8 零告警（探针平时沉默）、
+GBK 中文触发告警且议程号仍照常解析。
+
+**未修的 Minor 1**（`write_parsed` 非原子写）：审查核实 `ngr/fetch/manifest.py` 也是同样的
+`write_text` 模式，是项目既有惯例；且半截 JSON 会在 map 层 `json.loads` 立即报错，
+**不会被误读成"合法但为空"**，不违反本任务核心原则。裁定不为 Task 11 单独返工，
+若要加固应在后续统一改造 —— 记在这里以免被忘记。
+
+**Task 11: complete** —— `9c9fd5e` + agenda 解码修复，153 passed。
+parse 层（Task 8–11）至此整体收口。
+
+---
+
+## Task 12: 血统段匹配引擎
+
+- 预检 `preflight_task.py 12` → **[PASS] 14 passed**（第一个一次就过的预检）
+
 ## 当前状态与下一步（压缩/换会话后从这里接手）
 
 > **维护须知**：本段**永远是文件最后一段**。新增执行记录一律插在它**之前**，
