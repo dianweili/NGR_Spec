@@ -467,7 +467,7 @@ SOURCES_OK = """
         latest_meeting_with_content: 126
         artifacts: [agenda_csv, minutes_docx]
     http:
-      user_agent: "UA"
+      user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0.0.0"
       concurrency: 2
       delay_seconds: 0.5
       retry_backoff: [2, 8, 30]
@@ -510,6 +510,13 @@ def test_sources_rejects_invalid_minutes_re(tmp_path):
     body = SOURCES_OK.replace("(?i)^Draft_Minutes.*", "(?i)^Draft_Minutes(.*")
     with pytest.raises(ConfigError, match="minutes_re"):
         load_sources(write(tmp_path, "s.yaml", body))
+
+def test_sources_rejects_non_browser_user_agent(tmp_path):
+    """默认 UA 会被 3GPP 的 WAF 挡成 403，配置写错必须在启动时就炸。"""
+    bad = SOURCES_OK.replace("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0.0.0",
+                             "python-requests/2.32")
+    with pytest.raises(ConfigError, match="user_agent"):
+        load_sources(write(tmp_path, "s.yaml", bad))
 
 def test_sources_rejects_unknown_backend(tmp_path):
     bad = SOURCES_OK.replace("backend: cli", "backend: api")
@@ -557,10 +564,24 @@ def test_features_rejects_invalid_regex(tmp_path):
     with pytest.raises(ConfigError, match="正则"):
         load_features(write(tmp_path, "f.yaml", bad))
 
+FEATURES_DUP_SLUG = """
+    features:
+      - slug: isac
+        name_zh: ISAC 甲
+        lineage:
+          - { era: 6G, release: Rel-20, anchor: { agenda: ["RAN1:10.8"] },
+              meetings: { RAN1: [124, null] }, depth: full }
+      - slug: isac
+        name_zh: ISAC 乙
+        lineage:
+          - { era: 6G, release: Rel-20, anchor: { agenda: ["RAN1:10.9"] },
+              meetings: { RAN1: [124, null] }, depth: full }
+    default_depth: origin
+"""
+
 def test_features_rejects_duplicate_slug(tmp_path):
-    bad = FEATURES_OK + FEATURES_OK.split("features:")[1]
     with pytest.raises(ConfigError, match="slug"):
-        load_features(write(tmp_path, "f.yaml", bad))
+        load_features(write(tmp_path, "f.yaml", FEATURES_DUP_SLUG))
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -679,7 +700,8 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
         read_timeout=float(h.get("timeout", {}).get("read", 300)),
     )
     if "Mozilla" not in http.user_agent:
-        raise ConfigError("http.user_agent 必须伪装浏览器，否则 3GPP 返回 403")
+        raise ConfigError(
+            "http.user_agent 必须伪装浏览器（含 Mozilla），否则 3GPP 的 WAF 返回 403")
 
     e = _require(data, "extract", "sources.yaml")
     backend = _require(e, "backend", "extract")
