@@ -1385,7 +1385,12 @@ def pick_latest_minutes(names: list[str], minutes_re: str) -> str | None:
         return None
     def rank(n: str):
         v = minutes_version(n)
-        return (0 if v is None else 1, v or 0, n, 0 if n.lower().endswith(".docx") else -1)
+        fmt = 0 if n.lower().endswith(".docx") else -1
+        # 次序：有版本号 > 无版本号 → 版本号大 > 小 → docx > zip → 文件名大 > 小。
+        # 格式偏好必须排在文件名之前：同版本号的候选只差扩展名，
+        # 若先比文件名，'...v100.docx' < '...v100.zip'（'d' < 'z'）会让 max() 选中 zip，
+        # 格式偏好永远轮不到生效。文件名只作最后兜底（无版本号时按 TDoc 号取新）。
+        return (0 if v is None else 1, v or 0, fmt, n)
     return max(cands, key=rank)
 
 def unwrap_docx(data: bytes) -> bytes:
