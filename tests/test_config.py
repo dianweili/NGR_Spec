@@ -131,6 +131,41 @@ def test_sources_requires_extract_section(tmp_path):
     with pytest.raises(ConfigError, match="extract"):
         load_sources(write(tmp_path, "s.yaml", SOURCES_MISSING_EXTRACT))
 
+def test_sources_rejects_non_integer_concurrency(tmp_path):
+    """代表性用例：http 段的类型错误同样要包成带字段路径的 ConfigError，
+    不是只有 sources 段的字段才享受这个待遇。"""
+    bad = SOURCES_OK.replace("concurrency: 2", "concurrency: 两个")
+    with pytest.raises(ConfigError, match="concurrency"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+def test_sources_rejects_non_integer_batch_size(tmp_path):
+    """代表性用例：extract 段同理。"""
+    bad = SOURCES_OK.replace("batch_size: 40", "batch_size: 四十")
+    with pytest.raises(ConfigError, match="batch_size"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+def test_sources_rejects_zero_concurrency(tmp_path):
+    """类型对但取值无意义：concurrency: 0 会让抓取层一个请求都发不出去却不报错，
+    比类型错误更难排查，必须在启动时就拦下来。"""
+    bad = SOURCES_OK.replace("concurrency: 2", "concurrency: 0")
+    with pytest.raises(ConfigError, match="concurrency"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+def test_sources_rejects_negative_delay_seconds(tmp_path):
+    bad = SOURCES_OK.replace("delay_seconds: 0.5", "delay_seconds: -1")
+    with pytest.raises(ConfigError, match="delay_seconds"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+def test_sources_rejects_zero_batch_size(tmp_path):
+    bad = SOURCES_OK.replace("batch_size: 40", "batch_size: 0")
+    with pytest.raises(ConfigError, match="batch_size"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
+def test_sources_rejects_zero_max_calls_per_run(tmp_path):
+    bad = SOURCES_OK.replace("max_calls_per_run: 60", "max_calls_per_run: 0")
+    with pytest.raises(ConfigError, match="max_calls_per_run"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
 FEATURES_OK = """
     features:
       - slug: isac

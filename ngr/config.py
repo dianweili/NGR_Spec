@@ -79,6 +79,32 @@ def _to_int_or_none(value, path: str) -> int | None:
         return None
     return _to_int(value, path)
 
+def _to_float(value, path: str) -> float:
+    """同 _to_int，但用于允许小数的字段（int 写法也能转，例如 delay_seconds: 2）。"""
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"{path} 必须是数字，得到 {value!r}") from exc
+
+def _to_int_min(value, path: str, minimum: int) -> int:
+    """类型对但取值无意义的配置（如 concurrency: 0）同样是启动时就该炸的错误 ——
+    concurrency: 0 会让抓取层一个请求都发不出去，却不会有任何异常提示。"""
+    n = _to_int(value, path)
+    if n < minimum:
+        raise ConfigError(f"{path} 必须 >= {minimum}，得到 {n}")
+    return n
+
+def _to_float_min(value, path: str, minimum: float) -> float:
+    n = _to_float(value, path)
+    if n < minimum:
+        raise ConfigError(f"{path} 必须 >= {minimum}，得到 {n}")
+    return n
+
+def _to_number_list(value, path: str) -> list[int]:
+    if not isinstance(value, list):
+        raise ConfigError(f"{path} 必须是数值列表，得到 {value!r}")
+    return [_to_int(v, f"{path}[{i}]") for i, v in enumerate(value)]
+
 def load_sources(path: Path | None = None) -> SourcesConfig:
     path = path or P.config / "sources.yaml"
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
@@ -113,11 +139,11 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
     h = _require(data, "http", "sources.yaml")
     http = HttpConfig(
         user_agent=_require(h, "user_agent", "http"),
-        concurrency=int(h.get("concurrency", 1)),
-        delay_seconds=float(h.get("delay_seconds", 2.0)),
-        retry_backoff=list(h.get("retry_backoff", [2, 8, 30])),
-        connect_timeout=float(h.get("timeout", {}).get("connect", 10)),
-        read_timeout=float(h.get("timeout", {}).get("read", 300)),
+        concurrency=_to_int_min(h.get("concurrency", 1), "http.concurrency", 1),
+        delay_seconds=_to_float_min(h.get("delay_seconds", 2.0), "http.delay_seconds", 0.0),
+        retry_backoff=_to_number_list(h.get("retry_backoff", [2, 8, 30]), "http.retry_backoff"),
+        connect_timeout=_to_float(h.get("timeout", {}).get("connect", 10), "http.timeout.connect"),
+        read_timeout=_to_float(h.get("timeout", {}).get("read", 300), "http.timeout.read"),
     )
     if "Mozilla" not in http.user_agent:
         raise ConfigError(
@@ -129,8 +155,8 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
         raise ConfigError(f"extract.backend 只能是 {sorted(VALID_BACKENDS)}，得到 '{backend}'")
     extract = ExtractConfig(
         backend=backend,
-        max_calls_per_run=int(e.get("max_calls_per_run", 60)),
-        batch_size=int(e.get("batch_size", 40)),
+        max_calls_per_run=_to_int_min(e.get("max_calls_per_run", 60), "extract.max_calls_per_run", 1),
+        batch_size=_to_int_min(e.get("batch_size", 40), "extract.batch_size", 1),
         model_bulk=e.get("model_bulk", "sonnet"),
         model_digest=e.get("model_digest", "opus"),
     )
