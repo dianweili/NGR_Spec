@@ -1,3 +1,4 @@
+import logging
 import json
 from ngr.models import Feature, LineageSegment
 from ngr.mapping.runner import map_meeting, merge_events, write_state
@@ -114,3 +115,49 @@ def test_lineage_report_lists_hits_and_misses():
     assert "waveform" in txt and "6G" in txt
     assert "isac" in txt
     assert "0" in txt          # isac 的两段在本次会议都没命中
+
+
+def test_missing_event_is_reported_not_deleted(caplog):
+    """纪要出新版本、删掉一条 agreement 时，末位 id 从此无人认领。
+
+    事件 id 是位置式的，被删那条对应的 id **永久留在 state 里**，看板上会一直显示
+    一条实际已不存在的 agreement。只报告不删除：若某次 parse 回归让事件暂时缺失，
+    删除就是永久数据丢失。缺失是信号，不是指令。
+    """
+    feats = [Feature(slug="waveform", name_zh="波形",
+                     lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                  meetings={"RAN1": (124, None)})])]
+    def parsed(texts):
+        return {"wg": "RAN1", "meeting": 126, "minutes_version": 10,
+                "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                            "heading_path": ["Waveform"], "agenda_item": "10.2",
+                            "agenda_title": "Waveform"} for i, x in enumerate(texts)]}
+
+    state, _ = merge_events([], map_meeting(parsed(["AAA", "BBB", "CCC"]), feats), "2026-09-18")
+    with caplog.at_level(logging.WARNING):
+        merged, stats = merge_events(state, map_meeting(parsed(["AAA", "BBB"]), feats),
+                                     "2026-09-19")
+    assert stats.stale_ids == ["RAN1-126-10.2-a003"]
+    assert len(merged) == 3, "缺失的事件必须保留在 state 里，不许删"
+    assert "不再出现" in caplog.text
+
+
+def test_other_meetings_are_not_reported_as_stale(caplog):
+    """incoming 只覆盖本次跑的会议，而 existing 是全量 state。
+    比较不限定 (wg, meeting) 的话，所有历史会议的事件都会被当成"本次缺失"。"""
+    feats = [Feature(slug="waveform", name_zh="波形",
+                     lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                  meetings={"RAN1": (124, None)})])]
+    def parsed(meeting, texts):
+        return {"wg": "RAN1", "meeting": meeting, "minutes_version": 10,
+                "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                            "heading_path": ["Waveform"], "agenda_item": "10.2",
+                            "agenda_title": "Waveform"} for i, x in enumerate(texts)]}
+
+    state, _ = merge_events([], map_meeting(parsed(126, ["AAA", "BBB"]), feats), "2026-09-18")
+    with caplog.at_level(logging.WARNING):
+        merged, stats = merge_events(state, map_meeting(parsed(127, ["XXX"]), feats),
+                                     "2026-09-19")
+    assert stats.stale_ids == []
+    assert len(merged) == 3
+    assert caplog.text == ""

@@ -1,10 +1,12 @@
 from __future__ import annotations
-import hashlib, json, re
+import hashlib, json, logging, re
 from collections import defaultdict
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from ngr.mapping.lineage import match_event
 from ngr.models import Event, Feature
+
+log = logging.getLogger(__name__)
 
 _SLUG_RE = re.compile(r"[^A-Za-z0-9.]+")
 
@@ -56,6 +58,15 @@ class MergeStats:
     added_ids: list[str] = field(default_factory=list)
     """新增事件的 id。提交信息按它统计每特性新增数 —— 不能用整批 incoming，
     否则未变更的事件也会被计进'本次新增'。"""
+    stale_ids: list[str] = field(default_factory=list)
+    """本次解析中不再出现、但仍留在 state 里的事件 id。
+
+    事件 id 是位置式的（`RAN1-126-10.2-a003`），纪要出新版本、中间插入或删掉一条
+    agreement 时，后续事件的 seq 会整体位移。被删掉的那条对应的末位 id 从此无人认领，
+    **永久留在 state 里**，看板上会一直显示一条实际已不存在的 agreement。
+
+    **只报告不删除**：若某次 parse 回归（比如正则改动）让事件暂时缺失，删除就是永久
+    数据丢失 —— 那正是本项目最怕的。缺失是信号，不是指令。"""
 
 # 事件变更时要作废的 LLM 产物
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
@@ -88,6 +99,18 @@ def merge_events(existing: list[dict], incoming: list[Event],
                 new.update(_LLM_FIELDS)
             stats.changed += 1
         by_id[ev.id] = new
+
+    # incoming 只覆盖本次跑的那几场会议，而 existing 是**全量** state。
+    # 比较必须限定在同一 (wg, meeting) 范围内，否则所有历史会议的事件都会被当成
+    # "本次缺失" —— 这是这段最容易写错的地方。
+    scope = {(ev.wg, ev.meeting) for ev in incoming}
+    seen = {ev.id for ev in incoming}
+    for e in existing:
+        if (e.get("wg"), e.get("meeting")) in scope and e["id"] not in seen:
+            stats.stale_ids.append(e["id"])
+    if stats.stale_ids:
+        log.warning("state 里有 %d 条事件在本次解析中不再出现（保留不删，仅报告）: %s",
+                    len(stats.stale_ids), ", ".join(sorted(stats.stale_ids)[:5]))
 
     return list(by_id.values()), stats
 

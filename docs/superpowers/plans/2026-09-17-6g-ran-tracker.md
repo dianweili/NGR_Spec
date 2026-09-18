@@ -3335,6 +3335,7 @@ git commit -m "feat(map): 血统段匹配引擎"
 
 ```python
 # tests/test_mapping_runner.py
+import logging
 import json
 from ngr.models import Feature, LineageSegment
 from ngr.mapping.runner import map_meeting, merge_events, write_state
@@ -3451,6 +3452,52 @@ def test_lineage_report_lists_hits_and_misses():
     assert "waveform" in txt and "6G" in txt
     assert "isac" in txt
     assert "0" in txt          # isac 的两段在本次会议都没命中
+
+
+def test_missing_event_is_reported_not_deleted(caplog):
+    """纪要出新版本、删掉一条 agreement 时，末位 id 从此无人认领。
+
+    事件 id 是位置式的，被删那条对应的 id **永久留在 state 里**，看板上会一直显示
+    一条实际已不存在的 agreement。只报告不删除：若某次 parse 回归让事件暂时缺失，
+    删除就是永久数据丢失。缺失是信号，不是指令。
+    """
+    feats = [Feature(slug="waveform", name_zh="波形",
+                     lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                  meetings={"RAN1": (124, None)})])]
+    def parsed(texts):
+        return {"wg": "RAN1", "meeting": 126, "minutes_version": 10,
+                "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                            "heading_path": ["Waveform"], "agenda_item": "10.2",
+                            "agenda_title": "Waveform"} for i, x in enumerate(texts)]}
+
+    state, _ = merge_events([], map_meeting(parsed(["AAA", "BBB", "CCC"]), feats), "2026-09-18")
+    with caplog.at_level(logging.WARNING):
+        merged, stats = merge_events(state, map_meeting(parsed(["AAA", "BBB"]), feats),
+                                     "2026-09-19")
+    assert stats.stale_ids == ["RAN1-126-10.2-a003"]
+    assert len(merged) == 3, "缺失的事件必须保留在 state 里，不许删"
+    assert "不再出现" in caplog.text
+
+
+def test_other_meetings_are_not_reported_as_stale(caplog):
+    """incoming 只覆盖本次跑的会议，而 existing 是全量 state。
+    比较不限定 (wg, meeting) 的话，所有历史会议的事件都会被当成"本次缺失"。"""
+    feats = [Feature(slug="waveform", name_zh="波形",
+                     lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                  meetings={"RAN1": (124, None)})])]
+    def parsed(meeting, texts):
+        return {"wg": "RAN1", "meeting": meeting, "minutes_version": 10,
+                "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                            "heading_path": ["Waveform"], "agenda_item": "10.2",
+                            "agenda_title": "Waveform"} for i, x in enumerate(texts)]}
+
+    state, _ = merge_events([], map_meeting(parsed(126, ["AAA", "BBB"]), feats), "2026-09-18")
+    with caplog.at_level(logging.WARNING):
+        merged, stats = merge_events(state, map_meeting(parsed(127, ["XXX"]), feats),
+                                     "2026-09-19")
+    assert stats.stale_ids == []
+    assert len(merged) == 3
+    assert caplog.text == ""
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -3462,12 +3509,14 @@ Expected: FAIL，`No module named 'ngr.mapping.runner'`
 
 ```python
 from __future__ import annotations
-import hashlib, json, re
+import hashlib, json, logging, re
 from collections import defaultdict
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from ngr.mapping.lineage import match_event
 from ngr.models import Event, Feature
+
+log = logging.getLogger(__name__)
 
 _SLUG_RE = re.compile(r"[^A-Za-z0-9.]+")
 
@@ -3519,6 +3568,15 @@ class MergeStats:
     added_ids: list[str] = field(default_factory=list)
     """新增事件的 id。提交信息按它统计每特性新增数 —— 不能用整批 incoming，
     否则未变更的事件也会被计进'本次新增'。"""
+    stale_ids: list[str] = field(default_factory=list)
+    """本次解析中不再出现、但仍留在 state 里的事件 id。
+
+    事件 id 是位置式的（`RAN1-126-10.2-a003`），纪要出新版本、中间插入或删掉一条
+    agreement 时，后续事件的 seq 会整体位移。被删掉的那条对应的末位 id 从此无人认领，
+    **永久留在 state 里**，看板上会一直显示一条实际已不存在的 agreement。
+
+    **只报告不删除**：若某次 parse 回归（比如正则改动）让事件暂时缺失，删除就是永久
+    数据丢失 —— 那正是本项目最怕的。缺失是信号，不是指令。"""
 
 # 事件变更时要作废的 LLM 产物
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
@@ -3551,6 +3609,18 @@ def merge_events(existing: list[dict], incoming: list[Event],
                 new.update(_LLM_FIELDS)
             stats.changed += 1
         by_id[ev.id] = new
+
+    # incoming 只覆盖本次跑的那几场会议，而 existing 是**全量** state。
+    # 比较必须限定在同一 (wg, meeting) 范围内，否则所有历史会议的事件都会被当成
+    # "本次缺失" —— 这是这段最容易写错的地方。
+    scope = {(ev.wg, ev.meeting) for ev in incoming}
+    seen = {ev.id for ev in incoming}
+    for e in existing:
+        if (e.get("wg"), e.get("meeting")) in scope and e["id"] not in seen:
+            stats.stale_ids.append(e["id"])
+    if stats.stale_ids:
+        log.warning("state 里有 %d 条事件在本次解析中不再出现（保留不删，仅报告）: %s",
+                    len(stats.stale_ids), ", ".join(sorted(stats.stale_ids)[:5]))
 
     return list(by_id.values()), stats
 
@@ -3632,7 +3702,7 @@ print(f'解析 {len(p.events)} 条，归集 {len(evs)} 条')
 print(lineage_report(feats, [{'wg':'RAN1','meeting':126,'events':p.events}]))"
 ```
 
-Expected: 解析出 362 条，归集数 > 0；血统报告中 6G 段有命中。**若某个 6G 段命中为 0，先调 `features.yaml` 的锚点，不要改代码。**
+Expected: 解析出 369 条（319 agreement + 28 conclusion + 13 WA + 9 observation，Task 9/10 修复后的实测值），归集数 > 0；血统报告中 6G 段有命中。**若某个 6G 段命中为 0，先调 `features.yaml` 的锚点，不要改代码。**
 
 - [ ] **Step 7: Commit**
 
