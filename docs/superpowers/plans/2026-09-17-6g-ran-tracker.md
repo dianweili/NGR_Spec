@@ -2892,6 +2892,25 @@ def test_zero_events_raises(tmp_path, monkeypatch):
     with pytest.raises(ParseError, match="事件"):
         parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
 
+def test_no_eligible_heading_also_raises(tmp_path, monkeypatch):
+    """**一条都没参与对齐**时门禁也必须开火。
+
+    这条与下面那条走的是 unmatched_ratio 的**两个不同分支**：这里 by_heading 与
+    unaligned 都空（total==0，比如 heading 全是 Annex 结构性标题），
+    下面那条是 unaligned 撑满（total==1）。total==0 曾经返回 0.0 被门禁放行 ——
+    比正常值 12.2% 还好看，是本项目遇到过最隐蔽的一次静默失败。
+    """
+    shutil.copytree(FIX126, tmp_path / "raw")
+    from ngr.parse import runner
+    from ngr.parse.align import Alignment
+    from ngr.models import Heading
+    degenerate = Alignment(by_heading={}, unaligned=[],
+                           skipped=[Heading(1, "Annex A-1: List of Tdocs", 0)])
+    assert degenerate.unmatched_ratio == 1.0
+    monkeypatch.setattr(runner, "align", lambda a, h: degenerate)
+    with pytest.raises(ParseError, match="未对齐"):
+        parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
+
 def test_high_unmatched_ratio_raises(tmp_path, monkeypatch):
     shutil.copytree(FIX126, tmp_path / "raw")
     from ngr.parse import runner
@@ -3050,7 +3069,7 @@ def read_minutes_version(raw_dir: Path) -> int | None:
 - [ ] **Step 5: 跑测试确认通过**
 
 Run: `.venv/Scripts/python.exe -m pytest tests/test_parse_runner.py -v`
-Expected: 9 passed
+Expected: 10 passed
 
 - [ ] **Step 6: 跑全部测试**
 

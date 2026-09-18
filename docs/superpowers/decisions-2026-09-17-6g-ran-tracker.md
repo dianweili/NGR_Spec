@@ -629,6 +629,47 @@ M2：简报 Step 4 写 "Expected: 10 passed" 而代码块有 11 个测试（现�
 
 **复验**：全量 137 passed；Task 10 / 11 预检均 PASS。
 
+### Task 10 定向复审：APPROVED
+
+复审者实测六种场景确认 1.0 修复在所有退化路径生效、且**未误伤正常情形**
+（全部对齐时仍是 0.0）；并**实际调用 Task 11 的 runner 代码**（monkeypatch `align()` 返回
+total==0 的 Alignment）证明门禁确实抛 `ParseError: 未对齐议程项占比 100%` —— 不是看代码推断。
+把 `1.0` 改回 `0.0` 后新测试变红，确认守得住回归。
+
+**否决 nan 的理由成立**，复审还补了一条我没想到的佐证：即便侥幸走到序列化，
+`json.dumps(float("nan"))` 产出非标准 JSON token `NaN`，会污染 `events.json`。
+**1.0 在门禁比较与 JSON 序列化两条路径上都严格更安全。**
+
+Ruling AT（只告警不改行为）也被独立确认方向正确：先到先得的效果是第二个撞名议程项
+拿不到 heading，该 heading 落入 `unaligned` → 计入未对齐率 → 有机会触发门禁，
+属于**少归类**而非**错归类**，符合本任务原则。
+
+### Ruling AU —— 复审点出的测试空隙：补 Task 11 的 total==0 门禁测试
+
+Task 11 自带的 `test_high_unmatched_ratio_raises` 用 `unaligned=[Heading(...)]`，
+走的是 **total==1 的正常分支**；而这次修的是 **total==0 分支**，两者根本不是同一条路径。
+也就是说：修复落地了，但计划里没有任何测试守着它在 runner 层的效果。
+
+已补 `test_no_eligible_heading_also_raises`（`by_heading={}`、`unaligned=[]`、
+`skipped=[Annex]`，先断言 ratio==1.0 再断言门禁抛错），Task 11 Expected 9 → 10。
+
+**这类空隙的共性值得记住**：同一个函数的不同**分支**需要各自的测试，而"这个函数已经有测试了"
+最容易让人以为覆盖到了。前面 Task 9「只断言总数抓不到边界错位」是同一个道理的另一面。
+
+复审另提一条纯风格 Minor（新增测试函数只隔 1 个空行，PEP8 E302），已顺手改掉。
+
+**Task 10: complete** —— `e1f542b` + `3695ff8`，137 passed，定向复审 APPROVED。
+
+---
+
+## Task 11: parse 编排与沉默失败防线
+
+- 预检 `preflight_task.py 11` → **[PASS]**
+- 派发时必须带上前面攒下的两条 parse 层加固项（Task 8 审查的 Minor，裁定归入本任务）：
+  - `word/document.xml` 存在但无 `<w:body>` 时抛 `TypeError`，信息无助定位。
+  - zip 缺 `word/document.xml` / docx 被二次 zip 包裹 / XML 损坏，分别抛裸的
+    `KeyError` / `BadZipFile` / `ParseError`，不带是哪个文件失败的上下文。
+
 ## 当前状态与下一步（压缩/换会话后从这里接手）
 
 > **维护须知**：本段**永远是文件最后一段**。新增执行记录一律插在它**之前**，

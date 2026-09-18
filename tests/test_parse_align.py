@@ -97,6 +97,7 @@ def test_no_eligible_heading_reads_as_fully_unmatched():
     assert only_annex.unmatched_ratio == 1.0
     assert align([], []).unmatched_ratio == 1.0
 
+
 def test_duplicate_normalised_agenda_titles_warn(caplog):
     """两个议程项归一化后重名时会"先到先得"，后一个永远拿不到 heading。
     实测 RAN1#126 的 66 条议程项无冲突，所以不改行为，只出声。"""
@@ -104,6 +105,7 @@ def test_duplicate_normalised_agenda_titles_warn(caplog):
     with caplog.at_level(logging.WARNING):
         align(ag, [H(2, "Waveform Air Interface", 0)])
     assert "归一化后重名" in caplog.text
+
 
 def test_real_fixture_alignment():
     import pathlib
