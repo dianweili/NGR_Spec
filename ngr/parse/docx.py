@@ -15,13 +15,20 @@ class Block:
     style: str | None
     index: int           # 在 blocks 中的下标
     cell_paras: list[str] = field(default_factory=list)
-    """仅 table 块有值：该表格内各单元格段落的纯文本，按出现顺序。
+    """仅 table 块有值：本表**自有**单元格里各段落的纯文本，按出现顺序。
 
-    实测 RAN1#126 的纪要里有 12 个表格的**首个单元格就是标记**
-    （9 个 Agreement、2 个 Conclusion、1 个 Working assumption）——
-    它们是"用表格画的框"，框里装着一条 agreement。若只把表格转成 markdown
-    整块，这些标记对 extract_events 不可见，12 条 agreement 会被静默丢弃。
-    把单元格段落一并带出来，标记识别仍留在 parse/events.py（不在本层做）。"""
+    实测 RAN1#126 有 12 张表格的自有单元格里带标记，共 15 条
+    （11 Agreement、2 Conclusion、2 Working assumption）—— 它们是"用表格画的框"，
+    框里装着一条决议。若只把表格转成 markdown 整块，这些标记对 extract_events
+    不可见，约 4% 的 agreement 会被静默丢弃。
+    标记识别仍留在 parse/events.py（不在本层做）。"""
+    nested_paras: list[str] = field(default_factory=list)
+    """仅 table 块有值：嵌套在单元格内的**子表格**里的段落，按文档顺序。
+
+    与 cell_paras 分开，是因为两者语义不同：自有单元格里的标记是一条决议本身，
+    而子表格出现在 CR 封面表里，它的 "Agreement:" 只是这份 CR 的标签。
+    混为一谈会把一份 CR 拆成两条互相借用正文的事件，且总数仍然对得上 ——
+    这类错误测试发现不了。实测只有 1 张表有子表，正是那张 CR 封面表。"""
 
 @dataclass
 class Document:
@@ -66,8 +73,27 @@ def _cell_paragraphs(tbl) -> list[str]:
     这里**有意不做空白压平**，与 _cell_text 不同：_cell_text 的产物要塞进 markdown
     表格的一行，残留换行会撑断整张表；而 cell_paras 是给下游做标记识别和正文拼接的，
     text_en 要逐字保留（全局约束），在这里压平就等于改写原文。
-    需要单行呈现的场合（如喂 LLM 的逐行 blob）由使用方自己压平。"""
-    return [t for t in (_text_of(p).strip() for p in tbl.iter(W + "p")) if t]
+    需要单行呈现的场合（如喂 LLM 的逐行 blob）由使用方自己压平。
+
+    只取本表自有单元格（tr/tc 的直接子段落），**不递归进嵌套子表** ——
+    子表段落由 _nested_paragraphs 单独取出，理由见 Block.nested_paras。"""
+    out: list[str] = []
+    for tr in tbl.findall(W + "tr"):
+        for tc in tr.findall(W + "tc"):
+            out += [t for t in (_text_of(p).strip() for p in tc.findall(W + "p")) if t]
+    return out
+
+def _nested_paragraphs(tbl) -> list[str]:
+    """嵌套在单元格内的子表格里的段落纯文本，按文档顺序。
+
+    _table_to_markdown 只走 findall（非递归），子表内容在 block.text 里完全不可见；
+    这里若也不取，那些文本会整体静默消失。用"全部段落减去自有段落"而不是
+    findall('.//tbl') 逐个展开，是为了避免多层嵌套时同一段落被重复计入。"""
+    own = {p for tr in tbl.findall(W + "tr")
+             for tc in tr.findall(W + "tc")
+             for p in tc.findall(W + "p")}
+    return [t for t in (_text_of(p).strip() for p in tbl.iter(W + "p")
+                        if p not in own) if t]
 
 def _table_to_markdown(tbl) -> str:
     rows = []
@@ -111,5 +137,6 @@ def parse_docx(source: Path | bytes) -> Document:
             md = _table_to_markdown(el)
             if md:
                 doc.blocks.append(Block("table", md, None, len(doc.blocks),
-                                        cell_paras=_cell_paragraphs(el)))
+                                        cell_paras=_cell_paragraphs(el),
+                                        nested_paras=_nested_paragraphs(el)))
     return doc

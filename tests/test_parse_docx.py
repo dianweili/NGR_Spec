@@ -100,9 +100,12 @@ def test_real_fixture_marker_counts():
     assert sum(1 for p in doc.paragraphs if p.lower().startswith("working assumption")) == 11
 
 def test_real_fixture_table_wrapped_markers():
-    """12 个表格的首个单元格就是标记 —— 这些是"用表格画的框"，框里装着一条
-    agreement。parse 层必须把单元格段落带出来，否则 Task 9 看不到这些标记，
-    12 条 agreement 会被静默丢弃（实测占全部 agreement 的约 4%）。"""
+    """首个单元格就是标记的表格 —— 这些是"用表格画的框"，框里装着一条决议。
+    parse 层必须把单元格段落带出来，否则 Task 9 看不到这些标记，约 4% 的
+    agreement 会被静默丢弃。
+
+    实测：12 张表格的自有单元格里带标记、共 15 条（11 agreement + 2 conclusion
+    + 2 working assumption）；其中 11 张的**首个**单元格就是标记，即下面断言的 8/2/1。"""
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
     tables = [b for b in doc.blocks if b.kind == "table"]
     assert len(tables) == 82
@@ -110,6 +113,7 @@ def test_real_fixture_table_wrapped_markers():
     assert sum(1 for x in lead if x.startswith("Agreement")) == 8
     assert sum(1 for x in lead if x.startswith("Conclusion")) == 2
     assert sum(1 for x in lead if x.lower().startswith("working assumption")) == 1
-    # 注意 tables 只含 body 的**直接子**表格；嵌套表格不单独成块，其段落
-    # 会出现在外层表格的 cell_paras 里（iter 是递归的），只是不在首位。
-    # 全文按"任意层级表格的首个单元格是标记"数是 9 个 Agreement，此处为 8。
+    # 注意 tables 只含 body 的**直接子**表格。嵌套子表不单独成块，其段落进
+    # nested_paras 而非 cell_paras —— 两者语义不同：自有单元格里的标记是一条决议
+    # 本身，而嵌套子表出现在 CR 封面表里，它的 "Agreement:" 只是这份 CR 的标签。
+    # 实测全文只有 1 张表有子表，正是那张 CR 封面表。

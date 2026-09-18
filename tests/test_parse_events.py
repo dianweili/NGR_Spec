@@ -1,4 +1,4 @@
-import pathlib
+import logging, pathlib
 from ngr.parse.docx import parse_docx, Document, Block
 from ngr.parse.events import extract_events
 from ngr.models import Heading
@@ -43,7 +43,7 @@ def test_table_inside_block_is_kept():
     assert "| a | b |" in extract_events(d)[0].text_en
 
 def test_marker_inside_table_cell_is_extracted():
-    """实测 RAN1#126 有 14 条标记装在"用表格画的框"里（12 agreement + 2 working assumption）。
+    """实测 RAN1#126 有 15 条标记装在"用表格画的框"里（11 agreement + 2 conclusion + 2 working assumption）。
     只看表格的 markdown 整块会让它们不可见，约 4% 的 agreement 被静默丢弃。"""
     d = Document()
     d.blocks.append(Block("table", "| Agreement: |\n| --- |\n| Adopt X |", None, 0,
@@ -72,6 +72,31 @@ def test_table_column_header_is_not_a_marker():
     若为了它放宽正则去认 "/词"，就会凭空多出一条假事件。"""
     d = doc_of(("para", "Conclusion/Decision", None), ("para", "Y", None))
     assert extract_events(d) == []
+
+def test_nested_table_marker_is_content_not_a_new_event():
+    """CR 封面表里嵌套的子表，其 "Agreement:" 是这份 CR 的标签，不是一条新决议。
+    让它开新事件会把一份 CR 拆成两条互相借用正文的 agreement，而事件总数照样对得上 ——
+    这类缺陷计数类测试发现不了，所以要专门守住。"""
+    d = Document()
+    d.blocks.append(Block("para", "Agreement:", None, 0))
+    d.blocks.append(Block("para", "The following TP is endorsed.", None, 1))
+    # 真数据表的 markdown 本就含自有单元格的文字，所以这里照实构造
+    d.blocks.append(Block("table", "| Reason for change | priority rule unclear |", None, 2,
+                          cell_paras=["Reason for change", "priority rule unclear"],
+                          nested_paras=["Agreement:", "TP body text"]))
+    evs = extract_events(d)
+    assert len(evs) == 1
+    assert "priority rule unclear" in evs[0].text_en
+    assert "TP body text" in evs[0].text_en
+
+def test_empty_text_event_is_dropped_with_a_warning(caplog):
+    """正文为空的事件（标记后紧跟 heading / 另一个标记 / 文档结尾）丢弃是对的，
+    但必须留痕 —— 本项目里静默丢数据比崩溃更严重。"""
+    d = Document()
+    d.blocks.append(Block("para", "Agreement:", None, 0))
+    with caplog.at_level(logging.WARNING):
+        assert extract_events(d) == []
+    assert "正文为空" in caplog.text
 
 def test_all_marker_kinds_recognised():
     d = doc_of(("para", "Agreement: x", None), ("para", "Conclusion: y", None),
@@ -106,11 +131,15 @@ def test_real_fixture_counts():
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
     evs = extract_events(doc)
     kinds = [e.kind for e in evs]
-    assert kinds.count("agreement") == 320
+    assert kinds.count("agreement") == 319
     assert kinds.count("conclusion") == 28
     assert kinds.count("working_assumption") == 13
-    # 320/28/13 是在 Task 8 的 _text_of 修复（w:tab/w:br 补分隔符）之后实测的，
-    # 且已包含藏在表格单元格里的 14 条（12 agreement + 2 working assumption）。
+    # 319/28/13 是实测值，含藏在表格自有单元格里的 15 条标记
+    # （11 agreement + 2 conclusion + 2 working assumption）。
+    #
+    # agreement 曾一度是 320：当时 CR 封面表里**嵌套子表**的 "Agreement:" 会另开一条事件，
+    # 把一份 CR 拆成两条互相借用正文的 agreement。那个 320 是缺陷造成的虚高，不是基准。
+    # 现在嵌套子表的段落只当内容，那份 CR 合回一条 —— 详见 extract_events 表格分支第 3 点。
     assert all(e.text_en.strip() for e in evs), "不允许出现空正文的事件"
 
 def test_real_fixture_6g_events_have_heading_path():

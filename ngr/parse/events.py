@@ -1,5 +1,5 @@
 from __future__ import annotations
-import re
+import logging, re
 from ngr.models import KIND_PREFIX, RawEvent
 from ngr.parse.docx import Document
 
@@ -26,6 +26,8 @@ MARKER_RE = re.compile(
     r"\s*(?::|\.\s|$)", re.IGNORECASE)
 
 HEADING_STYLE_RE = re.compile(r"(?i)^heading\s*(\d+)$")
+
+log = logging.getLogger(__name__)
 
 def _marker_kind(text: str) -> str | None:
     m = MARKER_RE.match(text)
@@ -54,10 +56,15 @@ def extract_events(doc: Document) -> list[RawEvent]:
             current = None                  # heading 终结当前块
             continue
 
-        # 表格有两种角色：真的数据表，以及"用表格画的框"—— 框里装着一条 agreement。
-        # 实测 RAN1#126 有 14 条标记属后者（12 agreement + 2 working assumption）。
-        # 若只看 block.text（整张表的 markdown），这些标记不可见，约 4% 的 agreement 会被
-        # 静默丢弃：管线不报错，只是少几条记录，产出物上看不出任何异常。
+        # 表格有三种角色：
+        #   1) 真的数据表 —— 整块 markdown 并入上一条事件。
+        #   2) "用表格画的框" —— 自有单元格里就是标记，框本身装着一条决议。实测
+        #      RAN1#126 有 12 张这样的表、共 15 条标记（11 agreement + 2 conclusion
+        #      + 2 working assumption）。只看 block.text 就看不见它们，约 4% 的
+        #      agreement 会被静默丢弃：管线不报错，产出物上也看不出任何异常。
+        #   3) CR 封面表里**嵌套的子表** —— 它的 "Agreement:" 是这份 CR 的标签，
+        #      不是一条新决议。实测只有 1 处；若让它开新事件，一份 CR 会被拆成两条
+        #      互相借用正文的 agreement，而事件总数照样对得上，计数类测试发现不了。
         if block.kind == "table":
             if any(_marker_kind(c) for c in block.cell_paras):
                 for cell in block.cell_paras:
@@ -73,6 +80,12 @@ def extract_events(doc: Document) -> list[RawEvent]:
             elif current is not None:
                 # 真数据表：整块 markdown 并入上一条事件，保持原行为
                 current.text_en = (current.text_en + "\n" + block.text).strip()
+
+            # 嵌套子表的段落一律当内容：它们在 block.text 里不可见，不带出来就整体
+            # 静默消失；但也不许开新事件（见上面第 3 点）。
+            for para in block.nested_paras:
+                if current is not None:
+                    current.text_en = (current.text_en + "\n" + para).strip()
             continue
 
         kind = _marker_kind(block.text)
@@ -84,4 +97,12 @@ def extract_events(doc: Document) -> list[RawEvent]:
         elif current is not None:
             current.text_en = (current.text_en + "\n" + block.text).strip()
 
-    return [e for e in events if e.text_en.strip()]
+    kept = [e for e in events if e.text_en.strip()]
+    if len(kept) != len(events):
+        # 标记后紧跟另一个标记 / heading / 文档结尾时正文为空。丢弃本身是对的
+        # （没有内容可用），但必须留痕 —— 本项目里静默丢数据比崩溃更严重。
+        # 实测 RAN1#126 命中 0 条，这是为将来的纪要留的探针。
+        dropped = [e for e in events if not e.text_en.strip()]
+        log.warning("丢弃 %d 条正文为空的事件: %s", len(dropped),
+                    ", ".join(f"{e.kind}@块{e.para_index}" for e in dropped[:5]))
+    return kept
