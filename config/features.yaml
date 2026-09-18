@@ -1,0 +1,104 @@
+# 6G RAN 特性血统配置 —— 首版，来自 Task 1 侦察实测（docs/superpowers/recon-2026-09-17.md）。
+#
+# 首版只写 4 个特性：waveform、channel_coding、isac、ai_air_interface。
+# 其余议题（MIMO、NTN、NES、LP-WUS 等）等 Task 13 的 lineage-report 跑出未归类清单后再补，
+# 不在这里抢先猜测。
+#
+# 证据出处的两种类型：
+#   - 5G-A 段的 title_re：引用 docs/superpowers/recon-2026-09-17.md §3 逐条报告的 heading 原文
+#     （该文档对每条正则都列出了命中的会议号与原文，以及对 6GR 裸词的误命中检查）。
+#   - 6G 段的 anchor：以 agenda 锚点为主（RAN1 #126 的 agenda.csv 里 §10 "Rel-20 Study of 6GR"
+#     章节的逐字条目，见 tests/fixtures/RAN1_126/agenda.csv），title_re 为辅，
+#     取自同一份报告 §2 附录 A 里 RAN1 #122 纪要的 heading 原文
+#     （#122 已经出现"Rel-20 Study of 6GR"整章，早于 agenda.csv 从 #124 起才存在）。
+#
+# 没有出处支撑的正则一律不写；没有出处支撑的 meetings 下限一律不瞎猜早，宁可从有证据的那次会议起算。
+
+features:
+  # ISAC 通感一体：5G-A 侧是 RAN1 #116 起的 SI/WI（"ISAC for NR"），
+  # 6G 侧是 chapter 10 的 "10.8 ISAC" 议题。两者在 #122 是并存的两个不同条目
+  # （"Study on ISAC for NR" 挂在 "Release 20 NR" 章下，"Sensing" 挂在 "Rel-20 Study of 6GR" 章下），
+  # 不是同一件事的改名，配两段血统分开追踪。
+  - slug: isac
+    name_zh: ISAC 通感一体
+    lineage:
+      # 5G-A 起点 116，不是 112：#112-#115 的 1148 条 heading 里一条 ISAC 都没有
+      # （见 recon §3.5 第5条）。title_re 出处：recon §3.3 "isac" 一节，
+      # 命中 #116-#122（H2 "Study on channel modelling for ISAC for NR" /
+      # "Study on ISAC for NR" / "Maintenance on channel modelling for ISAC for NR"）。
+      - era: 5G-A
+        release: Rel-19
+        anchor:
+          title_re: '(?i)integrated\s+sensing\s+and\s+communication\s*\(ISAC\)\s+for\s+NR'
+        meetings: { RAN1: [116, null] }
+        depth: origin
+      # 6G 侧：agenda.csv (RAN1#126) 逐字 "10.8","ISAC"。
+      # agenda_csv_since=124，#124 之前没有 agenda.csv 可锚定，#122/#123 这段先留空，
+      # 待 Task 13 视需要再补 title_re（"Sensing" 太短，单独放会话进去容易在别处误命中，本版不加）。
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.8", "RAN1:10.8.*"]
+        meetings: { RAN1: [124, null] }
+        depth: full
+
+  # AI/ML 空口：纯 5G-A 演进链条（Rel-18 SI -> Rel-19 WI -> 持续维护 + Rel-20 NR phase 2）。
+  # #122 纪要里出现过一条 "AI/ML in 6GR interface"（chapter 10 下），
+  # 但 #126 agenda.csv 的 10.1-10.8 里已经没有这一条了，证据不足以稳定锚定一个 6G 段，
+  # 本版先不写，留给 Task 13 的未归类清单去决定要不要单独立一个 6G 特性。
+  - slug: ai_air_interface
+    name_zh: AI/ML 空口
+    lineage:
+      # Rel-18 SI 阶段：title_re 出处 recon §3.3 "ai_ml" 一节
+      # 命中 #112-#114（H2 "Study on Artificial Intelligence (AI)/Machine Learning (ML)
+      # for NR air interface"，在 #112/#113 纪要里确认挂在 "H1 Release 18" 章下）。
+      - era: 5G-A
+        release: Rel-18
+        anchor:
+          title_re: '(?i)(?:artificial\s+intelligence\s*\(AI\)\s*/\s*machine\s+learning\s*\(ML\)|AI\s*/\s*ML)\s+for\s+NR\s+air\s+interface'
+        meetings: { RAN1: [112, 114] }
+        depth: origin
+      # Rel-19 WI 阶段：同一条正则同时命中 WI 全名（#116-121，挂在 "H1 Release 19" 章下）、
+      # #122 的 "Maintenance on..." 与 "...enhancements"（Phase 2）。持续到今，区间开放。
+      - era: 5G-A
+        release: Rel-19
+        anchor:
+          title_re: '(?i)(?:artificial\s+intelligence\s*\(AI\)\s*/\s*machine\s+learning\s*\(ML\)|AI\s*/\s*ML)\s+for\s+NR\s+air\s+interface'
+        meetings: { RAN1: [116, null] }
+        depth: full
+
+  # Waveform：纯 6G 新题，5G-A 没有对应前身，不写 5G-A 段。
+  - slug: waveform
+    name_zh: 6GR 波形与帧结构
+    lineage:
+      # anchor 两路证据：
+      #   agenda —— agenda.csv (RAN1#126) 逐字 "10.2","Waveform for 6GR air interface" /
+      #             "10.2.1","Waveform"。
+      #   title_re —— RAN1 #122 纪要 heading 原文 "H2 Waveform and frame structure for
+      #             6GR air interface"（早于 agenda.csv 存在，用它把区间往前接到 #122）。
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.2", "RAN1:10.2.*"]
+          title_re: '(?i)waveform and frame structure for 6GR air interface'
+        meetings: { RAN1: [122, null] }
+        depth: full
+
+  # Channel coding：纯 6G 新题，5G-A 没有对应前身，不写 5G-A 段。
+  - slug: channel_coding
+    name_zh: 6GR 信道编码与调制
+    lineage:
+      # anchor 两路证据：
+      #   agenda —— agenda.csv (RAN1#126) 逐字 "10.3","Channel coding and modulation for
+      #             6GR interface"。
+      #   title_re —— RAN1 #122 纪要 heading 原文 "H2 Channel coding and modulation for
+      #             6GR interface"。
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.3", "RAN1:10.3.*"]
+          title_re: '(?i)channel coding and modulation for 6GR interface'
+        meetings: { RAN1: [122, null] }
+        depth: full
+
+default_depth: origin
