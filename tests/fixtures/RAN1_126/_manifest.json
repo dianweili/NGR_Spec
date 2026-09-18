@@ -1,0 +1,17 @@
+{
+  "files": {
+    "agenda.csv": {
+      "etag": null,
+      "length": 2925,
+      "sha256": "sha256:6b1629d24dfb64db17b07eab1bdf0241f009439afdc0a86e55775103cff7c14d",
+      "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/Agenda/agenda.csv"
+    },
+    "minutes.docx": {
+      "etag": null,
+      "length": 968605,
+      "sha256": "sha256:1ef019ee2ce9d3eed0fd405f34498a3db3cae20e76aaaffb2832ac553e4469d6",
+      "url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/Report/Draft_Minutes_report_RAN1%23126_v010.docx"
+    }
+  },
+  "frozen": false
+}

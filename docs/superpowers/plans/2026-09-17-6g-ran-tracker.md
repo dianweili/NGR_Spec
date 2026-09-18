@@ -2765,14 +2765,19 @@ MTG = Meeting(wg="RAN1", number=126, suffix="", url="https://x/TSGR1_126/")
 def test_parse_meeting_on_fixture(tmp_path):
     shutil.copytree(FIX126, tmp_path / "raw")
     p = parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
-    assert len(p.events) == 320 + 29 + 13
+    # 实测值，按 kind 拆开写以便出错时一眼看出是哪类变了。
+    # 注意 observation 也在 events 里 —— 旧公式 320+29+13 漏了它，
+    # 而 320/29 本身又是缺陷期的虚高值（详见 Task 9 的 test_real_fixture_counts 注释）。
+    assert len(p.events) == 319 + 28 + 13 + 9
     assert p.unmatched_ratio < 0.20
     assert p.minutes_version == 10
 
 def test_events_carry_agenda_item_when_aligned(tmp_path):
     shutil.copytree(FIX126, tmp_path / "raw")
     p = parse_meeting(tmp_path / "raw", MTG, agenda_required=True)
-    sixg = [e for e in p.events if e.get("agenda_item", "").startswith("10")]
+    # agenda_item 这个键**总是存在**，未对齐时值为 None ——
+    # 所以 .get(k, "") 返回的是 None 而不是 ""，直接 .startswith 会抛 AttributeError。
+    sixg = [e for e in p.events if (e.get("agenda_item") or "").startswith("10")]
     assert sixg, "6GR 议程项下应有事件"
     assert all("heading_path" in e and "text_en" in e for e in p.events)
 
@@ -2781,7 +2786,7 @@ def test_events_keep_heading_path_when_agenda_absent(tmp_path):
     raw = tmp_path / "raw"; raw.mkdir()
     shutil.copy(FIX126 / "minutes.docx", raw / "minutes.docx")
     p = parse_meeting(raw, MTG, agenda_required=False)
-    assert len(p.events) == 362
+    assert len(p.events) == 319 + 28 + 13 + 9   # 对齐与否不改变事件数
     assert all(e["agenda_item"] is None for e in p.events)
     assert any(e["heading_path"] for e in p.events)
 
