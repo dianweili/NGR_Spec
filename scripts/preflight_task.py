@@ -58,7 +58,11 @@ def extract_blocks(section: str) -> dict[str, str]:
     同一路径出现多次时后者覆盖前者 —— 计划里靠后的是最终版。
     """
     out: dict[str, str] = {}
-    for m in re.finditer(r"```python\n(.*?)```", section, re.S):
+    # 闭合的 ``` 必须在行首。代码里可能出现字符串内的 ```（markdown 渲染器就会写
+    # "```text"），非贪婪匹配会在那里提前截断、抽出半截模块。Task 14 是被截成语法
+    # 错误才暴露的 —— 更糟的情况是截出一个**语法合法但内容缺失**的模块，
+    # 那样预检会给出毫无意义的 PASS。
+    for m in re.finditer(r"^```python\n(.*?)^```", section, re.S | re.M):
         body = m.group(1)
         lines = body.splitlines()
         first = lines[0].strip() if lines else ""
