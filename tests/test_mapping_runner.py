@@ -1,7 +1,7 @@
 import logging
 import json
 from ngr.models import Feature, LineageSegment
-from ngr.mapping.runner import map_meeting, merge_events, write_state
+from ngr.mapping.runner import _agenda_key, map_meeting, merge_events, write_state
 from ngr.mapping.report import lineage_report
 
 def seg(era, depth, **kw):
@@ -161,3 +161,48 @@ def test_other_meetings_are_not_reported_as_stale(caplog):
     assert stats.stale_ids == []
     assert len(merged) == 3
     assert caplog.text == ""
+
+
+def test_legacy_keys_do_not_collide_on_punctuation():
+    """标点归一化会把不同议题撞成同一个 key，撞了之后 seq 按遍历顺序分配 ——
+    两次纪要修订间先后一换，同一个 id 就指向另一个议题，merge 判成普通内容变更，
+    把 A 的历史安到 B 头上，既不报错也不进 stale_ids。回退 key 必须带原文短哈希。"""
+    for a, b in [("ISAC channel model", "ISAC channel-model"),
+                 ("CSI enhancement: further study", "CSI enhancement further study")]:
+        assert _agenda_key(None, [a]) != _agenda_key(None, [b])
+    # 同一段原文必须每次都得到同一个 key，否则 id 不稳定
+    assert _agenda_key(None, ["ISAC channel model"]) == _agenda_key(None, ["ISAC channel model"])
+
+
+def test_whole_meeting_wipeout_is_reported_when_scope_given():
+    """整场会议归集归零（features.yaml 改坏、正则回归）是最该报警的情形。
+
+    scope 若从 incoming 反推，这场会议根本不在 scope 里，它的全部历史一条都不会被
+    比较，stale_ids 恒为空 —— 局部缺失报警、全部缺失反而不报警，探针在最该响的时候哑火。
+    """
+    feats = [Feature(slug="waveform", name_zh="波形",
+                     lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                  meetings={"RAN1": (124, None)})])]
+    def parsed(item):
+        return {"wg": "RAN1", "meeting": 126, "minutes_version": 10,
+                "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                            "heading_path": ["Waveform"], "agenda_item": item,
+                            "agenda_title": "Waveform"} for i, x in enumerate("AB")]}
+
+    state, _ = merge_events([], map_meeting(parsed("10.2"), feats), "2026-09-18")
+    wiped = map_meeting(parsed("99.9"), feats)          # 一条都归集不上
+    assert wiped == []
+
+    _, inferred = merge_events(state, wiped, "2026-09-19")
+    assert inferred.stale_ids == [], "反推 scope 时探针必然哑火 —— 这正是要修的盲区"
+
+    merged, explicit = merge_events(state, wiped, "2026-09-19", scope={("RAN1", 126)})
+    assert len(explicit.stale_ids) == 2, "显式给出 scope 后，整场归零必须被报出来"
+    assert len(merged) == 2, "报告归报告，历史一条都不许删"
+
+
+def test_empty_incoming_without_scope_warns(caplog):
+    """反推不出 scope 时至少要出声，不能默默返回"没有缺失"。"""
+    with caplog.at_level(logging.WARNING):
+        merge_events([], [], "2026-09-19")
+    assert "未给出 scope" in caplog.text
