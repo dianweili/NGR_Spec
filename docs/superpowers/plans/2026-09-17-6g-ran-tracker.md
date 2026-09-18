@@ -2390,7 +2390,8 @@ git commit -m "feat(parse): agreement 块提取"
 **Interfaces:**
 - Consumes: `ngr.models.{AgendaItem, Heading}`
 - Produces:
-  - `Alignment` 数据类：`.by_heading: dict[int, AgendaItem]`（键为 `Heading.para_index`）、`.unaligned: list[Heading]`、`.unmatched_ratio: float`
+  - `Alignment` 数据类：`.by_heading: dict[int, AgendaItem]`（键为 `Heading.para_index`）、`.unaligned: list[Heading]`、
+    `.skipped: list[Heading]`（结构性附录标题，不参与对齐也不计入未对齐率）、`.unmatched_ratio: float`
   - `align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment`
   - `normalize(text: str) -> str`
 
@@ -2436,10 +2437,22 @@ def test_depth_match_allows_one_level_offset():
     al = align(ag, [H(3, "Waveform", 1)])
     assert al.by_heading[1].item == "10.2"
 
-def test_each_agenda_item_used_at_most_once():
+def test_same_title_headings_share_one_agenda_item():
+    """同名 heading 是同一个议程项的重复出现（分组标题 + 同名子标题），两处都要对上。
+    实测 RAN1#126 的 "GNSS resilient NR-NTN operation" 就是 L2/L3 各一次。"""
     ag = [A("10.2", "Waveform")]
-    al = align(ag, [H(2, "Waveform", 1), H(2, "Waveform", 9)])
+    al = align(ag, [H(2, "Waveform", 1), H(3, "Waveform", 9)])
+    assert len(al.by_heading) == 2
+    assert {v.item for v in al.by_heading.values()} == {"10.2"}
+    assert al.unaligned == []
+
+def test_different_titles_cannot_claim_same_item():
+    """标题不同的两个小节不得抢同一个议程项 —— used 守的是这个。
+    "Waveforms" 与 "Waveform" 的 difflib 相似度 0.94，会越过模糊阈值。"""
+    ag = [A("10.2", "Waveform")]
+    al = align(ag, [H(2, "Waveform", 1), H(2, "Waveforms", 9)])
     assert len(al.by_heading) == 1
+    assert [h.text for h in al.unaligned] == ["Waveforms"]
 
 def test_unmatched_ratio_computed():
     ag = [A("1", "Opening")]
@@ -2458,6 +2471,10 @@ def test_real_fixture_alignment():
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
     al = align(ag, doc.headings)
     assert al.unmatched_ratio < 0.20, f"未对齐率过高: {al.unmatched_ratio:.0%}"
+    # 9 条 Annex 标题被跳过而非判为未对齐；若把它们算进去，未对齐率是 23%，
+    # 探针常年报警等于没有探针。
+    assert len(al.skipped) == 9
+    assert all(h.text.lower().startswith("annex") for h in al.skipped)
     items = {v.item for v in al.by_heading.values()}
     assert "10" in items and "10.2" in items
 ```
@@ -2486,10 +2503,17 @@ def normalize(text: str) -> str:
     t = _PUNCT.sub("", t)
     return _SPACE.sub(" ", t).strip()
 
+# "Annex A-1:"…"Annex H:" 是纪要的结构性附录（Tdoc 清单、参会者名单、会议日程表），
+# 不是议程项，永远不会出现在 agenda.csv 里。实测 RAN1#126 有 9 条。
+# 把它们计入未对齐率，会让这个"静默失败探针"常年停在 20%+ 的高位 ——
+# 真正的对齐崩溃反而淹没在固定噪声里，探针就白设了。
+ANNEX_RE = re.compile(r"(?i)^annex\b")
+
 @dataclass
 class Alignment:
     by_heading: dict[int, AgendaItem] = field(default_factory=dict)
     unaligned: list[Heading] = field(default_factory=list)
+    skipped: list[Heading] = field(default_factory=list)
 
     @property
     def unmatched_ratio(self) -> float:
@@ -2504,9 +2528,14 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
     for item in agenda:
         exact.setdefault(normalize(item.title), []).append(item)
     used: set[str] = set()
+    seen: dict[str, AgendaItem] = {}     # 归一化标题 -> 已分配给它的议程项
     norm_keys = list(exact.keys())
 
     for h in headings:
+        if ANNEX_RE.match(h.text.strip()):
+            result.skipped.append(h)
+            continue
+
         key = normalize(h.text)
         cands = [i for i in exact.get(key, []) if i.item not in used]
 
@@ -2522,10 +2551,19 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
                 break
 
         if chosen is None:
+            # 同一个议程项常以"分组标题 + 同名子标题"出现两次（实测 RAN1#126 的
+            # "GNSS resilient NR-NTN operation" 就是 L2/L3 各一次）。used 是为了阻止
+            # 两个**标题不同**的小节抢同一个议程项；标题逐字相同时它们本就是同一项，
+            # 判成未对齐只会凭空推高未对齐率，让探针失真。此处不再校验层级：
+            # 标题完全相同已是足够强的证据，而分组标题与子标题的层级本就会差。
+            chosen = seen.get(key)
+
+        if chosen is None:
             result.unaligned.append(h)
         else:
             result.by_heading[h.para_index] = chosen
             used.add(chosen.item)
+            seen[key] = chosen
 
     return result
 ```
