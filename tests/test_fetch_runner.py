@@ -1,3 +1,5 @@
+# tests/test_fetch_runner.py
+import pytest
 from unittest.mock import Mock
 from urllib.parse import quote
 from ngr.config import WgConfig
@@ -6,7 +8,7 @@ from ngr.fetch.manifest import Manifest
 from ngr.fetch.runner import fetch_meeting
 
 WG = WgConfig(path="tsg_ran/WG1_RL1", dir_re=r"TSGR1_(\d+)([a-z]*)", hard_floor=112,
-              agenda_csv_since=124, minutes_re=r"(?i)minutes.*\.(docx|zip)$",
+              agenda_csv_since=124, minutes_re=r"(?i)minutes.*\.(docx|zip)$", 
               artifacts=["agenda_csv", "minutes_docx", "docs_listing"])
 MTG = Meeting(wg="RAN1", number=126, suffix="",
               url="https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/")
@@ -85,6 +87,49 @@ def test_fetch_meeting_force_ignores_frozen(tmp_path):
         files={base + "Report/Minutes_v010.docx": b"doc"})
     res = fetch_meeting(http, MTG, WG, raw_dir=tmp_path, force=True)
     assert res.changed
+
+def test_manifest_saved_when_rate_limited_midway(tmp_path):
+    """限流中断时，本次已成功抓到的 artifact 必须落进 manifest。
+    否则文件在磁盘上却查不到记录，下次重试会重新下载 —— 限流引发重复下载、
+    重复下载又加剧限流。"""
+    from ngr.fetch.client import RateLimited
+    base = MTG.url
+    listings = {
+        base: _listing(base, ["Agenda", "Report"]),
+        base + "Agenda/": _listing(base + "Agenda/", ["agenda.csv"]),
+        base + "Report/": _listing(base + "Report/", ["Draft_Minutes_report_RAN1#126_v010.docx"]),
+    }
+    files = {base + "Agenda/agenda.csv": b"csv"}
+    http = _http(listings, files)
+    calls = {"n": 0}
+    def head(url):
+        calls["n"] += 1
+        if calls["n"] > 1:                      # 第二个 artifact 撞限流
+            raise RateLimited("rate limited")
+        return {"etag": '"e"', "length": 3}
+    http.head.side_effect = head
+
+    with pytest.raises(RateLimited):
+        fetch_meeting(http, MTG, WG, raw_dir=tmp_path)
+
+    assert (tmp_path / "agenda.csv").exists()
+    assert (tmp_path / "_manifest.json").exists(), "已成功的 artifact 必须落盘"
+    assert "agenda.csv" in Manifest(tmp_path).load()["files"]
+
+def test_report_dirs_picks_first_existing_candidate(tmp_path):
+    """report_dirs 是**有序**候选列表：两个都存在时取列表里排前面的那个。
+    实测 RAN4 老会议用复数 Reports、新会议用单数 Report。"""
+    from dataclasses import replace
+    base = MTG.url
+    wg = replace(WG, report_dirs=["Reports", "Report"], artifacts=["minutes_docx"])
+    listings = {
+        base: _listing(base, ["Report", "Reports"]),
+        base + "Reports/": _listing(base + "Reports/", ["Draft_Minutes_report_RAN1#126_v100.docx"]),
+        base + "Report/": _listing(base + "Report/", ["Draft_Minutes_report_RAN1#126_v010.docx"]),
+    }
+    files = {base + "Reports/Draft_Minutes_report_RAN1#126_v100.docx": b"doc"}
+    res = fetch_meeting(_http(listings, files), MTG, wg, raw_dir=tmp_path)
+    assert res.changed and "minutes_docx" in res.files
 
 def test_fetch_meeting_no_redownload_when_unchanged(tmp_path):
     base = MTG.url
