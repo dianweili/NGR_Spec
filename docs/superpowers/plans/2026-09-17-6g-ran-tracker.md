@@ -461,6 +461,10 @@ SOURCES_OK = """
         dir_re: 'TSGR1_(\\d+)([a-z]*)'
         hard_floor: 112
         agenda_csv_since: 124
+        minutes_re: '(?i)^Draft_Minutes.*\.(docx|zip)$'
+        report_dirs: [Report, Reports]
+        ls_dirs: [LSin, LSout]
+        latest_meeting_with_content: 126
         artifacts: [agenda_csv, minutes_docx]
     http:
       user_agent: "UA"
@@ -481,6 +485,31 @@ def test_load_sources(tmp_path):
     assert cfg.wgs["RAN1"].hard_floor == 112
     assert cfg.http.concurrency == 2
     assert cfg.extract.batch_size == 40
+
+def test_load_sources_reads_per_group_fields(tmp_path):
+    """这四个字段是实测后加的：各组纪要命名毫无共性，目录名还随年代变。"""
+    wg = load_sources(write(tmp_path, "s.yaml", SOURCES_OK)).wgs["RAN1"]
+    assert wg.minutes_re.startswith("(?i)")
+    assert wg.report_dirs == ["Report", "Reports"]
+    assert wg.ls_dirs == ["LSin", "LSout"]
+    assert wg.latest_meeting_with_content == 126
+
+def test_report_dirs_defaults_to_report(tmp_path):
+    body = SOURCES_OK.replace("        report_dirs: [Report, Reports]
+", "")
+    assert load_sources(write(tmp_path, "s.yaml", body)).wgs["RAN1"].report_dirs == ["Report"]
+
+def test_sources_requires_minutes_re(tmp_path):
+    """缺 minutes_re 必须在启动时炸 —— 否则该组会静默产出空结果。"""
+    body = SOURCES_OK.replace("        minutes_re: '(?i)^Draft_Minutes.*\\.(docx|zip)$'
+", "")
+    with pytest.raises(ConfigError, match="minutes_re"):
+        load_sources(write(tmp_path, "s.yaml", body))
+
+def test_sources_rejects_invalid_minutes_re(tmp_path):
+    body = SOURCES_OK.replace("(?i)^Draft_Minutes.*", "(?i)^Draft_Minutes(.*")
+    with pytest.raises(ConfigError, match="minutes_re"):
+        load_sources(write(tmp_path, "s.yaml", body))
 
 def test_sources_rejects_unknown_backend(tmp_path):
     bad = SOURCES_OK.replace("backend: cli", "backend: api")
