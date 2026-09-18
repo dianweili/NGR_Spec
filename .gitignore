@@ -5,3 +5,7 @@ logs/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# pytest --junitxml 的输出（排查时常用，不进仓库）
+test_results.xml
+junit*.xml
