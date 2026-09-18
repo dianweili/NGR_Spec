@@ -45,19 +45,56 @@ class Document:
 # 只是产出与原文本意不符的段落 —— 必须在这一处补分隔符，不能留给下游猜词边界。
 _SEP = {W + "tab": "\t", W + "br": "\n", W + "cr": "\n"}
 
+# Word 对同一个图形给出 mc:Choice 与 mc:Fallback 两份**等价**表示。两份都收会让
+# 文本原样重复一遍 —— 实测 Annex A-2 的日程表图示被拼成
+# "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1RAN1 MainRAN1 Main..."。只取其一。
+MC = "{http://schemas.openxmlformats.org/markup-compatibility/2006}"
+
 def _text_of(el) -> str:
+    """段落纯文本。按文档顺序收集 w:t，并为结构性断点补分隔符。
+
+    分隔符不是即时写入的，而是先挂起、等到下一段真实文本出现时才落下 ——
+    这样嵌套段落的前后断点不会在段首/段尾留下多余空行，也不会连出 "\n\n"。
+    """
     out: list[str] = []
-    def walk(node):
+    pending = False
+
+    def emit(s: str) -> None:
+        nonlocal pending
+        if pending and out:
+            out.append("\n")
+        pending = False
+        out.append(s)
+
+    def walk(node) -> None:
+        nonlocal pending
         for child in node:
             tag = child.tag
             if tag == W + "pPr":
                 continue            # 段落属性里的 <w:tab> 是制表位定义，不是制表符
+            if tag == MC + "AlternateContent":
+                pick = child.find(MC + "Choice")
+                if pick is None:
+                    pick = child.find(MC + "Fallback")
+                # 显式 is None：空 Element 的布尔值是 False，`a or b` 会选错
+                if pick is not None:
+                    walk(pick)
+                continue
             if tag == W + "t":
-                out.append(child.text or "")
+                emit(child.text or "")
             elif tag in _SEP:
-                out.append(_SEP[tag])
+                emit(_SEP[tag])
             else:
-                walk(child)         # 文本框等嵌套结构里的 w:t 也要收
+                # 文本框（w:txbxContent）等结构里嵌套着独立的 w:p，它们各自成段。
+                # 前后都要断开，否则会和外层文本首尾相连焊成一串 ——
+                # 与 w:br 那个坑同源（实测 "RAN1 MainAnnex A-2:"）。
+                nested_para = tag == W + "p"
+                if nested_para:
+                    pending = True
+                walk(child)
+                if nested_para:
+                    pending = True
+
     walk(el)
     return "".join(out)
 

@@ -33,6 +33,25 @@ def test_tab_and_break_become_separators():
         "Opening of the meeting\t5", "OLLA enabled\nTarget BLER 10%",
         "Case 1\nCase 2"]
 
+def test_alternate_content_is_not_counted_twice():
+    """Word 对同一个图形给出 mc:Choice 与 mc:Fallback 两份等价表示。
+    两份都收会让文本原样重复一遍 —— 实测 Annex A-2 的日程表图示被拼成
+    "RAN1 Brk 2RAN1 Brk 2RAN1 Brk 1RAN1 Brk 1..."。"""
+    mc = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xml = (f'<w:p xmlns:mc="{mc}"><w:r><mc:AlternateContent>'
+           '<mc:Choice Requires="wps"><w:p><w:r><w:t>Brk 2</w:t></w:r></w:p></mc:Choice>'
+           '<mc:Fallback><w:p><w:r><w:t>Brk 2</w:t></w:r></w:p></mc:Fallback>'
+           '</mc:AlternateContent></w:r><w:r><w:t>Annex A-2</w:t></w:r></w:p>')
+    assert parse_docx(make_docx(xml)).paragraphs == ["Brk 2\nAnnex A-2"]
+
+def test_nested_paragraphs_are_separated_from_surrounding_text():
+    """文本框里的 w:p 各自成段，前后都要断开，否则与外层文本焊成一串
+    （实测 "RAN1 MainAnnex A-2:"）。"""
+    xml = ('<w:p><w:r><w:t>before</w:t></w:r>'
+           '<w:r><w:p><w:r><w:t>boxed</w:t></w:r></w:p></w:r>'
+           '<w:r><w:t>after</w:t></w:r></w:p>')
+    assert parse_docx(make_docx(xml)).paragraphs == ["before\nboxed\nafter"]
+
 def test_tab_stop_definition_is_not_a_tab_character():
     """<w:pPr><w:tabs><w:tab/></w:tabs></w:pPr> 是制表位定义，与制表符同名但不是字符。"""
     xml = ('<w:p><w:pPr><w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs></w:pPr>'
