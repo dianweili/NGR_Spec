@@ -99,6 +99,14 @@ def test_sources_rejects_non_integer_hard_floor(tmp_path):
     with pytest.raises(ConfigError, match="hard_floor"):
         load_sources(write(tmp_path, "s.yaml", bad))
 
+def test_sources_rejects_non_list_artifacts(tmp_path):
+    """完整性扫描发现的缺口：原来是裸 list(...)，把字符串误当成列表写（漏了方括号）时
+    会静默拆成字符列表（list("agenda_csv") -> ['a','g',...]）而不报错，比崩溃更隐蔽。
+    改用 _as_list 后必须显式报错。"""
+    bad = SOURCES_OK.replace("artifacts: [agenda_csv, minutes_docx]", "artifacts: agenda_csv")
+    with pytest.raises(ConfigError, match="artifacts"):
+        load_sources(write(tmp_path, "s.yaml", bad))
+
 SOURCES_MISSING_HTTP = """
     sources:
       RAN1:
@@ -252,6 +260,13 @@ def test_features_rejects_reversed_meetings_range(tmp_path):
 
 def test_features_rejects_meetings_not_two_element_list(tmp_path):
     bad = FEATURES_OK.replace("meetings: { RAN1: [116, 126] }", "meetings: { RAN1: [116] }")
+    with pytest.raises(ConfigError, match="meetings"):
+        load_features(write(tmp_path, "f.yaml", bad))
+
+def test_features_rejects_non_dict_meetings(tmp_path):
+    """协调者点名的缺口：meetings 整体写成非 dict（这里写成列表）之前会在
+    meetings_raw.items() 那一步抛裸 AttributeError，现在必须是 ConfigError。"""
+    bad = FEATURES_OK.replace("meetings: { RAN1: [116, 126] }", "meetings: [116, 126]")
     with pytest.raises(ConfigError, match="meetings"):
         load_features(write(tmp_path, "f.yaml", bad))
 

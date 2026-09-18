@@ -122,7 +122,7 @@ def _to_number_list(value, path: str) -> list[int]:
 
 def load_sources(path: Path | None = None) -> SourcesConfig:
     path = path or P.config / "sources.yaml"
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    data = _as_dict(yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}, "sources.yaml")
 
     sources_raw = _as_dict(_require(data, "sources", "sources.yaml"), "sources")
     wgs = {}
@@ -131,22 +131,30 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
         raw = _as_dict(raw, where)
         try:
             re.compile(_require(raw, "dir_re", where))
-        except re.error as exc:
+        except (re.error, TypeError) as exc:
             raise ConfigError(f"{where}.dir_re 不是合法正则: {exc}") from exc
         minutes_re = _require(raw, "minutes_re", where)
         try:
             re.compile(minutes_re)
-        except re.error as exc:
+        except (re.error, TypeError) as exc:
             raise ConfigError(f"{where}.minutes_re 不是合法正则: {exc}") from exc
+
+        artifacts = list(_as_list(_require(raw, "artifacts", where), f"{where}.artifacts"))
+        report_dirs_raw = raw.get("report_dirs")
+        report_dirs = ([raw.get("report_dir", "Report")] if report_dirs_raw is None
+                        else list(_as_list(report_dirs_raw, f"{where}.report_dirs")))
+        ls_dirs_raw = raw.get("ls_dirs")
+        ls_dirs = ["LS"] if ls_dirs_raw is None else list(_as_list(ls_dirs_raw, f"{where}.ls_dirs"))
+
         wgs[name] = WgConfig(
             path=_require(raw, "path", where),
             dir_re=raw["dir_re"],
             hard_floor=_to_int(_require(raw, "hard_floor", where), f"{where}.hard_floor"),
             agenda_csv_since=_to_int_or_none(raw.get("agenda_csv_since"), f"{where}.agenda_csv_since"),
             minutes_re=minutes_re,
-            artifacts=list(_require(raw, "artifacts", where)),
-            report_dirs=list(raw.get("report_dirs", [raw.get("report_dir", "Report")])),
-            ls_dirs=list(raw.get("ls_dirs", ["LS"])),
+            artifacts=artifacts,
+            report_dirs=report_dirs,
+            ls_dirs=ls_dirs,
             latest_meeting_with_content=_to_int_or_none(
                 raw.get("latest_meeting_with_content"), f"{where}.latest_meeting_with_content"),
         )
@@ -191,14 +199,14 @@ def _parse_segment(raw: dict, where: str, default_depth: str) -> LineageSegment:
     if title_re:
         try:
             re.compile(title_re)
-        except re.error as exc:
+        except (re.error, TypeError) as exc:
             raise ConfigError(f"{where}.anchor.title_re 不是合法正则: {exc}") from exc
 
     depth = raw.get("depth", default_depth)
     if depth not in VALID_DEPTHS:
         raise ConfigError(f"{where}.depth 只能是 {sorted(VALID_DEPTHS)}，得到 '{depth}'")
 
-    meetings_raw = _require(raw, "meetings", where)
+    meetings_raw = _as_dict(_require(raw, "meetings", where), f"{where}.meetings")
     meetings: dict[str, tuple[int, int | None]] = {}
     for wg, rng in meetings_raw.items():
         if not isinstance(rng, list) or len(rng) != 2:
@@ -219,7 +227,7 @@ def _parse_segment(raw: dict, where: str, default_depth: str) -> LineageSegment:
 
 def load_features(path: Path | None = None) -> list[Feature]:
     path = path or P.config / "features.yaml"
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    data = _as_dict(yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}, "features.yaml")
     default_depth = data.get("default_depth", "origin")
     if default_depth not in VALID_DEPTHS:
         raise ConfigError(f"default_depth 只能是 {sorted(VALID_DEPTHS)}")
