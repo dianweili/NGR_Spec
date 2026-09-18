@@ -1916,18 +1916,37 @@ def test_empty_paragraphs_are_dropped():
     assert parse_docx(make_docx('<w:p></w:p>' + para("x"))).paragraphs == ["x"]
 
 def test_real_fixture_structure():
-    """实测 RAN1#126 v010 的确切数字 —— 3GPP 换纪要模板时这里第一个炸。"""
+    """实测 RAN1#126 v010 的确切数字 —— 3GPP 换纪要模板时这里第一个炸。
+
+    注意 paragraphs 只数 body 的**直接子**段落：表格内的段落归到 table 块，
+    不计入这里。（计划初稿写的 7803 是用正则匹配 <w:p> 量的，而正则处理不了
+    表格内嵌套的 <w:p>，那个数字本身就是错的。）"""
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
-    assert len(doc.paragraphs) == 7803
+    assert len(doc.paragraphs) == 5061
     assert len(doc.headings) == 83
     assert any(h.text == "Rel-20 Study of 6GR" and h.level == 1 for h in doc.headings)
     assert any(h.text == "Waveform for 6GR air interface" for h in doc.headings)
 
 def test_real_fixture_marker_counts():
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
-    assert sum(1 for p in doc.paragraphs if p.startswith("Agreement")) == 320
-    assert sum(1 for p in doc.paragraphs if p.startswith("Conclusion")) == 29
-    assert sum(1 for p in doc.paragraphs if p.lower().startswith("working assumption")) == 13
+    assert sum(1 for p in doc.paragraphs if p.startswith("Agreement")) == 308
+    assert sum(1 for p in doc.paragraphs if p.startswith("Conclusion")) == 26
+    assert sum(1 for p in doc.paragraphs if p.lower().startswith("working assumption")) == 11
+
+def test_real_fixture_table_wrapped_markers():
+    """12 个表格的首个单元格就是标记 —— 这些是"用表格画的框"，框里装着一条
+    agreement。parse 层必须把单元格段落带出来，否则 Task 9 看不到这些标记，
+    12 条 agreement 会被静默丢弃（实测占全部 agreement 的约 4%）。"""
+    doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
+    tables = [b for b in doc.blocks if b.kind == "table"]
+    assert len(tables) == 82
+    lead = [t.cell_paras[0] for t in tables if t.cell_paras]
+    assert sum(1 for x in lead if x.startswith("Agreement")) == 8
+    assert sum(1 for x in lead if x.startswith("Conclusion")) == 2
+    assert sum(1 for x in lead if x.lower().startswith("working assumption")) == 1
+    # 注意 tables 只含 body 的**直接子**表格；嵌套表格不单独成块，其段落
+    # 会出现在外层表格的 cell_paras 里（iter 是递归的），只是不在首位。
+    # 全文按"任意层级表格的首个单元格是标记"数是 9 个 Agreement，此处为 8。
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -1954,6 +1973,14 @@ class Block:
     text: str
     style: str | None
     index: int           # 在 blocks 中的下标
+    cell_paras: list[str] = field(default_factory=list)
+    """仅 table 块有值：该表格内各单元格段落的纯文本，按出现顺序。
+
+    实测 RAN1#126 的纪要里有 12 个表格的**首个单元格就是标记**
+    （9 个 Agreement、2 个 Conclusion、1 个 Working assumption）——
+    它们是"用表格画的框"，框里装着一条 agreement。若只把表格转成 markdown
+    整块，这些标记对 extract_events 不可见，12 条 agreement 会被静默丢弃。
+    把单元格段落一并带出来，标记识别仍留在 parse/events.py（不在本层做）。"""
 
 @dataclass
 class Document:
@@ -1970,6 +1997,10 @@ def _text_of(el) -> str:
 def _cell_text(tc) -> str:
     parts = [_text_of(p).strip() for p in tc.findall(W + "p")]
     return " ".join(x for x in parts if x).replace("|", r"\|")
+
+def _cell_paragraphs(tbl) -> list[str]:
+    """表格内所有单元格段落的纯文本，按文档顺序，跳过空段。"""
+    return [t for t in (_text_of(p).strip() for p in tbl.iter(W + "p")) if t]
 
 def _table_to_markdown(tbl) -> str:
     rows = []
@@ -2012,7 +2043,8 @@ def parse_docx(source: Path | bytes) -> Document:
         elif tag == W + "tbl":
             md = _table_to_markdown(el)
             if md:
-                doc.blocks.append(Block("table", md, None, len(doc.blocks)))
+                doc.blocks.append(Block("table", md, None, len(doc.blocks),
+                                        cell_paras=_cell_paragraphs(el)))
     return doc
 ```
 
