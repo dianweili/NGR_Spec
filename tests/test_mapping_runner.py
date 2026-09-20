@@ -68,7 +68,10 @@ def test_merge_adds_new_events():
     assert stats.added_ids == [new[0].id]
 
 def test_merge_added_ids_excludes_unchanged():
-    """提交信息按 added_ids 统计，未变更的事件不能混进'本次新增'。"""
+    """未变更的事件不能混进'本次新增'。
+
+    注意 added_ids 是**合并后 state 侧**的 id，不要拿它去 join incoming 的 Event.id ——
+    要每特性新增数请用 added_by_feature，见 test_added_ids_are_state_side_not_incoming。"""
     new = map_meeting(parsed([ev()]), FEATS)
     existing = [{**new[0].__dict__, "id": new[0].id, "first_seen": "2026-01-01"}]
     _, stats = merge_events(existing, new, today="2026-09-17", scope={("RAN1", 126)})
@@ -289,3 +292,49 @@ def test_empty_and_blank_heading_paths_differ():
     """[] 与 [""] 必须得到不同的 key。给空路径加 `or "0:"` 兜底会让两者相撞，
     把长度前缀编码的单射性破坏掉。"""
     assert _agenda_key(None, []) != _agenda_key(None, [""])
+
+
+def test_added_ids_are_state_side_not_incoming():
+    """merge 会重新定序，incoming 上的 Event.id 只是 map 阶段的位置式草稿值。
+
+    纪要改版在开头插一条，两侧 id 就整体错位（实测 0/4 对得上）。此时按
+    `ev.id in added_ids` 去 join 会把"本次新增"记到另一条事件头上，还不报错 ——
+    这正是 Task 20 计划稿里原本的写法。每特性新增数必须用 added_by_feature。
+    """
+    feats = _wf_feats()
+    scope = {("RAN1", 126)}
+    base, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB", "CCC"]), feats),
+                           "2026-09-01", scope=scope)
+    incoming = map_meeting(_wf_parsed(["NEW", "AAA", "BBB", "CCC"]), feats)
+    merged, stats = merge_events(base, incoming, "2026-09-19", scope=scope)
+
+    # 两侧 id 确实错位 —— 这就是不能 join 的原因
+    state_pairs = {(e["id"], e["text_en"]) for e in merged}
+    assert not any((ev.id, ev.text_en) in state_pairs for ev in incoming)
+
+    # 按草稿 id join 会认错人
+    joined = [ev.text_en for ev in incoming if ev.id in set(stats.added_ids)]
+    assert joined == ["CCC"], "这条断言记录的是错误行为，用来说明为什么不能这么 join"
+
+    # 权威结果：新增的是 NEW，且统计由 merge 算好
+    assert [e["text_en"] for e in merged if e["id"] in set(stats.added_ids)] == ["NEW"]
+    assert stats.added_by_feature == {("RAN1", 126): {"waveform": 1}}
+
+
+def test_history_without_seq_field_is_not_overwritten():
+    """老格式的 state 记录没有 seq 字段时，它的 id 仍然占位。
+
+    若占用判据取自可缺失的 seq，新事件会落到一条活着的历史 id 上把它覆盖掉，
+    而 stale_ids 还宣称那条"已保留" —— 占用必须按恒存在且权威的 id 判。
+    """
+    feats = _wf_feats()
+    scope = {("RAN1", 126)}
+    legacy = [{"id": "RAN1-126-10.2-a002", "wg": "RAN1", "meeting": 126,
+               "agenda_item": "10.2", "kind": "agreement", "text_en": "BBB",
+               "first_seen": "2026-01-01"}]          # 无 seq、无 content_hash
+    merged, stats = merge_events(legacy, map_meeting(_wf_parsed(["NEW"]), feats),
+                                 "2026-09-19", scope=scope)
+    texts = {e["text_en"]: e["id"] for e in merged}
+    assert "BBB" in texts, "老记录不得被覆盖"
+    assert texts["BBB"] == "RAN1-126-10.2-a002"
+    assert texts["NEW"] != "RAN1-126-10.2-a002", "新事件必须绕开已占用的 id"

@@ -51,6 +51,14 @@ def _agenda_key(agenda_item: str | None, heading_path: list[str]) -> str:
     full = "".join(f"{len(h)}:{h}" for h in heading_path)
     return f"{slug}-{hashlib.sha256(full.encode('utf-8')).hexdigest()[:8]}"
 
+_SEQ_TAIL_RE = re.compile(r"(\d+)$")
+
+def _seq_from_id(event_id: str) -> int | None:
+    """从事件 id 尾部反解 seq。老格式的 state 记录可能没有 seq 字段，
+    但 id 一定有 —— 认亲认到它时要沿用它自己的号，不能另给一个。"""
+    m = _SEQ_TAIL_RE.search(event_id or "")
+    return int(m.group(1)) if m else None
+
 def _hash(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -90,8 +98,19 @@ class MergeStats:
     changed: int = 0
     unchanged: int = 0
     added_ids: list[str] = field(default_factory=list)
-    """新增事件的 id。提交信息按它统计每特性新增数 —— 不能用整批 incoming，
-    否则未变更的事件也会被计进'本次新增'。"""
+    """新增事件的 id，**取自合并后的 state（权威侧）**。
+
+    ⚠️ 不要拿它去 join `incoming` 里的 `Event.id`。merge 会重新定序，
+    `incoming` 上的 id 只是 map 阶段按位置生成的**草稿值** —— 纪要改版插入一条时，
+    两侧的 id 会整体错位（实测开头插一条后 incoming 与 state **0/4 对得上**），
+    join 的结果会安到另一条事件头上，还不报错。
+    要"每特性新增数"请直接用 `added_by_feature`，不要自己 join。"""
+    added_by_feature: dict[tuple[str, int], dict[str, int]] = field(default_factory=dict)
+    """`(wg, meeting) -> {特性 slug: 本次新增条数}`，在 merge 内部按权威 id 算好。
+
+    存在的理由就是取消调用方的 join：契约只写在 docstring 里约束不住人 ——
+    本项目已经证明过两次（`scope_of()` 有警告仍被自己的测试绕过 6 次；
+    这条 join 指引直接把 Task 20 的统计写错）。能算好就别让调用方算。"""
     stale_ids: list[str] = field(default_factory=list)
     """本次解析中不再出现、但仍留在 state 里的事件 id。
 
@@ -158,24 +177,30 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
             taken.add(id(hit))
             pair[1] = hit
 
-    # 定序：认到历史的沿用旧 seq；其余取组内空号（历史 id 一律绕开，不回收）
-    used: dict[tuple, set[int]] = defaultdict(set)
-    for e in existing:
-        if isinstance(e.get("seq"), int):
-            used[gkey(e.get("wg"), e.get("meeting"),
-                      e.get("agenda_item"), e.get("kind"))].add(e["seq"])
+    # 定序：认到历史的沿用旧 seq；其余取尚未占用的最小号。
+    #
+    # 占用判据取自 **by_id 的键（权威 id）**，不是历史记录里的 `seq` 字段 ——
+    # `seq` 可能缺失或被手工改成字符串，那样它就不计入占用，新事件会落到一条
+    # 活着的历史 id 上把它覆盖掉，而 stale_ids 还宣称那条"已保留"。
+    # id 是恒存在且权威的，用它判占用不需要任何关于字段完整性的假设。
+    taken_ids = set(by_id)
 
     resolved: list[tuple[Event, dict | None]] = []
     for ev, hit in pairs:
-        k = gkey(ev.wg, ev.meeting, ev.agenda_item, ev.kind)
-        if hit is not None and isinstance(hit.get("seq"), int):
-            resolved.append((replace(ev, seq=hit["seq"]), hit))
+        old_seq = hit.get("seq") if hit is not None else None
+        if not isinstance(old_seq, int) and hit is not None:
+            old_seq = _seq_from_id(hit.get("id", ""))     # 老格式没有 seq 字段时从 id 反解
+        if old_seq is not None:
+            resolved.append((replace(ev, seq=old_seq), hit))
             continue
         n = 1
-        while n in used[k]:
+        while True:
+            cand = replace(ev, seq=n)
+            if cand.id not in taken_ids:
+                break
             n += 1
-        used[k].add(n)
-        resolved.append((replace(ev, seq=n), hit))
+        taken_ids.add(cand.id)
+        resolved.append((cand, hit))
 
     for ev, old in resolved:
         new = asdict(ev)
@@ -185,6 +210,8 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
             by_id[ev.id] = new
             stats.added += 1
             stats.added_ids.append(ev.id)
+            per = stats.added_by_feature.setdefault((ev.wg, ev.meeting), {})
+            per[ev.feature] = per.get(ev.feature, 0) + 1
             continue
 
         new["first_seen"] = old.get("first_seen", today)
