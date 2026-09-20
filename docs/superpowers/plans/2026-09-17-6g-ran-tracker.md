@@ -4444,7 +4444,8 @@ def render_dashboard(events: list[dict], features: list[Feature],
 
     for feat in features:
         evs = grouped.get(feat.slug, [])
-        st = feat_state.get(feat.slug, {})
+        # 键存在但值为 None 时 .get(k, {}) 的默认值不生效，见 site.py 同处注释
+        st = feat_state.get(feat.slug) or {}
         agr = [e for e in evs if e["kind"] == "agreement"]
         n6 = sum(1 for e in agr if e.get("era") == "6G")
         nl = sum(1 for e in agr if e.get("era") == "5G-A")
@@ -4663,6 +4664,53 @@ def test_render_all_is_deterministic(tmp_path):
 def test_render_all_writes_empty_alerts_when_no_banner(tmp_path):
     render_all([E()], [WAVE], FS, tmp_path)
     assert (tmp_path / "ALERTS.md").read_text(encoding="utf-8").strip() == ""
+
+
+# —— 以下四条守的是审查实测出来的缺陷 ——
+
+def test_feat_state_value_none_does_not_crash():
+    """`.get(slug, {})` 的默认值只在键**不存在**时生效；键在但值为 None
+    （state 文件里写了 null）时返回 None，紧接着的 .get 就炸。
+
+    渲染是管线最后一站，崩在这里等于整轮跑白，而且崩之前已经落了一半文件 ——
+    哪些写了哪些没写取决于崩在第几步。
+    """
+    from ngr.render.markdown import render_dashboard
+    html = render_site([], [WAVE], {"waveform": None}, generated="2026-09-20")
+    assert "6G (Rel-20) RAN" in html
+    assert render_dashboard([], [WAVE], {"waveform": None})      # markdown 层同一模式
+
+
+def test_accent_colour_is_actually_used():
+    """`--accent` 只定义不引用时，Step 1 那道"先读 dataviz 规范再选色"的工序
+    对最终产物零影响 —— 无论选什么色值，字节都不变。"""
+    html = render_site([], [WAVE], {}, generated="2026-09-20")
+    assert "var(--accent)" in html, "选了色就要真的用上，否则配色工序没有意义"
+
+
+def test_meeting_goes_through_esc():
+    """纵深防御：`Event.meeting: int` 是类型约定而非运行时强制，事件到渲染层时
+    已经是 dict、不再过 dataclass 校验。对数字套 esc() 无副作用。"""
+    html = render_site([], [WAVE], {}, generated="2026-09-20")
+    assert "esc(e.meeting)" in html
+
+
+def test_feature_order_is_preserved_not_sorted():
+    """`features` 顺序来自 features.yaml 的书写顺序，那是人工编排的优先级。
+
+    排成字典序等于把这个信息丢掉 —— 所以"打乱输入→输出不变"这条**有意**只对
+    events 与 feat_state 成立，features 顺序是调用方契约，不是要防御的抖动。
+    """
+    import json as _json
+    import re as _re
+    isac = Feature(slug="isac", name_zh="ISAC 通感一体", lineage=[seg("6G")])
+    a = render_site([], [WAVE, isac], {}, generated="2026-09-20")
+    b = render_site([], [isac, WAVE], {}, generated="2026-09-20")
+    assert a != b, "features 顺序必须如实反映到产物里"
+    slugs = lambda h: [f["slug"] for f in _json.loads(
+        _re.search(r'id="ngr-data">(.*?)</script>', h, _re.S).group(1)
+        .replace(chr(92) + "u003c", "<"))["features"]]
+    assert slugs(a) == ["waveform", "isac"] and slugs(b) == ["isac", "waveform"]
 ```
 
 - [ ] **Step 3: 跑测试确认失败**
@@ -4692,12 +4740,24 @@ def _ordered(events: list[dict]) -> list[dict]:
 
 def _payload(events: list[dict], features: list[Feature], feat_state: dict,
              generated: str) -> dict:
+    """把三份输入压成内嵌 JSON。
+
+    **`features` 的顺序有意保留，不排序。** 它来自 `config/features.yaml` 的书写顺序，
+    那是人工编排的优先级（重要特性写在前面），排成字典序等于把这个信息丢掉。
+    所以"打乱输入→输出不变"这条只对 `events` 与 `feat_state` 成立：
+    前者由 `_ordered()` 归一化，后者只被 `.get()` 查找、从不枚举。
+    `features` 顺序是**调用方契约**，不是需要防御的抖动。
+    """
     return {
         "generated": generated,
         "features": [{"slug": f.slug, "name_zh": f.name_zh,
                       "has_legacy": f.has_legacy,
-                      "stage": feat_state.get(f.slug, {}).get("stage"),
-                      "open_issues": feat_state.get(f.slug, {}).get("open_issues", [])}
+                      # `.get(slug, {})` 的默认值只在**键不存在**时生效；键在但值为
+                      # None（state 文件里写了 null）时它返回 None，紧接着的 .get 就炸。
+                      # 渲染是管线最后一站，崩在这里等于整轮跑白，而且崩之前已经落了
+                      # 一半文件 —— 哪些写了哪些没写取决于崩在第几步。
+                      "stage": (feat_state.get(f.slug) or {}).get("stage"),
+                      "open_issues": (feat_state.get(f.slug) or {}).get("open_issues", [])}
                      for f in features],
         "events": _ordered(events),
     }
@@ -4736,6 +4796,7 @@ def render_site(events: list[dict], features: list[Feature], feat_state: dict,
   body {{ background: var(--bg); color: var(--fg); margin: 0;
          padding: 0 16px 48px; font: 15px/1.6 system-ui, sans-serif; }}
   table {{ border-collapse: collapse; width: 100%; }}
+  a {{ color: var(--accent); }}
   th, td {{ border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }}
   details {{ border-bottom: 1px solid var(--line); padding: 6px 0; }}
   pre {{ overflow-x: auto; background: color-mix(in srgb, var(--fg) 5%, transparent);
@@ -4772,7 +4833,7 @@ function render() {{
 
   const shown = DATA.events.filter(e => !filterFeature || e.feature === filterFeature);
   const items = shown.sort((a, b) => b.meeting - a.meeting).map(e =>
-    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{e.meeting}}]
+    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{esc(e.meeting)}}]
        ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || cut(e.text_en, 90))}}</summary>
      <pre>${{esc(e.text_en)}}</pre></details>`).join('');
 

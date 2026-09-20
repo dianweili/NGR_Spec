@@ -15,12 +15,24 @@ def _ordered(events: list[dict]) -> list[dict]:
 
 def _payload(events: list[dict], features: list[Feature], feat_state: dict,
              generated: str) -> dict:
+    """把三份输入压成内嵌 JSON。
+
+    **`features` 的顺序有意保留，不排序。** 它来自 `config/features.yaml` 的书写顺序，
+    那是人工编排的优先级（重要特性写在前面），排成字典序等于把这个信息丢掉。
+    所以"打乱输入→输出不变"这条只对 `events` 与 `feat_state` 成立：
+    前者由 `_ordered()` 归一化，后者只被 `.get()` 查找、从不枚举。
+    `features` 顺序是**调用方契约**，不是需要防御的抖动。
+    """
     return {
         "generated": generated,
         "features": [{"slug": f.slug, "name_zh": f.name_zh,
                       "has_legacy": f.has_legacy,
-                      "stage": feat_state.get(f.slug, {}).get("stage"),
-                      "open_issues": feat_state.get(f.slug, {}).get("open_issues", [])}
+                      # `.get(slug, {})` 的默认值只在**键不存在**时生效；键在但值为
+                      # None（state 文件里写了 null）时它返回 None，紧接着的 .get 就炸。
+                      # 渲染是管线最后一站，崩在这里等于整轮跑白，而且崩之前已经落了
+                      # 一半文件 —— 哪些写了哪些没写取决于崩在第几步。
+                      "stage": (feat_state.get(f.slug) or {}).get("stage"),
+                      "open_issues": (feat_state.get(f.slug) or {}).get("open_issues", [])}
                      for f in features],
         "events": _ordered(events),
     }
@@ -59,6 +71,7 @@ def render_site(events: list[dict], features: list[Feature], feat_state: dict,
   body {{ background: var(--bg); color: var(--fg); margin: 0;
          padding: 0 16px 48px; font: 15px/1.6 system-ui, sans-serif; }}
   table {{ border-collapse: collapse; width: 100%; }}
+  a {{ color: var(--accent); }}
   th, td {{ border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }}
   details {{ border-bottom: 1px solid var(--line); padding: 6px 0; }}
   pre {{ overflow-x: auto; background: color-mix(in srgb, var(--fg) 5%, transparent);
@@ -95,7 +108,7 @@ function render() {{
 
   const shown = DATA.events.filter(e => !filterFeature || e.feature === filterFeature);
   const items = shown.sort((a, b) => b.meeting - a.meeting).map(e =>
-    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{e.meeting}}]
+    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{esc(e.meeting)}}]
        ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || cut(e.text_en, 90))}}</summary>
      <pre>${{esc(e.text_en)}}</pre></details>`).join('');
 

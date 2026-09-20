@@ -126,7 +126,8 @@ def render_dashboard(events: list[dict], features: list[Feature],
 
     for feat in features:
         evs = grouped.get(feat.slug, [])
-        st = feat_state.get(feat.slug, {})
+        # 键存在但值为 None 时 .get(k, {}) 的默认值不生效，见 site.py 同处注释
+        st = feat_state.get(feat.slug) or {}
         agr = [e for e in evs if e["kind"] == "agreement"]
         n6 = sum(1 for e in agr if e.get("era") == "6G")
         nl = sum(1 for e in agr if e.get("era") == "5G-A")
