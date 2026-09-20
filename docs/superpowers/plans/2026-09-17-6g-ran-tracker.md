@@ -4045,12 +4045,14 @@ git commit -m "feat(map): 血统归集、state 合并、lineage-report"
   - `render_dashboard(events, features, feat_state, *, banner=None, generated=...) -> str`
   - `render_feature_page(slug, events, feature, feat_state) -> str`
   - `render_report(wg, meeting, events, feature_names) -> str`
-  - `tdoc_url(wg, meeting, filename) -> str`
 
 - [ ] **Step 1: 写失败的测试**
 
 ```python
 # tests/test_render_markdown.py
+import random
+import re
+
 from ngr.models import Feature, LineageSegment
 from ngr.render.markdown import render_dashboard, render_feature_page, render_report
 
@@ -4139,6 +4141,101 @@ def test_report_groups_by_feature():
 def test_report_includes_source_link():
     md = render_report("RAN1", 126, [E()], {"waveform": "6GR 波形与帧结构"})
     assert "3gpp.org" in md
+
+
+# —— 以下七条守的是审查实测出来的缺陷，每条都曾在既有测试全绿时存在 ——
+
+def test_fence_is_longer_than_backticks_in_text():
+    """原文里出现 ``` 时围栏必须加长。
+
+    硬编码三个反引号会被撑破：后半段跑到代码块外面，连同后面事件的标题一起被当
+    markdown 重新解释。`text_en` 逐字保留承诺的是**呈现**也逐字 —— 撑破围栏就等于
+    让原文被改写了；而且是级联的，一条脏数据污染同一页里后面所有事件。
+    """
+    poison = "Agreement:\n```\nnot code\n```\nrest of decision"
+    md = render_feature_page("waveform", [E(text_en=poison)], WAVE, FS["waveform"])
+    m = re.search(r"^(`{3,})text$", md, re.M)
+    assert m and len(m.group(1)) >= 4, "围栏必须比正文里最长的反引号串更长"
+    fence = m.group(1)
+    inside, _, after = md.split(fence + "text\n", 1)[1].partition("\n" + fence + "\n")
+    assert poison in inside, "原文必须完整落在围栏内"
+    assert "rest of decision" not in after, "原文不得有任何片段跑到围栏外"
+
+
+def test_table_cells_escape_pipes_and_newlines():
+    """`features.yaml` 是人工维护的 —— 特性名里的 `|` 和换行是用户直接能触发的输入。
+
+    换行比 `|` 更狠：它把一行拆成多行物理行，数据里的 `| a | b |` 会被渲染成
+    一整行**伪造的表格行**，整张表结构报废。
+    """
+    evil = Feature(slug="waveform",
+                   name_zh="Wave\n| extra | row | injected |\nForm", lineage=[seg("6G")])
+    md = render_dashboard([E()], [evil], FS, generated="2026-09-20")
+    rows = [l for l in md.splitlines() if l.strip().startswith("|")]
+    assert len(rows) == 3, "注入的换行不得多出伪造的表格行"
+    unescaped = re.compile("(?<!" + chr(92) + chr(92) + ")" + chr(92) + "|")
+    assert len({len(unescaped.findall(l)) for l in rows}) == 1, "各行未转义竖线数必须一致"
+
+
+def test_headings_do_not_inherit_injected_newlines():
+    """标题行里嵌入换行，后半段会脱离标题按自己的语法重新解释 ——
+    数据里的 "# Fake Heading" 会变成真的一级标题，污染文档大纲。"""
+    md = render_feature_page("waveform",
+                             [E(agenda_title="Bad\n# Fake Heading")], WAVE, FS["waveform"])
+    assert not any(l.startswith("# Fake Heading") for l in md.splitlines())
+
+
+def test_render_is_deterministic_under_shuffled_input():
+    """产出的 Markdown 要提交进 git，顺序一变整个文件就是 diff 噪声。
+
+    调用方的顺序取决于 JSON 反序列化、上游重构等一堆我们控制不了的东西，
+    所以渲染层必须自己排序，**不能依赖传入列表的顺序**。
+    注意要打乱输入、而不是同一个对象渲染两次 —— 后者测不出顺序依赖。
+    """
+    evs = [E(id=f"RAN1-126-10.2-a{i:03d}", text_en=f"T{i}", summary_zh=None)
+           for i in range(1, 7)]
+    boards, reports = set(), set()
+    for _ in range(12):
+        shuffled = evs[:]
+        random.shuffle(shuffled)
+        boards.add(render_dashboard(shuffled, [WAVE], FS, generated="2026-09-20"))
+        reports.add(render_report("RAN1", 126, shuffled, {"waveform": "波形"}))
+    assert len(boards) == 1 and len(reports) == 1
+
+
+def test_latest_meeting_header_uses_real_wg():
+    """各组会议号是独立编号体系 —— RAN1#126 与 RAN3#126 是两场不同的会。
+    写死 RAN1 会把 RAN3 的会议号标成 RAN1 的，读者按这个号根本找不到会议。"""
+    md = render_dashboard([E(), E(id="RAN3-130-10.2-a002", wg="RAN3", meeting=130)],
+                          [WAVE], FS, generated="2026-09-20")
+    assert "最新会议 RAN3#130" in md
+
+
+def test_meeting_zero_is_not_treated_as_missing():
+    """`meeting` 可以合法地为 0；truthy 判断会把它当"没有最新会议"、
+    把本期新增强制清零，而小节标题用的是 is not None，两处口径就不一致了。"""
+    md = render_dashboard([E(meeting=0)], [WAVE], FS, generated="2026-09-20")
+    assert "最新会议 RAN1#0" in md
+    assert "**+1**" in md, "meeting=0 的事件必须计入本期新增"
+
+
+def test_events_of_unknown_feature_are_surfaced():
+    """特性被下线或改名后，历史事件还挂在旧 slug 上。
+
+    看板只遍历已知特性，这些事件会**彻底不出现在任何位置** —— 内容消失且无任何
+    诊断信号，是本项目定义的最严重故障类型。它与"待归类议程项"是同一原则的两半。
+    """
+    md = render_dashboard([E(), E(id="RAN1-126-10.2-a002", feature="ghost_feature")],
+                          [WAVE], FS, generated="2026-09-20")
+    assert "特性配置缺失" in md and "ghost_feature" in md
+
+
+def test_preview_truncation_is_marked():
+    """截断不留标记，读者会把半条决议当完整决议读。"""
+    md = render_report("RAN1", 126, [E(text_en="A" * 150, summary_zh=None)],
+                       {"waveform": "波形"})
+    line = [l for l in md.splitlines() if "AAA" in l][0]
+    assert line.rstrip().endswith("…")
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -4150,6 +4247,7 @@ Expected: FAIL，`No module named 'ngr.render'`
 
 ```python
 from __future__ import annotations
+import re
 import time
 from collections import defaultdict
 from ngr.models import Feature
@@ -4158,12 +4256,59 @@ WG_PATH = {"RAN1": "tsg_ran/WG1_RL1/TSGR1_%d", "RAN2": "tsg_ran/WG2_RL2/TSGR2_%d
            "RAN3": "tsg_ran/WG3_Iu/TSGR3_%d", "RAN4": "tsg_ran/WG4_Radio/TSGR4_%d",
            "RANP": "tsg_ran/TSG_RAN/TSGR_%d"}
 
+PREVIEW_DASHBOARD = 80      # 看板"本期新增"里每条的预览长度
+PREVIEW_REPORT = 100        # 简报里每条 bullet 的预览长度
+
+_WS_RE = re.compile(r"\s+")
+_BACKTICK_RUN_RE = re.compile(r"`+")
+
+
 def meeting_url(wg: str, meeting: int) -> str:
     tmpl = WG_PATH.get(wg)
     return f"https://www.3gpp.org/ftp/{tmpl % meeting}/" if tmpl else ""
 
+
+def _cell(text: object) -> str:
+    """转义成可以安全放进 markdown 表格单元格的文本。
+
+    `|` 会被表格解析器当列分隔符；换行更狠 —— 它把一行拆成多行物理行，
+    数据里的 `| a | b |` 会被渲染成**一整行伪造的表格行**，整张表结构报废。
+    `config/features.yaml` 是人工维护的特性字典，特性名里出现这些字符
+    是用户直接能触发的输入。
+    """
+    return _WS_RE.sub(" ", str(text)).replace("|", "\\|").strip()
+
+
+def _inline(text: object) -> str:
+    """转义成可以安全放进标题行 / bullet 的文本。
+
+    嵌入的换行会让后半段脱离标题、按自己的语法重新解释 ——
+    数据里的 "# Fake Heading" 会变成真的一级标题，把文档大纲污染掉。
+    """
+    return _WS_RE.sub(" ", str(text)).strip()
+
+
+def _fence(text: str) -> str:
+    """够长的代码围栏：比正文里最长的连续反引号串多一个（CommonMark 的做法）。
+
+    硬编码三个反引号时，正文里只要出现 ``` 就会把围栏撑破 —— 后半段跑到代码块
+    外面，连同后面事件的标题一起被当 markdown 重新解释。`text_en` 逐字保留
+    承诺的是**呈现**也逐字，不只是存储；撑破围栏就等于让原文被改写了。
+    而且这是级联的：一条脏数据能污染同一页里排在它后面的所有事件。
+    """
+    longest = max((len(m.group(0)) for m in _BACKTICK_RUN_RE.finditer(text)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def _preview(text: str, limit: int) -> str:
+    """单行预览。截断必须留标记 —— 否则读者会把半条决议当完整决议读。"""
+    one = _inline(text)
+    return one if len(one) <= limit else one[:limit] + "…"
+
+
 def _era_tag(e: dict) -> str:
     return f"[{e.get('era')}/{e.get('release')} {e['wg']}#{e['meeting']}]"
+
 
 def _by_feature(events: list[dict]) -> dict[str, list[dict]]:
     out = defaultdict(list)
@@ -4171,26 +4316,43 @@ def _by_feature(events: list[dict]) -> dict[str, list[dict]]:
         out[e.get("feature")].append(e)
     return out
 
+
+def _ordered(events: list[dict]) -> list[dict]:
+    """渲染顺序：会议号倒序、同会议按 id。
+
+    **不许依赖传入列表的顺序。** 产出的 Markdown 要提交进 git，顺序一变整个文件
+    就是 diff 噪声；而调用方的顺序取决于 JSON 反序列化、上游重构等一堆我们
+    控制不了的东西。
+    """
+    return sorted(events, key=lambda e: (-e["meeting"], e["id"]))
+
+
 def feat_wg(events: list[dict]) -> str:
     """该特性最近活动所在的工作组；多组时取最新会议那条的组。"""
     if not events:
         return ""
     return max(events, key=lambda e: e["meeting"])["wg"]
 
+
 def render_dashboard(events: list[dict], features: list[Feature],
                      feat_state: dict, *, banner: str | None = None,
                      unmapped: list[str] | None = None,
                      generated: str | None = None) -> str:
+    """特性状态看板。对给定输入是确定性的，不要求 `events` 预排序。"""
     generated = generated or time.strftime("%Y-%m-%d")
     grouped = _by_feature(events)
     latest_meeting = max((e["meeting"] for e in events), default=None)
+    # 各组会议号是独立编号体系（RAN1#126 与 RAN3#126 是两场不同的会），
+    # 所以"最新会议"的组名必须从数据里取，不能写死 RAN1。
+    latest_wg = feat_wg([e for e in events if e["meeting"] == latest_meeting])
 
     lines: list[str] = []
     if banner:
         lines += [banner, ""]
     lines += ["# 6G (Rel-20) RAN 进展看板", "",
               f"> 生成于 {generated}"
-              + (f" · 最新会议 RAN1#{latest_meeting}" if latest_meeting else ""), "",
+              + (f" · 最新会议 {latest_wg}#{latest_meeting}"
+                 if latest_meeting is not None else ""), "",
               "| 特性 | 阶段 | 血统 | 累计 Agr. (6G/5G-A) | 本期新增 | 最近活动 | 未决 |",
               "|---|---|---|---|---|---|---|"]
 
@@ -4200,12 +4362,16 @@ def render_dashboard(events: list[dict], features: list[Feature],
         agr = [e for e in evs if e["kind"] == "agreement"]
         n6 = sum(1 for e in agr if e.get("era") == "6G")
         nl = sum(1 for e in agr if e.get("era") == "5G-A")
-        this = sum(1 for e in evs if e["meeting"] == latest_meeting) if latest_meeting else 0
+        # `meeting` 可以合法地为 0 —— truthy 判断会把它当"没有最新会议"、
+        # 把本期新增强制清零。下面的小节标题用的是 is not None，口径必须一致。
+        this = (sum(1 for e in evs if e["meeting"] == latest_meeting)
+                if latest_meeting is not None else 0)
         last = max((e["meeting"] for e in evs), default=None)
         lineage = "5G-A→6G" if feat.has_legacy else "6G 原生"
         last_cell = f"{feat_wg(evs)}#{last}" if last is not None else "—"
         lines.append(
-            f"| [{feat.name_zh}](features/{feat.slug}.md) | {st.get('stage', '—')} "
+            f"| [{_cell(feat.name_zh)}](features/{feat.slug}.md) "
+            f"| {_cell(st.get('stage', '—'))} "
             f"| {lineage} | {n6} / {nl} | **+{this}** | {last_cell} "
             f"| {len(st.get('open_issues', []))} |")
 
@@ -4215,12 +4381,27 @@ def render_dashboard(events: list[dict], features: list[Feature],
         if not fresh:
             lines.append("_无_")
         for feat in features:
-            items = [e for e in fresh if e.get("feature") == feat.slug]
+            items = _ordered([e for e in fresh if e.get("feature") == feat.slug])
             if not items:
                 continue
-            lines.append(f"- **{feat.name_zh}**：新增 {len(items)} 条")
+            lines.append(f"- **{_inline(feat.name_zh)}**：新增 {len(items)} 条")
             for e in items[:3]:
-                lines.append(f"  - {e.get('summary_zh') or e['text_en'][:80]}")
+                lines.append("  - " + (_inline(e["summary_zh"]) if e.get("summary_zh")
+                                       else _preview(e["text_en"], PREVIEW_DASHBOARD)))
+
+    # state 里挂着 features.yaml 已不存在的 slug 时（特性被下线或改名），上面的循环
+    # 只遍历已知特性，这些事件会**彻底不出现在看板任何位置** —— 内容消失且无任何
+    # 诊断信号，是本项目定义的最严重故障类型。它与 unmapped 是同一原则的两半，
+    # 之前只做了一半（未归类议程项有兜底，归属对象消失没有）。
+    known = {f.slug for f in features}
+    orphans = {s: evs for s, evs in grouped.items() if s not in known}
+    if orphans:
+        total = sum(len(v) for v in orphans.values())
+        lines += ["", f"## ⚠️ 特性配置缺失（{total} 条事件无处归属）", ""]
+        for slug in sorted(orphans, key=lambda s: s or ""):
+            label = f"`{slug}`" if slug else "_（未归类）_"
+            lines.append(f"- {label} — {len(orphans[slug])} 条事件挂在这个 slug 上，"
+                         f"但 `config/features.yaml` 里没有它")
 
     if unmapped:
         lines += ["", f"## ⚠️ 待归类议程项（{len(unmapped)} 个）", ""]
@@ -4228,16 +4409,16 @@ def render_dashboard(events: list[dict], features: list[Feature],
 
     return "\n".join(lines) + "\n"
 
+
 def render_feature_page(slug: str, events: list[dict], feature: Feature,
                         state: dict) -> str:
+    """单个特性的详情页。对给定输入是确定性的，不要求 `events` 预排序。"""
     mine = [e for e in events if e.get("feature") == slug]
-    six = sorted([e for e in mine if e.get("era") == "6G"],
-                 key=lambda e: (-e["meeting"], e["id"]))
-    legacy = sorted([e for e in mine if e.get("era") == "5G-A"],
-                    key=lambda e: (-e["meeting"], e["id"]))
+    six = _ordered([e for e in mine if e.get("era") == "6G"])
+    legacy = _ordered([e for e in mine if e.get("era") == "5G-A"])
 
-    lines = [f"# {feature.name_zh}", "",
-             f"**当前进展** · 阶段：{state.get('stage', '—')}", "",
+    lines = [f"# {_inline(feature.name_zh)}", "",
+             f"**当前进展** · 阶段：{_inline(state.get('stage', '—'))}", "",
              state.get("summary", "_尚无综述_"), ""]
 
     issues = state.get("open_issues") or []
@@ -4258,29 +4439,35 @@ def render_feature_page(slug: str, events: list[dict], feature: Feature,
 
     return "\n".join(lines) + "\n"
 
+
 def _render_events(events: list[dict], *, with_summary: bool) -> list[str]:
     lines = []
     for e in events:
-        lines.append(f"### {_era_tag(e)} `{e['kind']}` {e['agenda_item']} {e['agenda_title']}")
+        lines.append(f"### {_era_tag(e)} `{e['kind']}` {e['agenda_item']} "
+                     f"{_inline(e.get('agenda_title') or '')}")
         if with_summary and e.get("summary_zh"):
             lines += ["", e["summary_zh"]]
         elif with_summary and e.get("llm_status") == "failed":
             lines += ["", "_（摘要生成失败，见下方原文）_"]
-        lines += ["", "```text", e["text_en"], "```",
+        fence = _fence(e["text_en"])
+        lines += ["", fence + "text", e["text_en"], fence,
                   f"[原文出处]({meeting_url(e['wg'], e['meeting'])}) · `{e['id']}`", ""]
     return lines
 
+
 def render_report(wg: str, meeting: int, events: list[dict],
                   feature_names: dict[str, str]) -> str:
+    """单次会议的增量简报。对给定输入是确定性的，不要求 `events` 预排序。"""
     mine = [e for e in events if e["wg"] == wg and e["meeting"] == meeting]
     grouped = _by_feature(mine)
     lines = [f"# {wg} #{meeting} 增量简报", "",
              f"> 共 {len(mine)} 条事件 · [会议目录]({meeting_url(wg, meeting)})", ""]
     for slug, evs in sorted(grouped.items(), key=lambda kv: kv[0] or ""):
-        lines += [f"## {feature_names.get(slug, slug)}（{len(evs)} 条）", ""]
-        for e in evs:
-            lines.append(f"- **{e['kind']}** {e['agenda_item']} — "
-                         f"{e.get('summary_zh') or e['text_en'][:100]}")
+        lines += [f"## {_inline(feature_names.get(slug, slug))}（{len(evs)} 条）", ""]
+        for e in _ordered(evs):
+            body = (_inline(e["summary_zh"]) if e.get("summary_zh")
+                    else _preview(e["text_en"], PREVIEW_REPORT))
+            lines.append(f"- **{e['kind']}** {e['agenda_item']} — {body}")
         lines.append("")
     return "\n".join(lines) + "\n"
 ```
