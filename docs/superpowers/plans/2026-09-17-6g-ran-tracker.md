@@ -3564,6 +3564,68 @@ def test_scope_has_no_default():
     p = inspect.signature(merge_events).parameters["scope"]
     assert p.default is inspect.Parameter.empty, "scope 不得有默认值"
     assert p.kind is inspect.Parameter.KEYWORD_ONLY, "scope 应为关键字参数，避免位置传错"
+
+
+def _wf_feats():
+    return [Feature(slug="waveform", name_zh="波形",
+                    lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                 meetings={"RAN1": (124, None)})])]
+
+
+def _wf_parsed(texts):
+    return {"wg": "RAN1", "meeting": 126, "minutes_version": 10,
+            "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                        "heading_path": ["Waveform"], "agenda_item": "10.2",
+                        "agenda_title": "Waveform"} for i, x in enumerate(texts)]}
+
+
+def test_inserted_event_does_not_steal_history():
+    """纪要改版在开头补录一条，其余逐字未变 —— 不得有任何一条被判成变更。
+
+    id 是位置式的，只按 id 认亲的话后续 seq 整体位移，每条存活事件都会接管别人的
+    first_seen，而 stale_ids 探不到（那些 id 没消失，只是被顶替了）。实测过一次
+    "开头补录一条"就让 3 条未变事件被判 changed、摘要全部作废、一条 first_seen 被
+    写成今天，全程无声。所以认亲必须先按正文哈希，并沿用历史的 seq。
+    """
+    feats = _wf_feats()
+    scope = {("RAN1", 126)}
+    base, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB", "CCC"]), feats),
+                           "2026-09-01", scope=scope)
+    merged, stats = merge_events(base, map_meeting(_wf_parsed(["NEW", "AAA", "BBB", "CCC"]), feats),
+                                 "2026-09-19", scope=scope)
+    assert (stats.added, stats.changed, stats.unchanged) == (1, 0, 3)
+    assert stats.stale_ids == []
+    by_text = {e["text_en"]: e for e in merged}
+    # 原有三条的 id 与 first_seen 都不许动 —— id 稳定，LLM 缓存键和看板链接才稳定
+    assert by_text["AAA"]["id"] == "RAN1-126-10.2-a001"
+    assert all(by_text[x]["first_seen"] == "2026-09-01" for x in ("AAA", "BBB", "CCC"))
+    assert by_text["NEW"]["first_seen"] == "2026-09-19"
+
+
+def test_deleted_event_keeps_its_id_and_survivors_keep_theirs():
+    """删掉中间一条：幸存者的 id 不动，被删那条保留在 state 里并报进 stale_ids。
+
+    若幸存者跟着位移，被顶替的历史记录会被覆盖掉 —— "只报告不删除"这条承诺
+    在删除场景下就根本守不住了。
+    """
+    feats = _wf_feats()
+    scope = {("RAN1", 126)}
+    base, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB", "CCC"]), feats),
+                           "2026-09-01", scope=scope)
+    merged, stats = merge_events(base, map_meeting(_wf_parsed(["AAA", "CCC"]), feats),
+                                 "2026-09-19", scope=scope)
+    assert stats.stale_ids == ["RAN1-126-10.2-a002"]
+    assert len(merged) == 3, "被删那条必须仍在 state 里"
+    ids = {e["text_en"]: e["id"] for e in merged}
+    assert ids["AAA"] == "RAN1-126-10.2-a001"
+    assert ids["CCC"] == "RAN1-126-10.2-a003", "幸存者不得因前面少了一条而位移"
+    assert ids["BBB"] == "RAN1-126-10.2-a002"
+
+
+def test_empty_and_blank_heading_paths_differ():
+    """[] 与 [""] 必须得到不同的 key。给空路径加 `or "0:"` 兜底会让两者相撞，
+    把长度前缀编码的单射性破坏掉。"""
+    assert _agenda_key(None, []) != _agenda_key(None, [""])
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -3577,7 +3639,7 @@ Expected: FAIL，`No module named 'ngr.mapping.runner'`
 from __future__ import annotations
 import hashlib, json, logging, re
 from collections import defaultdict
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict, field, replace
 from pathlib import Path
 from ngr.mapping.lineage import match_event
 from ngr.models import Event, Feature
@@ -3622,7 +3684,9 @@ def _agenda_key(agenda_item: str | None, heading_path: list[str]) -> str:
         log.warning("legacy 事件缺 heading_path，回退 key 不具区分度（全部落到同一个 key）")
     slug = _SLUG_RE.sub("-", tail).strip("-").lower()[:40] or "unknown"
     # 长度前缀编码：每一级写成 "<长度>:<原文>"，无论原文含什么字符都能唯一还原
-    full = "".join(f"{len(h)}:{h}" for h in heading_path) or "0:"
+    # 不要给空路径加兜底串：`or "0:"` 会让 [] 与 [""] 得到同一个编码，
+    # 把上面论证的单射性破坏掉。空路径编码成空串即可，sha256("") 合法。
+    full = "".join(f"{len(h)}:{h}" for h in heading_path)
     return f"{slug}-{hashlib.sha256(full.encode('utf-8')).hexdigest()[:8]}"
 
 def _hash(text: str) -> str:
@@ -3681,13 +3745,79 @@ _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pe
 
 def merge_events(existing: list[dict], incoming: list[Event], today: str,
                  *, scope: set[tuple[str, int]]) -> tuple[list[dict], MergeStats]:
+    """把本次归集的事件并入历史 state。
+
+    **认亲分两轮：先按正文哈希，再按 id 兜底；认到之后沿用历史的 seq。**
+
+    事件 id 是位置式的。只按 id 认亲，纪要一改版就会出错：中间插入或删掉一条，
+    后续事件的 seq 整体位移，每一条存活事件都会**接管别人的 first_seen**，
+    而 stale_ids 探不到 —— 那些 id 并没有消失，只是被顶替了。实测一次"开头补录一条"
+    就让 3 条逐字未变的事件被判成 changed、摘要全部白白作废、其中一条的 first_seen
+    被写成今天，全程无声。
+
+    正文哈希配对解决认亲；**沿用旧 seq** 解决另一半：否则被顶替的历史记录会被覆盖掉，
+    "只报告不删除"这条承诺在删除场景下根本守不住。沿用之后 id 在改版间保持稳定，
+    LLM 缓存键与看板链接也跟着稳定。
+
+    新事件取组内尚未占用的最小编号，**包括绕开那些已消失但仍保留的历史 id** ——
+    缺失是信号不是指令，它们的号不能被回收。
+    """
     by_id = {e["id"]: dict(e) for e in existing}
     stats = MergeStats()
 
+    def gkey(wg, meeting, agenda_item, kind):
+        return (wg, meeting, agenda_item, kind)
+
+    pool: dict[tuple, list[dict]] = defaultdict(list)
+    for e in existing:
+        pool[gkey(e.get("wg"), e.get("meeting"),
+                  e.get("agenda_item"), e.get("kind"))].append(e)
+
+    taken: set[int] = set()          # 已被认走的历史记录（按对象身份去重）
+    pairs: list[list] = []           # [事件, 认到的历史记录 | None]
+
+    # 第一轮：正文哈希。纯插入/删除全靠这一轮认对。
     for ev in incoming:
+        g = pool.get(gkey(ev.wg, ev.meeting, ev.agenda_item, ev.kind), ())
+        hit = next((o for o in g if id(o) not in taken and o.get("content_hash")
+                    and o["content_hash"] == ev.content_hash), None)
+        if hit is not None:
+            taken.add(id(hit))
+        pairs.append([ev, hit])
+
+    # 第二轮：id 兜底。正文同时被改写的那条走这里，行为与改动前一致。
+    for pair in pairs:
+        ev, hit = pair
+        if hit is not None:
+            continue
+        g = pool.get(gkey(ev.wg, ev.meeting, ev.agenda_item, ev.kind), ())
+        hit = next((o for o in g if id(o) not in taken and o["id"] == ev.id), None)
+        if hit is not None:
+            taken.add(id(hit))
+            pair[1] = hit
+
+    # 定序：认到历史的沿用旧 seq；其余取组内空号（历史 id 一律绕开，不回收）
+    used: dict[tuple, set[int]] = defaultdict(set)
+    for e in existing:
+        if isinstance(e.get("seq"), int):
+            used[gkey(e.get("wg"), e.get("meeting"),
+                      e.get("agenda_item"), e.get("kind"))].add(e["seq"])
+
+    resolved: list[tuple[Event, dict | None]] = []
+    for ev, hit in pairs:
+        k = gkey(ev.wg, ev.meeting, ev.agenda_item, ev.kind)
+        if hit is not None and isinstance(hit.get("seq"), int):
+            resolved.append((replace(ev, seq=hit["seq"]), hit))
+            continue
+        n = 1
+        while n in used[k]:
+            n += 1
+        used[k].add(n)
+        resolved.append((replace(ev, seq=n), hit))
+
+    for ev, old in resolved:
         new = asdict(ev)
         new["id"] = ev.id
-        old = by_id.get(ev.id)
         if old is None:
             new["first_seen"] = today
             by_id[ev.id] = new
@@ -3718,9 +3848,8 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     # 不提供现成的反推函数：上一轮我加过一个 scope_of()，结果自己的测试里 9 处调用
     # 有 6 处图省事用了它 —— 一个"看起来官方、有文档警告但无强制力"的旁路，
     # 等于把盲区从签名默认值搬到了函数名上。让反推每次都得手写，风险才在每个调用点可见。
-    seen = {ev.id for ev in incoming}
     for e in existing:
-        if (e.get("wg"), e.get("meeting")) in scope and e["id"] not in seen:
+        if (e.get("wg"), e.get("meeting")) in scope and id(e) not in taken:
             stats.stale_ids.append(e["id"])
     if stats.stale_ids:
         log.warning("state 里有 %d 条事件在本次解析中不再出现（保留不删，仅报告）: %s",

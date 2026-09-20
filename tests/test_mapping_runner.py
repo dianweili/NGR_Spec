@@ -227,3 +227,65 @@ def test_scope_has_no_default():
     p = inspect.signature(merge_events).parameters["scope"]
     assert p.default is inspect.Parameter.empty, "scope 不得有默认值"
     assert p.kind is inspect.Parameter.KEYWORD_ONLY, "scope 应为关键字参数，避免位置传错"
+
+
+def _wf_feats():
+    return [Feature(slug="waveform", name_zh="波形",
+                    lineage=[seg("6G", "full", agenda=["RAN1:10.2"],
+                                 meetings={"RAN1": (124, None)})])]
+
+
+def _wf_parsed(texts):
+    return {"wg": "RAN1", "meeting": 126, "minutes_version": 10,
+            "events": [{"kind": "agreement", "text_en": x, "para_index": i,
+                        "heading_path": ["Waveform"], "agenda_item": "10.2",
+                        "agenda_title": "Waveform"} for i, x in enumerate(texts)]}
+
+
+def test_inserted_event_does_not_steal_history():
+    """纪要改版在开头补录一条，其余逐字未变 —— 不得有任何一条被判成变更。
+
+    id 是位置式的，只按 id 认亲的话后续 seq 整体位移，每条存活事件都会接管别人的
+    first_seen，而 stale_ids 探不到（那些 id 没消失，只是被顶替了）。实测过一次
+    "开头补录一条"就让 3 条未变事件被判 changed、摘要全部作废、一条 first_seen 被
+    写成今天，全程无声。所以认亲必须先按正文哈希，并沿用历史的 seq。
+    """
+    feats = _wf_feats()
+    scope = {("RAN1", 126)}
+    base, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB", "CCC"]), feats),
+                           "2026-09-01", scope=scope)
+    merged, stats = merge_events(base, map_meeting(_wf_parsed(["NEW", "AAA", "BBB", "CCC"]), feats),
+                                 "2026-09-19", scope=scope)
+    assert (stats.added, stats.changed, stats.unchanged) == (1, 0, 3)
+    assert stats.stale_ids == []
+    by_text = {e["text_en"]: e for e in merged}
+    # 原有三条的 id 与 first_seen 都不许动 —— id 稳定，LLM 缓存键和看板链接才稳定
+    assert by_text["AAA"]["id"] == "RAN1-126-10.2-a001"
+    assert all(by_text[x]["first_seen"] == "2026-09-01" for x in ("AAA", "BBB", "CCC"))
+    assert by_text["NEW"]["first_seen"] == "2026-09-19"
+
+
+def test_deleted_event_keeps_its_id_and_survivors_keep_theirs():
+    """删掉中间一条：幸存者的 id 不动，被删那条保留在 state 里并报进 stale_ids。
+
+    若幸存者跟着位移，被顶替的历史记录会被覆盖掉 —— "只报告不删除"这条承诺
+    在删除场景下就根本守不住了。
+    """
+    feats = _wf_feats()
+    scope = {("RAN1", 126)}
+    base, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB", "CCC"]), feats),
+                           "2026-09-01", scope=scope)
+    merged, stats = merge_events(base, map_meeting(_wf_parsed(["AAA", "CCC"]), feats),
+                                 "2026-09-19", scope=scope)
+    assert stats.stale_ids == ["RAN1-126-10.2-a002"]
+    assert len(merged) == 3, "被删那条必须仍在 state 里"
+    ids = {e["text_en"]: e["id"] for e in merged}
+    assert ids["AAA"] == "RAN1-126-10.2-a001"
+    assert ids["CCC"] == "RAN1-126-10.2-a003", "幸存者不得因前面少了一条而位移"
+    assert ids["BBB"] == "RAN1-126-10.2-a002"
+
+
+def test_empty_and_blank_heading_paths_differ():
+    """[] 与 [""] 必须得到不同的 key。给空路径加 `or "0:"` 兜底会让两者相撞，
+    把长度前缀编码的单射性破坏掉。"""
+    assert _agenda_key(None, []) != _agenda_key(None, [""])
