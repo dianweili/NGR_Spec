@@ -23,14 +23,30 @@ def _agenda_key(agenda_item: str | None, heading_path: list[str]) -> str:
     哈希取自**未归一化的完整 heading 路径**，不是只取末节。只取末节的话，
     "Overview" / "General" / "Way forward" 这类通用小节名在不同 Release、不同上级章节下
     **100% 撞车**（实测 `["Rel-17 NR","Overview"]` 与 `["Rel-18 NR","Overview"]` 同 key），
-    而它们在 3GPP 纪要里反复出现 —— 这比标点变体常见得多。"""
+    而它们在 3GPP 纪要里反复出现 —— 这比标点变体常见得多。
+
+    编码用**长度前缀**而不是拼接分隔符。用 `"/".join(...)` 曾经撞过车：3GPP 标题里
+    "UL/DL switching"、"Tx/Rx"、"PDCCH/PDSCH" 这类写法很常见，于是
+    `["UL/DL switching", "Way forward"]` 与 `["UL", "DL switching", "Way forward"]`
+    拼出同一个串、哈希相同、末节也相同 —— **完整 key 100% 撞车，且加长哈希位数毫无用处**
+    （这是确定性字符串碰撞，不是随机碰撞）。换任何"内容里不会出现的分隔符"都是在赌，
+    本项目已经为这个赌注付过两次代价（另一次见 Task 18 的逐行 blob）。
+    长度前缀不需要任何关于内容的假设，可证单射。
+
+    **注意**：改动这里的哈希算法会让所有 fallback key（无议程号的 5G-A 老会议）的事件 id
+    整体变化。当前尚无 state 落盘，改动零代价；一旦 Task 20 跑出真实 state，
+    再改就需要写迁移，否则旧 id 全部变成孤儿、新 id 全部被当成首次出现。"""
     if agenda_item:
         return agenda_item
     tail = heading_path[-1] if heading_path else "unknown"
     if not heading_path:
+        # 没有任何标题路径时，所有此类事件共享同一个 key，身份只能靠组内 seq 区分。
+        # 这是**已知限制**，不是漏修：用 text_en 入 key 能区分开，但正文被编辑一下
+        # id 就变了 —— 换来的是更常见、更伤的那类故障（孤儿 + 假新增）。
         log.warning("legacy 事件缺 heading_path，回退 key 不具区分度（全部落到同一个 key）")
     slug = _SLUG_RE.sub("-", tail).strip("-").lower()[:40] or "unknown"
-    full = "/".join(heading_path) if heading_path else "unknown"
+    # 长度前缀编码：每一级写成 "<长度>:<原文>"，无论原文含什么字符都能唯一还原
+    full = "".join(f"{len(h)}:{h}" for h in heading_path) or "0:"
     return f"{slug}-{hashlib.sha256(full.encode('utf-8')).hexdigest()[:8]}"
 
 def _hash(text: str) -> str:
@@ -87,15 +103,6 @@ class MergeStats:
 # 事件变更时要作废的 LLM 产物
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
 
-def scope_of(incoming: list[Event]) -> set[tuple[str, int]]:
-    """由归集结果反推 scope。**只有在调用方确实无从得知处理了哪几场会议时才用。**
-
-    反推有致命盲区：某场会议归集归零时它不出现在结果里，那场的全部历史一条都不会被
-    检查。真实管线是逐会议调用的，应当直接传 `{(wg, meeting)}`。
-    这个函数存在的意义，是让"我在反推"这件事**出现在调用点上**，
-    而不是藏在一个默认参数里 —— 藏起来的那版正是上一轮被审查抓出来的盲区。"""
-    return {(ev.wg, ev.meeting) for ev in incoming}
-
 def merge_events(existing: list[dict], incoming: list[Event], today: str,
                  *, scope: set[tuple[str, int]]) -> tuple[list[dict], MergeStats]:
     by_id = {e["id"]: dict(e) for e in existing}
@@ -131,7 +138,10 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     # 不给默认值、不做隐式反推：某场会议一旦归集归零（features.yaml 改坏、正则回归），
     # 它就不在反推出的 scope 里，那场的全部历史一条都不会被比较，stale_ids 恒为空 ——
     # 局部缺失会报警、全部缺失反而不报警，探针恰好在最该响的时候哑火。
-    # 确实需要反推时用 scope_of()，让这个选择显式出现在调用点上。
+    # 确实需要反推时，在**调用点内联**写出 {(ev.wg, ev.meeting) for ev in incoming}。
+    # 不提供现成的反推函数：上一轮我加过一个 scope_of()，结果自己的测试里 9 处调用
+    # 有 6 处图省事用了它 —— 一个"看起来官方、有文档警告但无强制力"的旁路，
+    # 等于把盲区从签名默认值搬到了函数名上。让反推每次都得手写，风险才在每个调用点可见。
     seen = {ev.id for ev in incoming}
     for e in existing:
         if (e.get("wg"), e.get("meeting")) in scope and e["id"] not in seen:

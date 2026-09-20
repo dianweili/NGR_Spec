@@ -1,7 +1,7 @@
 import logging
 import json
 from ngr.models import Feature, LineageSegment
-from ngr.mapping.runner import _agenda_key, scope_of, map_meeting, merge_events, write_state
+from ngr.mapping.runner import _agenda_key, map_meeting, merge_events, write_state
 from ngr.mapping.report import lineage_report
 
 def seg(era, depth, **kw):
@@ -63,7 +63,7 @@ def test_content_hash_is_set():
 # —— 合并 ——
 def test_merge_adds_new_events():
     new = map_meeting(parsed([ev()]), FEATS)
-    merged, stats = merge_events([], new, today="2026-09-17", scope=scope_of(new))
+    merged, stats = merge_events([], new, today="2026-09-17", scope={("RAN1", 126)})
     assert stats.added == 1 and merged[0]["first_seen"] == "2026-09-17"
     assert stats.added_ids == [new[0].id]
 
@@ -71,7 +71,7 @@ def test_merge_added_ids_excludes_unchanged():
     """提交信息按 added_ids 统计，未变更的事件不能混进'本次新增'。"""
     new = map_meeting(parsed([ev()]), FEATS)
     existing = [{**new[0].__dict__, "id": new[0].id, "first_seen": "2026-01-01"}]
-    _, stats = merge_events(existing, new, today="2026-09-17", scope=scope_of(new))
+    _, stats = merge_events(existing, new, today="2026-09-17", scope={("RAN1", 126)})
     assert stats.added_ids == [] and stats.unchanged == 1
 
 def test_merge_preserves_first_seen_and_llm_fields():
@@ -79,7 +79,7 @@ def test_merge_preserves_first_seen_and_llm_fields():
     existing = [{**new[0].__dict__, "id": new[0].id, "first_seen": "2026-01-01",
                  "summary_zh": "旧摘要", "llm_status": "ok"}]
     merged, stats = merge_events(existing, new, today="2026-09-17",
-                                 scope=scope_of(new))
+                                 scope={("RAN1", 126)})
     assert stats.unchanged == 1
     assert merged[0]["first_seen"] == "2026-01-01"
     assert merged[0]["summary_zh"] == "旧摘要"
@@ -91,7 +91,7 @@ def test_merge_detects_text_change_and_invalidates_summary():
                  "content_hash": "sha256:old", "first_seen": "2026-01-01",
                  "summary_zh": "旧摘要", "llm_status": "ok"}]
     merged, stats = merge_events(existing, new, today="2026-09-17",
-                                 scope=scope_of(new))
+                                 scope={("RAN1", 126)})
     assert stats.changed == 1
     assert merged[0]["text_en"] == "NEW TEXT"
     assert merged[0]["summary_zh"] is None and merged[0]["llm_status"] == "pending"
@@ -101,12 +101,12 @@ def test_merge_keeps_events_from_other_meetings():
     new = map_meeting(parsed([ev()]), FEATS)
     existing = [{"id": "RAN1-120-9.1-a001", "wg": "RAN1", "meeting": 120,
                  "text_en": "x", "first_seen": "2026-01-01"}]
-    merged, _ = merge_events(existing, new, today="2026-09-17", scope=scope_of(new))
+    merged, _ = merge_events(existing, new, today="2026-09-17", scope={("RAN1", 126)})
     assert len(merged) == 2
 
 def test_write_state_is_sorted_and_deterministic(tmp_path):
     new = map_meeting(parsed([ev(), ev()]), FEATS)
-    merged, _ = merge_events([], new, today="2026-09-17", scope=scope_of(new))
+    merged, _ = merge_events([], new, today="2026-09-17", scope={("RAN1", 126)})
     a = write_state(merged, tmp_path / "a.json").read_bytes()
     b = write_state(list(reversed(merged)), tmp_path / "b.json").read_bytes()
     assert a == b, "事件顺序不同也必须产出相同字节 —— 否则 git diff 全是噪声"
@@ -177,7 +177,12 @@ def test_legacy_keys_do_not_collide():
     for a, b in [(["ISAC channel model"], ["ISAC channel-model"]),
                  (["CSI enhancement: further study"], ["CSI enhancement further study"]),
                  (["Rel-17 NR", "Overview"], ["Rel-18 NR", "Overview"]),
-                 (["Rel-19 NR", "Way forward"], ["Rel-20 6GR", "Way forward"])]:
+                 (["Rel-19 NR", "Way forward"], ["Rel-20 6GR", "Way forward"]),
+                 # 标题原文含字面 "/" 时，用 "/".join 拼接会让不同层级结构撞出同一个串。
+                 # 3GPP 标题里 "UL/DL"、"Tx/Rx"、"PDCCH/PDSCH" 很常见，所以哈希输入
+                 # 必须是长度前缀编码那种可证单射的写法，而不是赌某个分隔符不出现在内容里。
+                 (["UL/DL switching", "Way forward"], ["UL", "DL switching", "Way forward"]),
+                 (["a/b", "c"], ["a", "b", "c"])]:
         assert _agenda_key(None, a) != _agenda_key(None, b), f"{a} 与 {b} 撞 key"
     # 同一段路径必须每次都得到同一个 key，否则 id 不稳定
     assert _agenda_key(None, ["Rel-17 NR", "Overview"]) == _agenda_key(None, ["Rel-17 NR", "Overview"])
@@ -207,9 +212,11 @@ def test_whole_meeting_wipeout_is_reported_when_scope_given():
     assert len(stats.stale_ids) == 2, "整场归零必须被报出来"
     assert len(merged) == 2, "报告归报告，历史一条都不许删"
 
-    # 对照：scope_of() 反推出来的是空集合，什么都查不到 —— 这正是它不能当默认行为的原因
-    assert scope_of(wiped) == set()
-    _, inferred = merge_events(state, wiped, "2026-09-19", scope=scope_of(wiped))
+    # 对照：若按"归集结果里有哪几场会议"来定 scope，归零的这场根本不在里面，
+    # 什么都查不到 —— 这正是它不能当默认行为、也不该提供成现成函数的原因。
+    inferred_scope = {(e.wg, e.meeting) for e in wiped}
+    assert inferred_scope == set()
+    _, inferred = merge_events(state, wiped, "2026-09-19", scope=inferred_scope)
     assert inferred.stale_ids == []
 
 
