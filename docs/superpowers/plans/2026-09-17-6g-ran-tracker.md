@@ -4296,6 +4296,16 @@ def test_unmapped_and_orphan_labels_are_escaped():
                           unmapped=["9.9\n# Also Fake"])
     assert not any(l.startswith("# Fake") or l.startswith("# Also Fake")
                    for l in md.splitlines())
+
+
+def test_feat_wg_tiebreak_survives_bad_wg_values():
+    """tiebreak 把 wg 拉进了元组比较 —— wg 为 None 或数字、又恰好会议号打平时，
+    元组比较会抛 TypeError。原来的 max(key=meeting) 不碰 wg，所以这个崩溃点是
+    加 tiebreak 时引进的。渲染是管线最后一站，这里崩掉等于整轮跑白。"""
+    from ngr.render.markdown import feat_wg
+    assert feat_wg([{"meeting": 130, "wg": "RAN1"}, {"meeting": 130, "wg": None}])
+    assert feat_wg([{"meeting": 130, "wg": "RAN1"}, {"meeting": 130, "wg": 3}])
+    assert feat_wg([]) == ""
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -4399,10 +4409,15 @@ def feat_wg(events: list[dict]) -> str:
     编号体系，RAN1#130 与 RAN3#130 打平是会真实发生的；没有 tiebreak 的话，
     看板 header 与"最近活动"列会随调用方的列表顺序变化 —— 产出物要提交进 git，
     那就是每次都不一样的 diff。
+
+    比较键里的 `wg` 要过一次 `str()`：加上 tiebreak 之后 `wg` 被拉进了元组比较，
+    一旦它是 `None` 或数字、又恰好会议号打平，元组比较就会抛 `TypeError`。
+    原来的 `max(key=e["meeting"])` 不碰 wg，所以这个崩溃点是**加 tiebreak 时引进的** ——
+    渲染是管线最后一站，这里崩掉等于整轮跑白。
     """
     if not events:
         return ""
-    return max(events, key=lambda e: (e["meeting"], e["wg"]))["wg"]
+    return max(events, key=lambda e: (e["meeting"], str(e.get("wg") or "")))["wg"]
 
 
 def render_dashboard(events: list[dict], features: list[Feature],

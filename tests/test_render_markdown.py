@@ -244,3 +244,13 @@ def test_unmapped_and_orphan_labels_are_escaped():
                           unmapped=["9.9\n# Also Fake"])
     assert not any(l.startswith("# Fake") or l.startswith("# Also Fake")
                    for l in md.splitlines())
+
+
+def test_feat_wg_tiebreak_survives_bad_wg_values():
+    """tiebreak 把 wg 拉进了元组比较 —— wg 为 None 或数字、又恰好会议号打平时，
+    元组比较会抛 TypeError。原来的 max(key=meeting) 不碰 wg，所以这个崩溃点是
+    加 tiebreak 时引进的。渲染是管线最后一站，这里崩掉等于整轮跑白。"""
+    from ngr.render.markdown import feat_wg
+    assert feat_wg([{"meeting": 130, "wg": "RAN1"}, {"meeting": 130, "wg": None}])
+    assert feat_wg([{"meeting": 130, "wg": "RAN1"}, {"meeting": 130, "wg": 3}])
+    assert feat_wg([]) == ""
