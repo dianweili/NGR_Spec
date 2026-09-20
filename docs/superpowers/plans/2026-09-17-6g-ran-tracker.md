@@ -5898,7 +5898,14 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False,
 
             payload = _load_json(P.parsed_dir(wg, mtg.number) / "events.json", {})
             incoming = map_meeting(payload, features)
-            events, stats = merge_events(events, incoming, today=today)
+            # scope 必须显式给出：从 incoming 反推的话，这场会议一旦归集归零
+            # （features.yaml 改坏、正则回归），它就不在 scope 里，其全部历史
+            # 一条都不会被检查，stale_ids 恒为空 —— 探针在最该响时哑火。
+            events, stats = merge_events(events, incoming, today=today,
+                                         scope={(wg, mtg.number)})
+            if stats.stale_ids:
+                res.alerts.append(
+                    f"{wg}#{mtg.number}: {len(stats.stale_ids)} 条历史事件本次未再出现")
             res.new_events += stats.added
             added = set(stats.added_ids)
             for ev in incoming:
@@ -6062,7 +6069,13 @@ def run_pipeline_remap() -> PipelineResult:
         if not payload:
             continue
         incoming = map_meeting(payload, features)
-        events, stats = merge_events(events, incoming, today=today)
+        # 同上：scope 显式给出，否则归集归零的会议不会被检查（见 merge_events 注释）
+        events, stats = merge_events(events, incoming, today=today,
+                                     scope={(payload["wg"], payload["meeting"])})
+        if stats.stale_ids:
+            res.alerts.append(
+                f"{payload['wg']}#{payload['meeting']}: "
+                f"{len(stats.stale_ids)} 条历史事件本次未再出现")
         res.new_events += stats.added
         added = set(stats.added_ids)
         for ev in incoming:
