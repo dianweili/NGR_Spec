@@ -4143,6 +4143,22 @@ def test_report_includes_source_link():
     assert "3gpp.org" in md
 
 
+def _live_pipes(line: str) -> int:
+    r"""按 markdown 的转义语义数"活着的"列分隔符。
+
+    不能用 `(?<!\\)\|` 这种"看前一个字符是不是反斜杠"的判据 —— 它不理解 markdown
+    从左往右的转义：`\\\\|` 是"转义过的反斜杠 + 裸竖线"（分隔符**活着**），
+    而 `\\\\\\|` 才是"转义反斜杠 + 转义竖线"。判据是竖线前的反斜杠个数为偶数才算活着。
+    我上一轮就是用了那个错判据，把一个真缺陷判成了通过。
+    """
+    n = 0
+    for m in re.finditer(re.escape("|"), line):
+        head = line[:m.start()]
+        if (len(head) - len(head.rstrip(chr(92)))) % 2 == 0:
+            n += 1
+    return n
+
+
 # —— 以下七条守的是审查实测出来的缺陷，每条都曾在既有测试全绿时存在 ——
 
 def test_fence_is_longer_than_backticks_in_text():
@@ -4173,8 +4189,7 @@ def test_table_cells_escape_pipes_and_newlines():
     md = render_dashboard([E()], [evil], FS, generated="2026-09-20")
     rows = [l for l in md.splitlines() if l.strip().startswith("|")]
     assert len(rows) == 3, "注入的换行不得多出伪造的表格行"
-    unescaped = re.compile("(?<!" + chr(92) + chr(92) + ")" + chr(92) + "|")
-    assert len({len(unescaped.findall(l)) for l in rows}) == 1, "各行未转义竖线数必须一致"
+    assert len({_live_pipes(l) for l in rows}) == 1, "各行的列分隔符数必须一致"
 
 
 def test_headings_do_not_inherit_injected_newlines():
@@ -4236,6 +4251,51 @@ def test_preview_truncation_is_marked():
                        {"waveform": "波形"})
     line = [l for l in md.splitlines() if "AAA" in l][0]
     assert line.rstrip().endswith("…")
+
+
+def test_open_issues_do_not_inject_headings():
+    """未决问题是写进 state 的自由文本，嵌入换行会让后半段脱离 bullet
+    按自己的语法重新解释。这与标题注入是同一缺陷，只是另一个调用点 ——
+    上一轮加了 _inline() 却漏扫了它。"""
+    md = render_feature_page("waveform", [E()], WAVE,
+                             {"stage": "收敛中",
+                              "open_issues": ["A", "B\n# Fake Heading"]})
+    assert not any(l.startswith("# Fake Heading") for l in md.splitlines())
+
+
+def test_feat_wg_is_deterministic_on_meeting_tie():
+    """各组会议号是独立编号体系，RAN1#130 与 RAN3#130 打平会真实发生。
+
+    `max()` 无 tiebreak 时结果取决于传入顺序 —— 看板 header 与"最近活动"列
+    会随调用方的列表顺序变化，而产出物要提交进 git。
+    """
+    a = E(id="RAN1-130-10.2-a001", wg="RAN1", meeting=130)
+    b = E(id="RAN3-130-10.2-a001", wg="RAN3", meeting=130)
+    heads = set()
+    for order in ([a, b], [b, a]):
+        heads.add(next(l for l in render_dashboard(order, [WAVE], FS,
+                                                   generated="2026-09-20").splitlines()
+                       if "最新会议" in l))
+    assert len(heads) == 1, "会议号打平时结果不得取决于传入顺序"
+
+
+def test_backslash_is_escaped_before_pipe():
+    r"""原文里本就含 `\|` 时，只转义竖线会得到 `\\|` ——
+    markdown 把 `\\` 读成转义过的反斜杠，后面那个竖线于是又成了裸分隔符，
+    **转义反而把表格撑断**。必须先转义反斜杠。"""
+    evil = Feature(slug="waveform", name_zh="Wave" + chr(92) + "|Form", lineage=[seg("6G")])
+    md = render_dashboard([E()], [evil], FS, generated="2026-09-20")
+    rows = [l for l in md.splitlines() if l.strip().startswith("|")]
+    assert len({_live_pipes(l) for l in rows}) == 1
+
+
+def test_unmapped_and_orphan_labels_are_escaped():
+    """待归类议程项与孤儿 slug 同样是自由文本，换行会把列表结构撑开。"""
+    md = render_dashboard([E(id="RAN1-126-10.2-a002", feature="ghost\n# Fake")],
+                          [WAVE], FS, generated="2026-09-20",
+                          unmapped=["9.9\n# Also Fake"])
+    assert not any(l.startswith("# Fake") or l.startswith("# Also Fake")
+                   for l in md.splitlines())
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -4275,8 +4335,13 @@ def _cell(text: object) -> str:
     数据里的 `| a | b |` 会被渲染成**一整行伪造的表格行**，整张表结构报废。
     `config/features.yaml` 是人工维护的特性字典，特性名里出现这些字符
     是用户直接能触发的输入。
+
+    **反斜杠必须先转义。** 否则原文里本就存在的 `\\|` 会被转成 `\\\\|` ——
+    markdown 把 `\\\\` 读成"转义过的反斜杠"，后面那个 `|` 于是又成了裸的列分隔符，
+    转义反而把表格撑断了。
     """
-    return _WS_RE.sub(" ", str(text)).replace("|", "\\|").strip()
+    one = _WS_RE.sub(" ", str(text)).replace("\\", "\\\\").replace("|", "\\|")
+    return one.strip()
 
 
 def _inline(text: object) -> str:
@@ -4328,10 +4393,16 @@ def _ordered(events: list[dict]) -> list[dict]:
 
 
 def feat_wg(events: list[dict]) -> str:
-    """该特性最近活动所在的工作组；多组时取最新会议那条的组。"""
+    """该特性最近活动所在的工作组；多组时取最新会议那条的组。
+
+    会议号打平时按 wg 名决出胜负，**不能让结果取决于传入顺序**。各组会议号是独立
+    编号体系，RAN1#130 与 RAN3#130 打平是会真实发生的；没有 tiebreak 的话，
+    看板 header 与"最近活动"列会随调用方的列表顺序变化 —— 产出物要提交进 git，
+    那就是每次都不一样的 diff。
+    """
     if not events:
         return ""
-    return max(events, key=lambda e: e["meeting"])["wg"]
+    return max(events, key=lambda e: (e["meeting"], e["wg"]))["wg"]
 
 
 def render_dashboard(events: list[dict], features: list[Feature],
@@ -4399,13 +4470,14 @@ def render_dashboard(events: list[dict], features: list[Feature],
         total = sum(len(v) for v in orphans.values())
         lines += ["", f"## ⚠️ 特性配置缺失（{total} 条事件无处归属）", ""]
         for slug in sorted(orphans, key=lambda s: s or ""):
-            label = f"`{slug}`" if slug else "_（未归类）_"
+            label = f"`{_inline(slug)}`" if slug else "_（未归类）_"
             lines.append(f"- {label} — {len(orphans[slug])} 条事件挂在这个 slug 上，"
                          f"但 `config/features.yaml` 里没有它")
 
     if unmapped:
         lines += ["", f"## ⚠️ 待归类议程项（{len(unmapped)} 个）", ""]
-        lines += [f"- `{u}` — 请在 `config/features.yaml` 中确认归属" for u in unmapped]
+        lines += [f"- `{_inline(u)}` — 请在 `config/features.yaml` 中确认归属"
+                  for u in unmapped]
 
     return "\n".join(lines) + "\n"
 
@@ -4423,7 +4495,9 @@ def render_feature_page(slug: str, events: list[dict], feature: Feature,
 
     issues = state.get("open_issues") or []
     if issues:
-        lines += ["**未决问题**", ""] + [f"- {i}" for i in issues] + [""]
+        # 与标题行同理：未决问题是 LLM/人工写进 state 的自由文本，嵌入换行会让
+        # 后半段脱离 bullet 按自己的语法重新解释（"# Fake Heading" 变成真标题）。
+        lines += ["**未决问题**", ""] + [f"- {_inline(i)}" for i in issues] + [""]
 
     if feature.has_legacy and state.get("legacy_summary"):
         lines += ["## 5G-A 源头", "", state["legacy_summary"], ""]

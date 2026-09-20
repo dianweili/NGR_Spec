@@ -27,8 +27,13 @@ def _cell(text: object) -> str:
     数据里的 `| a | b |` 会被渲染成**一整行伪造的表格行**，整张表结构报废。
     `config/features.yaml` 是人工维护的特性字典，特性名里出现这些字符
     是用户直接能触发的输入。
+
+    **反斜杠必须先转义。** 否则原文里本就存在的 `\\|` 会被转成 `\\\\|` ——
+    markdown 把 `\\\\` 读成"转义过的反斜杠"，后面那个 `|` 于是又成了裸的列分隔符，
+    转义反而把表格撑断了。
     """
-    return _WS_RE.sub(" ", str(text)).replace("|", "\\|").strip()
+    one = _WS_RE.sub(" ", str(text)).replace("\\", "\\\\").replace("|", "\\|")
+    return one.strip()
 
 
 def _inline(text: object) -> str:
@@ -80,10 +85,16 @@ def _ordered(events: list[dict]) -> list[dict]:
 
 
 def feat_wg(events: list[dict]) -> str:
-    """该特性最近活动所在的工作组；多组时取最新会议那条的组。"""
+    """该特性最近活动所在的工作组；多组时取最新会议那条的组。
+
+    会议号打平时按 wg 名决出胜负，**不能让结果取决于传入顺序**。各组会议号是独立
+    编号体系，RAN1#130 与 RAN3#130 打平是会真实发生的；没有 tiebreak 的话，
+    看板 header 与"最近活动"列会随调用方的列表顺序变化 —— 产出物要提交进 git，
+    那就是每次都不一样的 diff。
+    """
     if not events:
         return ""
-    return max(events, key=lambda e: e["meeting"])["wg"]
+    return max(events, key=lambda e: (e["meeting"], e["wg"]))["wg"]
 
 
 def render_dashboard(events: list[dict], features: list[Feature],
@@ -151,13 +162,14 @@ def render_dashboard(events: list[dict], features: list[Feature],
         total = sum(len(v) for v in orphans.values())
         lines += ["", f"## ⚠️ 特性配置缺失（{total} 条事件无处归属）", ""]
         for slug in sorted(orphans, key=lambda s: s or ""):
-            label = f"`{slug}`" if slug else "_（未归类）_"
+            label = f"`{_inline(slug)}`" if slug else "_（未归类）_"
             lines.append(f"- {label} — {len(orphans[slug])} 条事件挂在这个 slug 上，"
                          f"但 `config/features.yaml` 里没有它")
 
     if unmapped:
         lines += ["", f"## ⚠️ 待归类议程项（{len(unmapped)} 个）", ""]
-        lines += [f"- `{u}` — 请在 `config/features.yaml` 中确认归属" for u in unmapped]
+        lines += [f"- `{_inline(u)}` — 请在 `config/features.yaml` 中确认归属"
+                  for u in unmapped]
 
     return "\n".join(lines) + "\n"
 
@@ -175,7 +187,9 @@ def render_feature_page(slug: str, events: list[dict], feature: Feature,
 
     issues = state.get("open_issues") or []
     if issues:
-        lines += ["**未决问题**", ""] + [f"- {i}" for i in issues] + [""]
+        # 与标题行同理：未决问题是 LLM/人工写进 state 的自由文本，嵌入换行会让
+        # 后半段脱离 bullet 按自己的语法重新解释（"# Fake Heading" 变成真标题）。
+        lines += ["**未决问题**", ""] + [f"- {_inline(i)}" for i in issues] + [""]
 
     if feature.has_legacy and state.get("legacy_summary"):
         lines += ["## 5G-A 源头", "", state["legacy_summary"], ""]
