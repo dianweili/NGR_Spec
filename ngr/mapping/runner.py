@@ -183,13 +183,17 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     # `seq` 可能缺失或被手工改成字符串，那样它就不计入占用，新事件会落到一条
     # 活着的历史 id 上把它覆盖掉，而 stale_ids 还宣称那条"已保留"。
     # id 是恒存在且权威的，用它判占用不需要任何关于字段完整性的假设。
+    #
+    # **复用分支也必须以 id 为准**，不能一边按 id 判占用、一边按 `seq` 字段复用：
+    # 两套权威一旦分歧（手工改过的 state 里 seq 字段与 id 尾号对不上）就会撞号 ——
+    # 复用出的 id 不在 taken_ids 里，分配循环会把同一个号再发一次，后写的静默覆盖先写的。
     taken_ids = set(by_id)
 
     resolved: list[tuple[Event, dict | None]] = []
     for ev, hit in pairs:
-        old_seq = hit.get("seq") if hit is not None else None
-        if not isinstance(old_seq, int) and hit is not None:
-            old_seq = _seq_from_id(hit.get("id", ""))     # 老格式没有 seq 字段时从 id 反解
+        old_seq = _seq_from_id(hit.get("id", "")) if hit is not None else None
+        if old_seq is None and hit is not None and isinstance(hit.get("seq"), int):
+            old_seq = hit["seq"]                          # id 尾部无数字时才退回字段
         if old_seq is not None:
             resolved.append((replace(ev, seq=old_seq), hit))
             continue

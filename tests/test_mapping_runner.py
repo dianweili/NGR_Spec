@@ -329,12 +329,17 @@ def test_history_without_seq_field_is_not_overwritten():
     """
     feats = _wf_feats()
     scope = {("RAN1", 126)}
-    legacy = [{"id": "RAN1-126-10.2-a002", "wg": "RAN1", "meeting": 126,
-               "agenda_item": "10.2", "kind": "agreement", "text_en": "BBB",
-               "first_seen": "2026-01-01"}]          # 无 seq、无 content_hash
-    merged, stats = merge_events(legacy, map_meeting(_wf_parsed(["NEW"]), feats),
+    # 前两条用真实产出（带 seq 与 content_hash），第三条模拟老格式：有 id、无 seq。
+    seeded, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB"]), feats),
+                             "2026-01-01", scope=scope)
+    legacy = seeded + [{"id": "RAN1-126-10.2-a003", "wg": "RAN1", "meeting": 126,
+                        "agenda_item": "10.2", "kind": "agreement", "text_en": "OLD",
+                        "first_seen": "2026-01-01"}]
+    # NEW 必须排在**首位**：放末位它的草稿 id 就是 a003，会被第二轮 id 兜底认亲吃掉，
+    # 分配器根本走不到 a003，断言就成了恒真 —— 这条测试的前一版正是栽在这里。
+    merged, stats = merge_events(legacy, map_meeting(_wf_parsed(["NEW", "AAA", "BBB"]), feats),
                                  "2026-09-19", scope=scope)
     texts = {e["text_en"]: e["id"] for e in merged}
-    assert "BBB" in texts, "老记录不得被覆盖"
-    assert texts["BBB"] == "RAN1-126-10.2-a002"
-    assert texts["NEW"] != "RAN1-126-10.2-a002", "新事件必须绕开已占用的 id"
+    assert texts["OLD"] == "RAN1-126-10.2-a003", "缺 seq 的历史记录不得被覆盖"
+    assert texts["NEW"] == "RAN1-126-10.2-a004", "新事件必须绕开它的 id"
+    assert stats.stale_ids == ["RAN1-126-10.2-a003"], "报了保留，就必须真的还在"

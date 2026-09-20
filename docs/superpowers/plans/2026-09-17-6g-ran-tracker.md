@@ -3666,15 +3666,20 @@ def test_history_without_seq_field_is_not_overwritten():
     """
     feats = _wf_feats()
     scope = {("RAN1", 126)}
-    legacy = [{"id": "RAN1-126-10.2-a002", "wg": "RAN1", "meeting": 126,
-               "agenda_item": "10.2", "kind": "agreement", "text_en": "BBB",
-               "first_seen": "2026-01-01"}]          # 无 seq、无 content_hash
-    merged, stats = merge_events(legacy, map_meeting(_wf_parsed(["NEW"]), feats),
+    # 前两条用真实产出（带 seq 与 content_hash），第三条模拟老格式：有 id、无 seq。
+    seeded, _ = merge_events([], map_meeting(_wf_parsed(["AAA", "BBB"]), feats),
+                             "2026-01-01", scope=scope)
+    legacy = seeded + [{"id": "RAN1-126-10.2-a003", "wg": "RAN1", "meeting": 126,
+                        "agenda_item": "10.2", "kind": "agreement", "text_en": "OLD",
+                        "first_seen": "2026-01-01"}]
+    # NEW 必须排在**首位**：放末位它的草稿 id 就是 a003，会被第二轮 id 兜底认亲吃掉，
+    # 分配器根本走不到 a003，断言就成了恒真 —— 这条测试的前一版正是栽在这里。
+    merged, stats = merge_events(legacy, map_meeting(_wf_parsed(["NEW", "AAA", "BBB"]), feats),
                                  "2026-09-19", scope=scope)
     texts = {e["text_en"]: e["id"] for e in merged}
-    assert "BBB" in texts, "老记录不得被覆盖"
-    assert texts["BBB"] == "RAN1-126-10.2-a002"
-    assert texts["NEW"] != "RAN1-126-10.2-a002", "新事件必须绕开已占用的 id"
+    assert texts["OLD"] == "RAN1-126-10.2-a003", "缺 seq 的历史记录不得被覆盖"
+    assert texts["NEW"] == "RAN1-126-10.2-a004", "新事件必须绕开它的 id"
+    assert stats.stale_ids == ["RAN1-126-10.2-a003"], "报了保留，就必须真的还在"
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -3870,13 +3875,17 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     # `seq` 可能缺失或被手工改成字符串，那样它就不计入占用，新事件会落到一条
     # 活着的历史 id 上把它覆盖掉，而 stale_ids 还宣称那条"已保留"。
     # id 是恒存在且权威的，用它判占用不需要任何关于字段完整性的假设。
+    #
+    # **复用分支也必须以 id 为准**，不能一边按 id 判占用、一边按 `seq` 字段复用：
+    # 两套权威一旦分歧（手工改过的 state 里 seq 字段与 id 尾号对不上）就会撞号 ——
+    # 复用出的 id 不在 taken_ids 里，分配循环会把同一个号再发一次，后写的静默覆盖先写的。
     taken_ids = set(by_id)
 
     resolved: list[tuple[Event, dict | None]] = []
     for ev, hit in pairs:
-        old_seq = hit.get("seq") if hit is not None else None
-        if not isinstance(old_seq, int) and hit is not None:
-            old_seq = _seq_from_id(hit.get("id", ""))     # 老格式没有 seq 字段时从 id 反解
+        old_seq = _seq_from_id(hit.get("id", "")) if hit is not None else None
+        if old_seq is None and hit is not None and isinstance(hit.get("seq"), int):
+            old_seq = hit["seq"]                          # id 尾部无数字时才退回字段
         if old_seq is not None:
             resolved.append((replace(ev, seq=old_seq), hit))
             continue
