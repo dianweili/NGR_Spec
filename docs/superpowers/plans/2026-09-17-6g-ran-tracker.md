@@ -4676,9 +4676,19 @@ Expected: FAIL，`No module named 'ngr.render.site'`
 
 ```python
 from __future__ import annotations
-import html as html_mod, json
-from dataclasses import asdict
+import json
 from ngr.models import Feature
+
+def _ordered(events: list[dict]) -> list[dict]:
+    """渲染顺序：会议号倒序、同会议按 id（与 markdown._ordered 一致）。
+
+    **不许依赖传入列表的顺序。** `events` 内嵌进这里产出的 JSON，逐字节写进
+    要提交 git 的 `site/index.html`；调用方的顺序取决于 JSON 反序列化、
+    上游重构等一堆我们控制不了的东西 —— 不在这里排序，同样的输入两次跑出来的
+    HTML 字节就会不一样，纯粹因为上游列表顺序抖动，制造无意义的 diff。
+    """
+    return sorted(events, key=lambda e: (-e["meeting"], e["id"]))
+
 
 def _payload(events: list[dict], features: list[Feature], feat_state: dict,
              generated: str) -> dict:
@@ -4689,15 +4699,19 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
                       "stage": feat_state.get(f.slug, {}).get("stage"),
                       "open_issues": feat_state.get(f.slug, {}).get("open_issues", [])}
                      for f in features],
-        "events": events,
+        "events": _ordered(events),
     }
 
 def render_site(events: list[dict], features: list[Feature], feat_state: dict,
                 *, generated: str) -> str:
     data = json.dumps(_payload(events, features, feat_state, generated),
                       ensure_ascii=False, sort_keys=True)
-    # </script> 出现在数据里会提前闭合脚本标签
-    data = data.replace("</", r"<\/")
+    # 光把 "</" 换掉不够：HTML 的 script 数据状态机一旦见到 "<!--" 会切进
+    # "escaped"/"double escaped" 状态，之后一个真正的 "</script" 反而可能
+    # 不再闭合标签 —— 自由文本里凑巧同时出现 "<!--" 和 "<script" 就能把这段
+    # JSON 撑出脚本块。根治办法是把 JSON 文本里所有字面 "<" 都转成 \\u003c
+    # （合法 JSON 转义，JSON.parse 原样吃下去），"</" 自然也在其中，不必再单列。
+    data = data.replace("<", "\\u003c")
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -4707,15 +4721,17 @@ def render_site(events: list[dict], features: list[Feature], feat_state: dict,
 <style>
   :root {{
     --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --line: #e0e0e0;
-    --accent: #2563eb;   /* 按 dataviz 规范替换为品牌色 */
+    --accent: #2a78d6;   /* dataviz 规范：categorical 1 号色（blue）浅色档 */
   }}
   @media (prefers-color-scheme: dark) {{
     :root:not([data-theme="light"]) {{
       --bg: #141414; --fg: #eaeaea; --muted: #999; --line: #303030;
+      --accent: #3987e5;   /* dataviz 规范：categorical 1 号色（blue）深色档 */
     }}
   }}
   :root[data-theme="dark"] {{
     --bg: #141414; --fg: #eaeaea; --muted: #999; --line: #303030;
+    --accent: #3987e5;   /* dataviz 规范：categorical 1 号色（blue）深色档 */
   }}
   body {{ background: var(--bg); color: var(--fg); margin: 0;
          padding: 0 16px 48px; font: 15px/1.6 system-ui, sans-serif; }}
@@ -4736,6 +4752,9 @@ def render_site(events: list[dict], features: list[Feature], feat_state: dict,
 const DATA = JSON.parse(document.getElementById('ngr-data').textContent);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
+// 折叠行里的预览截断必须留标记 —— 否则读者会把半条决议当完整决议读。
+// 与 markdown 层的 _preview() 同一约定。
+const cut = (s, n) => (s = String(s ?? ''), s.length <= n ? s : s.slice(0, n) + '…');
 let filterFeature = null;
 
 function render() {{
@@ -4754,7 +4773,7 @@ function render() {{
   const shown = DATA.events.filter(e => !filterFeature || e.feature === filterFeature);
   const items = shown.sort((a, b) => b.meeting - a.meeting).map(e =>
     `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{e.meeting}}]
-       ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || e.text_en.slice(0, 90))}}</summary>
+       ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || cut(e.text_en, 90))}}</summary>
      <pre>${{esc(e.text_en)}}</pre></details>`).join('');
 
   document.getElementById('board').innerHTML =

@@ -1,6 +1,5 @@
 from __future__ import annotations
-import html as html_mod, json
-from dataclasses import asdict
+import json
 from ngr.models import Feature
 
 def _ordered(events: list[dict]) -> list[dict]:
@@ -76,6 +75,9 @@ def render_site(events: list[dict], features: list[Feature], feat_state: dict,
 const DATA = JSON.parse(document.getElementById('ngr-data').textContent);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c]);
+// 折叠行里的预览截断必须留标记 —— 否则读者会把半条决议当完整决议读。
+// 与 markdown 层的 _preview() 同一约定。
+const cut = (s, n) => (s = String(s ?? ''), s.length <= n ? s : s.slice(0, n) + '…');
 let filterFeature = null;
 
 function render() {{
@@ -94,7 +96,7 @@ function render() {{
   const shown = DATA.events.filter(e => !filterFeature || e.feature === filterFeature);
   const items = shown.sort((a, b) => b.meeting - a.meeting).map(e =>
     `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{e.meeting}}]
-       ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || e.text_en.slice(0, 90))}}</summary>
+       ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || cut(e.text_en, 90))}}</summary>
      <pre>${{esc(e.text_en)}}</pre></details>`).join('');
 
   document.getElementById('board').innerHTML =
