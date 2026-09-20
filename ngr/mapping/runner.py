@@ -20,12 +20,18 @@ def _agenda_key(agenda_item: str | None, heading_path: list[str]) -> str:
     merge 会判成一次普通的内容变更，把 A 的历史（first_seen 等）安到 B 头上，
     既不报错也不进 stale_ids，**彻底静默**。
 
-    哈希取自**未归一化**的原文，所以只有真正同名的 heading 才共用 key。"""
+    哈希取自**未归一化的完整 heading 路径**，不是只取末节。只取末节的话，
+    "Overview" / "General" / "Way forward" 这类通用小节名在不同 Release、不同上级章节下
+    **100% 撞车**（实测 `["Rel-17 NR","Overview"]` 与 `["Rel-18 NR","Overview"]` 同 key），
+    而它们在 3GPP 纪要里反复出现 —— 这比标点变体常见得多。"""
     if agenda_item:
         return agenda_item
     tail = heading_path[-1] if heading_path else "unknown"
+    if not heading_path:
+        log.warning("legacy 事件缺 heading_path，回退 key 不具区分度（全部落到同一个 key）")
     slug = _SLUG_RE.sub("-", tail).strip("-").lower()[:40] or "unknown"
-    return f"{slug}-{hashlib.sha256(tail.encode('utf-8')).hexdigest()[:4]}"
+    full = "/".join(heading_path) if heading_path else "unknown"
+    return f"{slug}-{hashlib.sha256(full.encode('utf-8')).hexdigest()[:8]}"
 
 def _hash(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -81,8 +87,17 @@ class MergeStats:
 # 事件变更时要作废的 LLM 产物
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
 
+def scope_of(incoming: list[Event]) -> set[tuple[str, int]]:
+    """由归集结果反推 scope。**只有在调用方确实无从得知处理了哪几场会议时才用。**
+
+    反推有致命盲区：某场会议归集归零时它不出现在结果里，那场的全部历史一条都不会被
+    检查。真实管线是逐会议调用的，应当直接传 `{(wg, meeting)}`。
+    这个函数存在的意义，是让"我在反推"这件事**出现在调用点上**，
+    而不是藏在一个默认参数里 —— 藏起来的那版正是上一轮被审查抓出来的盲区。"""
+    return {(ev.wg, ev.meeting) for ev in incoming}
+
 def merge_events(existing: list[dict], incoming: list[Event], today: str,
-                 scope: set[tuple[str, int]] | None = None) -> tuple[list[dict], MergeStats]:
+                 *, scope: set[tuple[str, int]]) -> tuple[list[dict], MergeStats]:
     by_id = {e["id"]: dict(e) for e in existing}
     stats = MergeStats()
 
@@ -110,18 +125,13 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
             stats.changed += 1
         by_id[ev.id] = new
 
-    # scope = 本次处理了哪几场会议。existing 是**全量** state，比较必须限定在
+    # scope = 本次处理了哪几场会议，**必填**。existing 是全量 state，比较必须限定在
     # 同一 (wg, meeting) 范围内，否则所有历史会议的事件都会被当成"本次缺失"。
     #
-    # **调用方应当显式传 scope。** 从 incoming 反推有个致命盲区：某场会议一旦归集
-    # 归零（features.yaml 改坏、正则回归），它就不在反推出的 scope 里，那场会议的
-    # 全部历史一条都不会被拿来比较，stale_ids 恒为空 ——
-    # **局部缺失会报警，全部缺失反而不报警**，探针恰好在最该响的时候哑火。
-    if scope is None:
-        scope = {(ev.wg, ev.meeting) for ev in incoming}
-        if not incoming:
-            log.warning("merge_events 收到空 incoming 且调用方未给出 scope："
-                        "无法判断本次是否有事件消失。归集归零正是最该报警的情形。")
+    # 不给默认值、不做隐式反推：某场会议一旦归集归零（features.yaml 改坏、正则回归），
+    # 它就不在反推出的 scope 里，那场的全部历史一条都不会被比较，stale_ids 恒为空 ——
+    # 局部缺失会报警、全部缺失反而不报警，探针恰好在最该响的时候哑火。
+    # 确实需要反推时用 scope_of()，让这个选择显式出现在调用点上。
     seen = {ev.id for ev in incoming}
     for e in existing:
         if (e.get("wg"), e.get("meeting")) in scope and e["id"] not in seen:
