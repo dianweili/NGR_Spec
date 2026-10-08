@@ -1,0 +1,37 @@
+from __future__ import annotations
+import argparse
+import logging
+from ngr.config import load_features
+from ngr.mapping.report import lineage_report
+from ngr.parse.runner import ParseError
+from ngr.paths import P
+from ngr.pipeline import EXIT_OK, EXIT_PARSE, run_pipeline, run_pipeline_enrich, run_pipeline_remap
+
+run_remap, run_enrich = run_pipeline_remap, run_pipeline_enrich
+
+def run_doctor(**kwargs):
+    from ngr.ops.doctor import run_doctor as doctor
+    return doctor(**kwargs)
+
+def build_lineage_report():
+    import json
+    return lineage_report(load_features(), [json.loads(p.read_text(encoding="utf-8")) for p in sorted(P.parsed.rglob("events.json"))])
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="ngr", description="6G RAN 进展跟踪")
+    sub = parser.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("run"); run.add_argument("--no-llm", action="store_true"); run.add_argument("--wg", action="append"); run.add_argument("--force", action="store_true")
+    backfill = sub.add_parser("backfill"); backfill.add_argument("--wg", required=True); backfill.add_argument("--from", dest="frm", type=int, required=True); backfill.add_argument("--to", type=int, required=True); backfill.add_argument("--no-llm", action="store_true")
+    sub.add_parser("remap"); sub.add_parser("lineage-report"); sub.add_parser("enrich"); sub.add_parser("doctor")
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "run": result = run_pipeline(wgs=args.wg, use_llm=not args.no_llm, force=args.force)
+        elif args.command == "backfill": result = run_pipeline(wgs=[args.wg], use_llm=not args.no_llm, meetings=(args.frm, args.to))
+        elif args.command == "remap": result = run_remap()
+        elif args.command == "enrich": result = run_enrich()
+        elif args.command == "lineage-report": print(build_lineage_report()); return EXIT_OK
+        else: return run_doctor()
+    except ParseError as exc:
+        logging.error("解析断言失败: %s", exc); return EXIT_PARSE
+    for alert in result.alerts: logging.warning("%s", alert)
+    return result.exit_code
