@@ -1,6 +1,18 @@
 from __future__ import annotations
 import re
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
+
+
+def child_url(directory_url: str, name: str) -> str:
+    """Return a request URL for one decoded directory-listing entry.
+
+    ``parse_listing`` deliberately returns decoded names so matching and local file
+    handling use the human-readable filename.  A raw ``#`` in such a name is a URL
+    fragment separator, however, and is never sent to the server.  Re-encode every
+    direct child at the HTTP boundary (not when parsing) to keep those two contracts
+    separate.
+    """
+    return directory_url.rstrip("/") + "/" + quote(name, safe="")
 
 def parse_listing(html: bytes, dir_url: str) -> list[str]:
     """从 3GPP 的 HTML 目录列表中取出该目录的直接子条目名（不含更深层路径）。

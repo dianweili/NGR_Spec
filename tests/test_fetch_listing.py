@@ -1,4 +1,4 @@
-from ngr.fetch.listing import parse_listing
+from ngr.fetch.listing import child_url, parse_listing
 
 DIR = "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/"
 HTML = b"""<html><body><table>
@@ -36,3 +36,8 @@ def test_parse_listing_on_fixture_docs():
     names = parse_listing(p.read_bytes(), DIR + "Docs/")
     assert names, "fixture 解析出 0 条，检查 fixture 或解析逻辑"
     assert all(n.startswith("R1-") and n.endswith(".zip") for n in names)
+
+
+def test_child_url_reencodes_reserved_filename_characters():
+    assert child_url(DIR + "Report/", "Draft_RAN1#126_v100.zip") == (
+        DIR + "Report/Draft_RAN1%23126_v100.zip")

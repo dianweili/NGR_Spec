@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from ngr.config import WgConfig
-from ngr.fetch.listing import parse_listing
+from ngr.fetch.listing import child_url, parse_listing
 from ngr.fetch.manifest import Manifest, pick_latest_minutes, unwrap_docx
 from ngr.models import Meeting
 from ngr.paths import P
@@ -69,7 +69,7 @@ def fetch_meeting(http, meeting: Meeting, cfg: WgConfig,
                 if chosen is None:
                     res.missing.append(art)
                     continue
-                url = sub_url + chosen
+                url = child_url(sub_url, chosen)
                 head = http.head(url)
                 if man.needs_fetch(local, head):
                     data = http.get(url)

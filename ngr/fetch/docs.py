@@ -1,7 +1,7 @@
 from __future__ import annotations
 import io, logging, zipfile
 from pathlib import Path
-from ngr.fetch.listing import parse_listing
+from ngr.fetch.listing import child_url, parse_listing
 from ngr.parse.docx import parse_docx
 
 log = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ def fetch_docs(http, meeting, cfg, *, agenda_prefix, out_dir, tdoc_agenda):
         target = out_dir / (name.removesuffix('.zip') + '.txt')
         if target.exists(): continue
         try:
-            with zipfile.ZipFile(io.BytesIO(http.get(base + name))) as archive:
+            with zipfile.ZipFile(io.BytesIO(http.get(child_url(base, name)))) as archive:
                 names = [n for n in archive.namelist() if n.lower().endswith('.docx')]
                 if not names: continue
                 doc = parse_docx(archive.read(names[0]))
