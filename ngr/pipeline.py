@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from ngr.config import load_features, load_sources
@@ -48,14 +48,19 @@ def _write_state(events, features, feature_state, result, stats, started):
     write_state(events, P.state / "events.json")
     P.state.mkdir(parents=True, exist_ok=True)
     (P.state / "features_state.json").write_text(json.dumps(feature_state, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
-    runs = load_runs(P.state / "run_history.json")
+    record = RunRecord(time.strftime("%Y-%m-%dT%H:%M:%S"), round(time.time()-started, 1),
+                       result.new_events, result.llm_calls, result.exit_code, "; ".join(result.alerts))
+    # Render against the run that is about to be persisted.  Loading history before
+    # append made every first successful run render as "从未成功"; appending only
+    # after rendering still keeps a failed render out of the recorded history.
+    runs = [*load_runs(P.state / "run_history.json"), asdict(record)]
     banner = build_banner(result.alerts, runs, today)
     from ngr.mapping.unmapped import collect_unmapped
     parsed = [payload for path in sorted(P.parsed.rglob("events.json")) if (payload := _load(path, {}))]
     render_all(events, features, feature_state, P.out, banner=banner,
                unmapped=collect_unmapped(features, parsed, sixg_roots=["10"]))
     result.stats_by_meeting = {key: dict(value) for key, value in stats.items()}
-    append_run(P.state / "run_history.json", RunRecord(time.strftime("%Y-%m-%dT%H:%M:%S"), round(time.time()-started, 1), result.new_events, result.llm_calls, result.exit_code, "; ".join(result.alerts)))
+    append_run(P.state / "run_history.json", record)
 
 
 def _enrich(events, features, state, cfg, result):

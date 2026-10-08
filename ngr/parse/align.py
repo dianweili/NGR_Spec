@@ -15,6 +15,7 @@ DEPTH_TOLERANCE = 1  # heading 层级与议程深度允许 ±1 偏移
 
 _PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
 _SPACE = re.compile(r"\s+")
+_ABBREVIATION = re.compile(r"\b[A-Z][A-Z0-9-]{1,}\b")
 
 
 def normalize(text: str) -> str:
@@ -29,6 +30,17 @@ def normalize(text: str) -> str:
 # 真正的对齐崩溃反而淹没在固定噪声里，探针就白设了。
 ANNEX_RE = re.compile(r"(?i)^annex\b")
 
+# RAN1 minutes have a fixed opening/schedule block that is intentionally absent
+# from agenda.csv.  These are not technical agenda items, so counting them as
+# a failed alignment turns a harmless template difference into a false gate.
+# Keep this list exact: a broad "opening"/"meeting" match would hide genuine
+# agenda-template changes.
+NON_AGENDA_RE = re.compile(
+    r"(?i)^(?:call for ipr|competition law statement|network usage conditions|"
+    r"consensus principles reminder|streamlined standards|"
+    r"check-in for registered delegates|recording of ran1 meeting|ran1 brk\b)"
+)
+
 
 @dataclass
 class Alignment:
@@ -38,7 +50,7 @@ class Alignment:
 
     @property
     def unmatched_ratio(self) -> float:
-        """未对上的比例，分母只含**参与对齐**的 heading（不含 skipped 的 Annex）。
+        """未对上的比例，分母只含**参与对齐**的 heading（不含 skipped 的结构标题）。
 
         分母为 0 时返回 **1.0 而不是 0.0**。0/0 在数学上无定义，这里是一个刻意的
         策略选择：分母为 0 意味着"一条都没对上"，而不是"全对上了"。
@@ -58,8 +70,11 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
     difflib 相似度 ≥ 0.90 → heading 层级与议程深度互校。全过才算数。"""
     result = Alignment()
     exact: dict[str, list[AgendaItem]] = {}
+    abbreviations: dict[str, list[AgendaItem]] = {}
     for item in agenda:
         exact.setdefault(normalize(item.title), []).append(item)
+        for token in _ABBREVIATION.findall(item.title):
+            abbreviations.setdefault(normalize(token), []).append(item)
     # 两个议程项归一化后撞成同一个 key 时，下面的候选池会"先到先得"，
     # 后一个议程项永远拿不到 heading —— 这违背"宁可少归类，不可错归类"。
     # 实测 RAN1#126 的 66 条议程项无冲突，所以不改行为，只出声：
@@ -72,12 +87,19 @@ def align(agenda: list[AgendaItem], headings: list[Heading]) -> Alignment:
     norm_keys = list(exact.keys())
 
     for h in headings:
-        if ANNEX_RE.match(h.text.strip()):
+        if ANNEX_RE.match(h.text.strip()) or NON_AGENDA_RE.match(h.text.strip()):
             result.skipped.append(h)
             continue
 
         key = normalize(h.text)
         cands = [i for i in exact.get(key, []) if i.item not in used]
+
+        # A minute may use an acronym ("ISAC") where the agenda spells out the
+        # full title ("Integrated Sensing And Communication (ISAC)").  Only a
+        # unique agenda acronym is evidence strong enough to use; terms such as
+        # NR or AI appear in several items and must remain unaligned.
+        if not cands and len(abbreviations.get(key, [])) == 1:
+            cands = [i for i in abbreviations[key] if i.item not in used]
 
         if not cands and norm_keys:
             close = difflib.get_close_matches(key, norm_keys, n=1, cutoff=FUZZY_THRESHOLD)

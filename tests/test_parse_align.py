@@ -62,6 +62,24 @@ def test_same_title_headings_share_one_agenda_item():
     assert al.unaligned == []
 
 
+def test_unique_agenda_abbreviation_matches_full_title():
+    ag = [A("10.8", "Integrated Sensing And Communication (ISAC)")]
+    al = align(ag, [H(2, "ISAC", 1)])
+    assert al.by_heading[1].item == "10.8"
+
+
+def test_ambiguous_agenda_abbreviation_does_not_match():
+    ag = [A("9.1", "Artificial Intelligence (AI) for NR"),
+          A("9.2", "Artificial Intelligence (AI) evaluation")]
+    al = align(ag, [H(2, "AI", 1)])
+    assert 1 not in al.by_heading and al.unaligned[0].text == "AI"
+
+
+def test_fixed_ran1_process_heading_is_skipped_not_unaligned():
+    al = align([A("10", "6GR Study")], [H(2, "Call for IPR", 1)])
+    assert al.skipped[0].text == "Call for IPR" and al.unmatched_ratio == 1.0
+
+
 def test_different_titles_cannot_claim_same_item():
     """标题不同的两个小节不得抢同一个议程项 —— used 守的是这个。
     "Waveforms" 与 "Waveform" 的 difflib 相似度 0.94，会越过模糊阈值。"""
@@ -117,9 +135,10 @@ def test_real_fixture_alignment():
     doc = parse_docx(pathlib.Path("tests/fixtures/RAN1_126/minutes.docx"))
     al = align(ag, doc.headings)
     assert al.unmatched_ratio < 0.20, f"未对齐率过高: {al.unmatched_ratio:.0%}"
-    # 9 条 Annex 标题被跳过而非判为未对齐；若把它们算进去，未对齐率是 23%，
-    # 探针常年报警等于没有探针。
-    assert len(al.skipped) == 9
-    assert all(h.text.lower().startswith("annex") for h in al.skipped)
+    # 9 条 Annex 与固定流程标题都不属于 agenda.csv。两者若计入未对齐率，
+    # 会让探针常年报警，反而淹没真正的议程/纪要模板变化。
+    annexes = [h for h in al.skipped if h.text.lower().startswith("annex")]
+    assert len(annexes) == 9
+    assert any(h.text == "Call for IPR" for h in al.skipped)
     items = {v.item for v in al.by_heading.values()}
     assert "10" in items and "10.2" in items
