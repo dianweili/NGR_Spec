@@ -54,6 +54,13 @@ def test_head_tolerates_missing_headers():
     assert Http(CFG).head(URL) == {"etag": None, "length": None}
 
 @responses.activate
+def test_head_403_is_retried_then_succeeds():
+    responses.add(responses.HEAD, URL, status=403)
+    responses.add(responses.HEAD, URL, status=200, headers={"ETag": '"ok"'})
+    assert Http(CFG).head(URL) == {"etag": '"ok"', "length": None}
+    assert len(responses.calls) == 2
+
+@responses.activate
 def test_delay_is_applied(monkeypatch):
     slept = []
     monkeypatch.setattr("ngr.fetch.client.time.sleep", lambda s: slept.append(s))

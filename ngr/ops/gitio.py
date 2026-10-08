@@ -27,13 +27,15 @@ def commit_outputs(repo: Path, paths: list[str], message: str) -> bool:
     return commit.returncode == 0
 
 
-def build_commit_message(stats: dict[tuple[str, int], dict[str | None, int]]) -> str:
+def build_commit_message(stats: dict[tuple[str, int, str], dict[str | None, int]]) -> str:
     """让 Git 日志也成为按会议归档的协议进展流水账。"""
     chunks = []
-    for (wg, meeting), per_feature in sorted(stats.items()):
+    for key, per_feature in sorted(stats.items()):
+        wg, meeting = key[:2]
+        meeting_suffix = key[2] if len(key) > 2 else ""
         total = sum(per_feature.values())
         details = [f"{slug or '未归类'} +{count}" for slug, count in
                    sorted(per_feature.items(), key=lambda item: (-item[1], item[0] or ""))]
-        suffix = f" ({', '.join(details)})" if details else ""
-        chunks.append(f"{wg}#{meeting}: +{total} events{suffix}")
+        details_suffix = f" ({', '.join(details)})" if details else ""
+        chunks.append(f"{wg}#{meeting}{meeting_suffix}: +{total} events{details_suffix}")
     return "; ".join(chunks) if chunks else "chore: 无新增事件"

@@ -15,6 +15,11 @@ class Meeting:
     def label(self) -> str:
         return f"{self.wg}#{self.number}{self.suffix}"
 
+    @property
+    def key(self) -> str:
+        """Directory and identity-safe meeting key, for example ``124b``."""
+        return f"{self.number}{self.suffix}"
+
 @dataclass(frozen=True)
 class AgendaItem:
     item: str          # "10.2"
@@ -48,6 +53,7 @@ class Event:
     kind: str
     text_en: str
     agenda_title: str
+    meeting_suffix: str = ""
     meeting_end: str | None = None
     era: str | None = None
     release: str | None = None
@@ -63,7 +69,7 @@ class Event:
 
     @property
     def id(self) -> str:
-        return f"{self.wg}-{self.meeting}-{self.agenda_item}-{KIND_PREFIX[self.kind]}{self.seq:03d}"
+        return f"{self.wg}-{self.meeting}{self.meeting_suffix}-{self.agenda_item}-{KIND_PREFIX[self.kind]}{self.seq:03d}"
 
 @dataclass(frozen=True)
 class LineageSegment:

@@ -31,12 +31,12 @@ def render_all(events: list[dict], features: list[Feature], feat_state: dict,
               render_feature_page(feat.slug, events, feat, feat_state.get(feat.slug, {})))
 
     names = {f.slug: f.name_zh for f in features}
-    for wg, meeting in sorted({(e["wg"], e["meeting"]) for e in events}):
+    for wg, meeting, suffix in sorted({(e["wg"], e["meeting"], e.get("meeting_suffix", "")) for e in events}):
         date = next((e.get("meeting_end") for e in events
-                     if e["wg"] == wg and e["meeting"] == meeting and e.get("meeting_end")),
+                     if e["wg"] == wg and e["meeting"] == meeting and e.get("meeting_suffix", "") == suffix and e.get("meeting_end")),
                     generated)
-        write(f"reports/{date}-{wg}-{meeting}.md",
-              render_report(wg, meeting, events, names))
+        write(f"reports/{date}-{wg}-{meeting}{suffix}.md",
+              render_report(wg, meeting, events, names, suffix))
 
     write("site/index.html", render_site(events, features, feat_state, generated=generated))
     return written

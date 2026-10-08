@@ -23,7 +23,7 @@ from ngr.parse.runner import parse_meeting, write_parsed
 from ngr.paths import P
 from ngr.render.runner import render_all
 
-EXIT_OK, EXIT_PARSE, EXIT_LLM, EXIT_GIT = 0, 2, 3, 4
+EXIT_OK, EXIT_FETCH, EXIT_PARSE, EXIT_LLM, EXIT_GIT = 0, 1, 2, 3, 4
 GUARDED = ["config"]
 
 
@@ -91,26 +91,32 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False, meetings=None) -> Pipel
         lo, hi = window
         try: discovered = discover_meetings(http, wg, wgcfg)
         except RateLimited as exc:
-            result.alerts.append(f"{wg} 会议发现被限流: {exc}"); continue
-        parsed_numbers = []
+            result.alerts.append(f"{wg} 会议发现被限流: {exc}")
+            result.exit_code = max(result.exit_code, EXIT_FETCH)
+            continue
+        parsed_meetings = []
         for meeting in discovered:
             if meeting.number < lo or (hi is not None and meeting.number > hi): continue
-            raw = P.raw_dir(wg, meeting.number)
+            raw = P.raw_dir(wg, meeting.number, meeting.suffix)
             try: fetched = fetch_meeting(http, meeting, wgcfg, raw_dir=raw, force=force)
             except RateLimited as exc:
-                result.alerts.append(f"{meeting.label} 抓取被限流: {exc}"); continue
+                result.alerts.append(f"{meeting.label} 抓取被限流: {exc}")
+                result.exit_code = max(result.exit_code, EXIT_FETCH)
+                continue
             if fetched.skipped_reason == "frozen" or "minutes_docx" in fetched.missing: continue
             parsed = parse_meeting(raw, meeting, agenda_required=bool(wgcfg.agenda_csv_since and meeting.number >= wgcfg.agenda_csv_since))
-            write_parsed(parsed, P.parsed_dir(wg, meeting.number))
-            payload = _load(P.parsed_dir(wg, meeting.number) / "events.json", {})
-            events, merge = merge_events(events, map_meeting(payload, features), today, scope={(wg, meeting.number)})
+            parsed_dir = P.parsed_dir(wg, meeting.number, meeting.suffix)
+            write_parsed(parsed, parsed_dir)
+            payload = _load(parsed_dir / "events.json", {})
+            events, merge = merge_events(events, map_meeting(payload, features), today,
+                                         scope={(wg, meeting.number, meeting.suffix)})
             result.new_events += merge.added
             if merge.stale_ids: result.alerts.append(f"{meeting.label}: {len(merge.stale_ids)} 条历史事件本次未再出现")
             for key, per in merge.added_by_feature.items():
                 for feature, count in per.items(): stats[key][feature] += count
-            parsed_numbers.append(meeting.number)
-        for number in sorted(parsed_numbers)[:-2]:
-            manifest = Manifest(P.raw_dir(wg, number)); manifest.mark_frozen(); manifest.save()
+            parsed_meetings.append((meeting.number, meeting.suffix))
+        for number, suffix in sorted(parsed_meetings)[:-2]:
+            manifest = Manifest(P.raw_dir(wg, number, suffix)); manifest.mark_frozen(); manifest.save()
     feature_state = _load(P.state / "features_state.json", {})
     if use_llm: feature_state = _enrich(events, features, feature_state, cfg.extract, result)
     _write_state(events, features, feature_state, result, stats, started)
@@ -125,7 +131,8 @@ def run_pipeline_remap() -> PipelineResult:
     for path in sorted(P.parsed.rglob("events.json")):
         payload = _load(path, {})
         if not payload: continue
-        events, merge = merge_events(events, map_meeting(payload, features), today, scope={(payload["wg"], payload["meeting"])})
+        events, merge = merge_events(events, map_meeting(payload, features), today,
+                                     scope={(payload["wg"], payload["meeting"], payload.get("meeting_suffix", ""))})
         result.new_events += merge.added
         for key, per in merge.added_by_feature.items():
             for feature, count in per.items(): stats[key][feature] += count

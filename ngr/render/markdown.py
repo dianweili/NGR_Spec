@@ -15,9 +15,27 @@ _WS_RE = re.compile(r"\s+")
 _BACKTICK_RUN_RE = re.compile(r"`+")
 
 
-def meeting_url(wg: str, meeting: int) -> str:
+def meeting_url(wg: str, meeting: int, suffix: str = "") -> str:
     tmpl = WG_PATH.get(wg)
-    return f"https://www.3gpp.org/ftp/{tmpl % meeting}/" if tmpl else ""
+    return f"https://www.3gpp.org/ftp/{tmpl % meeting}{suffix}/" if tmpl else ""
+
+
+def _meeting_suffix(event: dict) -> str:
+    return str(event.get("meeting_suffix") or "")
+
+
+def _meeting_key(event: dict) -> tuple[int, str]:
+    return event["meeting"], _meeting_suffix(event)
+
+
+def _meeting_label(event: dict) -> str:
+    return f"{event['meeting']}{_meeting_suffix(event)}"
+
+
+def _event_order_key(event: dict) -> tuple:
+    suffix = _meeting_suffix(event)
+    return (-event["meeting"], 0 if suffix else 1,
+            tuple(-ord(char) for char in suffix), event["id"])
 
 
 def _cell(text: object) -> str:
@@ -64,7 +82,7 @@ def _preview(text: str, limit: int) -> str:
 
 
 def _era_tag(e: dict) -> str:
-    return f"[{e.get('era')}/{e.get('release')} {e['wg']}#{e['meeting']}]"
+    return f"[{e.get('era')}/{e.get('release')} {e['wg']}#{_meeting_label(e)}]"
 
 
 def _by_feature(events: list[dict]) -> dict[str, list[dict]]:
@@ -81,7 +99,7 @@ def _ordered(events: list[dict]) -> list[dict]:
     就是 diff 噪声；而调用方的顺序取决于 JSON 反序列化、上游重构等一堆我们
     控制不了的东西。
     """
-    return sorted(events, key=lambda e: (-e["meeting"], e["id"]))
+    return sorted(events, key=_event_order_key)
 
 
 def feat_wg(events: list[dict]) -> str:
@@ -99,7 +117,7 @@ def feat_wg(events: list[dict]) -> str:
     """
     if not events:
         return ""
-    return max(events, key=lambda e: (e["meeting"], str(e.get("wg") or "")))["wg"]
+    return max(events, key=lambda e: (e["meeting"], _meeting_suffix(e), str(e.get("wg") or "")))["wg"]
 
 
 def render_dashboard(events: list[dict], features: list[Feature],
@@ -109,17 +127,20 @@ def render_dashboard(events: list[dict], features: list[Feature],
     """特性状态看板。对给定输入是确定性的，不要求 `events` 预排序。"""
     generated = generated or time.strftime("%Y-%m-%d")
     grouped = _by_feature(events)
-    latest_meeting = max((e["meeting"] for e in events), default=None)
+    latest = max(events, key=lambda e: (e["meeting"], _meeting_suffix(e), str(e.get("wg") or "")), default=None)
+    latest_meeting = latest["meeting"] if latest else None
+    latest_suffix = _meeting_suffix(latest) if latest else ""
+    latest_key = (latest.get("wg"), latest_meeting, latest_suffix) if latest else None
     # 各组会议号是独立编号体系（RAN1#126 与 RAN3#126 是两场不同的会），
     # 所以"最新会议"的组名必须从数据里取，不能写死 RAN1。
-    latest_wg = feat_wg([e for e in events if e["meeting"] == latest_meeting])
+    latest_wg = latest.get("wg") if latest else ""
 
     lines: list[str] = []
     if banner:
         lines += [banner, ""]
     lines += ["# 6G (Rel-20) RAN 进展看板", "",
               f"> 生成于 {generated}"
-              + (f" · 最新会议 {latest_wg}#{latest_meeting}"
+              + (f" · 最新会议 {latest_wg}#{latest_meeting}{latest_suffix}"
                  if latest_meeting is not None else ""), "",
               "| 特性 | 阶段 | 血统 | 累计 Agr. (6G/5G-A) | 本期新增 | 最近活动 | 未决 |",
               "|---|---|---|---|---|---|---|"]
@@ -133,11 +154,11 @@ def render_dashboard(events: list[dict], features: list[Feature],
         nl = sum(1 for e in agr if e.get("era") == "5G-A")
         # `meeting` 可以合法地为 0 —— truthy 判断会把它当"没有最新会议"、
         # 把本期新增强制清零。下面的小节标题用的是 is not None，口径必须一致。
-        this = (sum(1 for e in evs if e["meeting"] == latest_meeting)
-                if latest_meeting is not None else 0)
-        last = max((e["meeting"] for e in evs), default=None)
+        this = (sum(1 for e in evs if (e.get("wg"), *_meeting_key(e)) == latest_key)
+                if latest_key is not None else 0)
+        latest_for_feature = max(evs, key=lambda e: (e["meeting"], _meeting_suffix(e), str(e.get("wg") or "")), default=None)
         lineage = "5G-A→6G" if feat.has_legacy else "6G 原生"
-        last_cell = f"{feat_wg(evs)}#{last}" if last is not None else "—"
+        last_cell = f"{latest_for_feature['wg']}#{_meeting_label(latest_for_feature)}" if latest_for_feature else "—"
         lines.append(
             f"| [{_cell(feat.name_zh)}](features/{feat.slug}.md) "
             f"| {_cell(st.get('stage', '—'))} "
@@ -145,8 +166,8 @@ def render_dashboard(events: list[dict], features: list[Feature],
             f"| {len(st.get('open_issues', []))} |")
 
     if latest_meeting is not None:
-        lines += ["", f"## 本期新增（最近一次会议 #{latest_meeting}）", ""]
-        fresh = [e for e in events if e["meeting"] == latest_meeting]
+        lines += ["", f"## 本期新增（最近一次会议 #{latest_meeting}{latest_suffix}）", ""]
+        fresh = [e for e in events if (e.get("wg"), *_meeting_key(e)) == latest_key]
         if not fresh:
             lines.append("_无_")
         for feat in features:
@@ -223,17 +244,18 @@ def _render_events(events: list[dict], *, with_summary: bool) -> list[str]:
             lines += ["", "_（摘要生成失败，见下方原文）_"]
         fence = _fence(e["text_en"])
         lines += ["", fence + "text", e["text_en"], fence,
-                  f"[原文出处]({meeting_url(e['wg'], e['meeting'])}) · `{e['id']}`", ""]
+                  f"[原文出处]({meeting_url(e['wg'], e['meeting'], _meeting_suffix(e))}) · `{e['id']}`", ""]
     return lines
 
 
 def render_report(wg: str, meeting: int, events: list[dict],
-                  feature_names: dict[str, str]) -> str:
+                  feature_names: dict[str, str], suffix: str = "") -> str:
     """单次会议的增量简报。对给定输入是确定性的，不要求 `events` 预排序。"""
-    mine = [e for e in events if e["wg"] == wg and e["meeting"] == meeting]
+    mine = [e for e in events if e["wg"] == wg and e["meeting"] == meeting
+            and _meeting_suffix(e) == suffix]
     grouped = _by_feature(mine)
-    lines = [f"# {wg} #{meeting} 增量简报", "",
-             f"> 共 {len(mine)} 条事件 · [会议目录]({meeting_url(wg, meeting)})", ""]
+    lines = [f"# {wg} #{meeting}{suffix} 增量简报", "",
+             f"> 共 {len(mine)} 条事件 · [会议目录]({meeting_url(wg, meeting, suffix)})", ""]
     for slug, evs in sorted(grouped.items(), key=lambda kv: kv[0] or ""):
         lines += [f"## {_inline(feature_names.get(slug, slug))}（{len(evs)} 条）", ""]
         for e in _ordered(evs):

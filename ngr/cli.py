@@ -1,6 +1,7 @@
 from __future__ import annotations
 import argparse
 import logging
+import sys
 from ngr.config import load_features
 from ngr.mapping.report import lineage_report
 from ngr.parse.runner import ParseError
@@ -18,6 +19,9 @@ def build_lineage_report():
     return lineage_report(load_features(), [json.loads(p.read_text(encoding="utf-8")) for p in sorted(P.parsed.rglob("events.json"))])
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(prog="ngr", description="6G RAN 进展跟踪")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run"); run.add_argument("--no-llm", action="store_true"); run.add_argument("--wg", action="append"); run.add_argument("--force", action="store_true")

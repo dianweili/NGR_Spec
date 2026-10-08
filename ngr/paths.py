@@ -19,10 +19,10 @@ class Paths:
     @property
     def logs(self) -> Path: return self.root / "logs"
 
-    def raw_dir(self, wg: str, meeting: int) -> Path:
-        return self.raw / wg / str(meeting)
+    def raw_dir(self, wg: str, meeting: int, suffix: str = "") -> Path:
+        return self.raw / wg / f"{meeting}{suffix}"
 
-    def parsed_dir(self, wg: str, meeting: int) -> Path:
-        return self.parsed / wg / str(meeting)
+    def parsed_dir(self, wg: str, meeting: int, suffix: str = "") -> Path:
+        return self.parsed / wg / f"{meeting}{suffix}"
 
 P = Paths(root=Path(__file__).resolve().parent.parent)

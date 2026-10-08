@@ -37,3 +37,7 @@ def test_commit_message_summarises_all_meetings():
                                     ("RAN2", 131): {"isac": 1}})
     assert message.startswith("RAN1#127:") and "+18 events" in message
     assert "waveform +9" in message and "未归类 +2" in message and "RAN2#131" in message
+
+
+def test_commit_message_retains_special_meeting_suffix():
+    assert "RAN1#124b" in build_commit_message({("RAN1", 124, "b"): {"waveform": 1}})

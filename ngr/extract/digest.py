@@ -33,6 +33,10 @@ def _one_line(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _meeting_label(event: dict) -> str:
+    return f"{event['meeting']}{event.get('meeting_suffix') or ''}"
+
+
 LEGACY_SYSTEM = """你在归纳一个 3GPP 特性在 5G-A（Rel-18/19）阶段的历史脉络。
 
 只依据下面给出的英文 agreement 原文，说明这个阶段实际定下了什么、哪些问题没有做充分或被推迟，以及为什么会延续到 6G。
@@ -60,13 +64,13 @@ def build_legacy_chunks(legacy_events: list[dict], meetings_per_chunk: int = MEE
 def build_feature_prompt(feature: Feature, six_events: list[dict], legacy_chunk: list[dict] | None = None) -> str:
     if legacy_chunk is not None:
         parts = [LEGACY_SYSTEM, "", f"特性：{feature.name_zh}", ""]
-        for event in sorted(legacy_chunk, key=lambda item: (item["meeting"], item["id"])):
-            parts.extend((f"[{event['wg']}#{event['meeting']}] {event['kind']}", event["text_en"], ""))
+        for event in sorted(legacy_chunk, key=lambda item: (item["meeting"], item.get("meeting_suffix") or "", item["id"])):
+            parts.extend((f"[{event['wg']}#{_meeting_label(event)}] {event['kind']}", event["text_en"], ""))
         return "\n".join(parts)
 
     parts = [FEATURE_SYSTEM, "", f"特性：{feature.name_zh}", "", "6GR 阶段的进展："]
-    for event in sorted(six_events, key=lambda item: (item["meeting"], item["id"])):
-        parts.append(f"- [{event['wg']}#{event['meeting']}] {event.get('summary_zh') or event['text_en'][:200]}")
+    for event in sorted(six_events, key=lambda item: (item["meeting"], item.get("meeting_suffix") or "", item["id"])):
+        parts.append(f"- [{event['wg']}#{_meeting_label(event)}] {event.get('summary_zh') or event['text_en'][:200]}")
     return "\n".join(parts)
 
 

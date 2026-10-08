@@ -139,3 +139,11 @@ def test_write_parsed_is_deterministic(tmp_path):
     b = write_parsed(p, tmp_path / "out2").read_bytes()
     assert a == b, "同一输入必须产出逐字节相同的 JSON（幂等性前提）"
     assert json.loads(a)["wg"] == "RAN1"
+
+
+def test_write_parsed_preserves_meeting_suffix(tmp_path):
+    shutil.copytree(FIX126, tmp_path / "raw")
+    special = Meeting(wg="RAN1", number=126, suffix="b", url="https://x/TSGR1_126b/")
+    payload = json.loads(write_parsed(parse_meeting(tmp_path / "raw", special, agenda_required=True),
+                                      tmp_path / "out").read_text(encoding="utf-8"))
+    assert payload["meeting"] == 126 and payload["meeting_suffix"] == "b"

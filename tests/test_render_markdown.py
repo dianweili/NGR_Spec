@@ -71,6 +71,12 @@ def test_feature_page_marks_era_on_each_event():
     md = render_feature_page("waveform", [E()], WAVE, FS["waveform"])
     assert "[6G/Rel-20 RAN1#126]" in md
 
+
+def test_special_meeting_suffix_is_shown_and_linked():
+    event = E(id="RAN1-126b-10.2-a001", meeting_suffix="b")
+    md = render_feature_page("waveform", [event], WAVE, FS["waveform"])
+    assert "RAN1#126b" in md and "TSGR1_126b" in md
+
 def test_feature_page_always_shows_english_original():
     md = render_feature_page("waveform", [E(summary_zh=None, llm_status="failed")],
                              WAVE, FS["waveform"])

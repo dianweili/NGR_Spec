@@ -5,6 +5,7 @@ def test_meeting_label():
     m = Meeting(wg="RAN1", number=126, suffix="", url="https://x/")
     assert m.label == "RAN1#126"
     assert Meeting(wg="RAN1", number=126, suffix="b", url="").label == "RAN1#126b"
+    assert Meeting(wg="RAN1", number=126, suffix="b", url="").key == "126b"
 
 def test_event_id_is_stable():
     e = Event(wg="RAN1", meeting=126, agenda_item="10.2", seq=17, kind="agreement",
@@ -26,3 +27,4 @@ def test_lineage_segment_covers_meeting():
 
 def test_paths_raw_dir():
     assert P.raw_dir("RAN1", 126) == P.raw / "RAN1" / "126"
+    assert P.raw_dir("RAN1", 126, "b") == P.raw / "RAN1" / "126b"

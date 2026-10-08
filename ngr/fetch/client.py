@@ -55,15 +55,25 @@ class Http:
             "注意：这不代表文件不存在 —— 3GPP 对限流和缺失都返回 403。")
 
     def head(self, url: str) -> dict:
-        try:
-            r = self.session.head(url, timeout=self._timeout, allow_redirects=True)
-        except requests.RequestException as exc:
-            raise FetchError(f"{url} HEAD 网络错误: {exc}") from exc
-        if r.status_code in RATE_LIMIT_CODES:
-            raise RateLimited(f"{url} HEAD 返回 {r.status_code}")
-        if r.status_code != 200:
-            raise FetchError(f"{url} HEAD 返回 HTTP {r.status_code}")
-        length = r.headers.get("Content-Length")
-        time.sleep(self.cfg.delay_seconds)
-        return {"etag": r.headers.get("ETag"),
-                "length": int(length) if length and length.isdigit() else None}
+        last = None
+        for backoff in [*self.cfg.retry_backoff, None]:
+            try:
+                response = self.session.head(url, timeout=self._timeout, allow_redirects=True)
+            except requests.RequestException as exc:
+                last = exc
+                if backoff is None:
+                    raise FetchError(f"{url} HEAD 网络错误: {exc}") from exc
+                time.sleep(backoff)
+                continue
+            if response.status_code == 200:
+                length = response.headers.get("Content-Length")
+                time.sleep(self.cfg.delay_seconds)
+                return {"etag": response.headers.get("ETag"),
+                        "length": int(length) if length and length.isdigit() else None}
+            if response.status_code not in RATE_LIMIT_CODES:
+                raise FetchError(f"{url} HEAD 返回 HTTP {response.status_code}")
+            last = response.status_code
+            if backoff is not None:
+                log.warning("%s HEAD 返回 %s（按限流处理），退避 %ss", url, last, backoff)
+                time.sleep(backoff)
+        raise RateLimited(f"{url} HEAD 重试耗尽，最后状态 {last}")

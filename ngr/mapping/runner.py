@@ -64,7 +64,7 @@ def _hash(text: str) -> str:
 
 def map_meeting(parsed: dict, features: list[Feature],
                 meeting_end: str | None = None) -> list[Event]:
-    wg, meeting = parsed["wg"], parsed["meeting"]
+    wg, meeting, suffix = parsed["wg"], parsed["meeting"], parsed.get("meeting_suffix", "")
     counters: dict[tuple[str, str], int] = defaultdict(int)
     out: list[Event] = []
 
@@ -81,7 +81,7 @@ def map_meeting(parsed: dict, features: list[Feature],
         out.append(Event(
             wg=wg, meeting=meeting, agenda_item=key,
             seq=counters[(key, raw["kind"])], kind=raw["kind"],
-            text_en=raw["text_en"], agenda_title=raw.get("agenda_title", ""),
+            text_en=raw["text_en"], agenda_title=raw.get("agenda_title", ""), meeting_suffix=suffix,
             meeting_end=meeting_end,
             era=m.segment.era, release=m.segment.release, depth=m.segment.depth,
             feature=m.feature_slug,
@@ -105,8 +105,8 @@ class MergeStats:
     两侧的 id 会整体错位（实测开头插一条后 incoming 与 state **0/4 对得上**），
     join 的结果会安到另一条事件头上，还不报错。
     要"每特性新增数"请直接用 `added_by_feature`，不要自己 join。"""
-    added_by_feature: dict[tuple[str, int], dict[str, int]] = field(default_factory=dict)
-    """`(wg, meeting) -> {特性 slug: 本次新增条数}`，在 merge 内部按权威 id 算好。
+    added_by_feature: dict[tuple[str, int, str], dict[str, int]] = field(default_factory=dict)
+    """`(wg, meeting, suffix) -> {特性 slug: 本次新增条数}`，在 merge 内部按权威 id 算好。
 
     存在的理由就是取消调用方的 join：契约只写在 docstring 里约束不住人 ——
     本项目已经证明过两次（`scope_of()` 有警告仍被自己的测试绕过 6 次；
@@ -125,7 +125,7 @@ class MergeStats:
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
 
 def merge_events(existing: list[dict], incoming: list[Event], today: str,
-                 *, scope: set[tuple[str, int]]) -> tuple[list[dict], MergeStats]:
+                 *, scope: set[tuple]) -> tuple[list[dict], MergeStats]:
     """把本次归集的事件并入历史 state。
 
     **认亲分两轮：先按正文哈希，再按 id 兜底；认到之后沿用历史的 seq。**
@@ -146,12 +146,12 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     by_id = {e["id"]: dict(e) for e in existing}
     stats = MergeStats()
 
-    def gkey(wg, meeting, agenda_item, kind):
-        return (wg, meeting, agenda_item, kind)
+    def gkey(wg, meeting, suffix, agenda_item, kind):
+        return (wg, meeting, suffix or "", agenda_item, kind)
 
     pool: dict[tuple, list[dict]] = defaultdict(list)
     for e in existing:
-        pool[gkey(e.get("wg"), e.get("meeting"),
+        pool[gkey(e.get("wg"), e.get("meeting"), e.get("meeting_suffix", ""),
                   e.get("agenda_item"), e.get("kind"))].append(e)
 
     taken: set[int] = set()          # 已被认走的历史记录（按对象身份去重）
@@ -159,7 +159,7 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
 
     # 第一轮：正文哈希。纯插入/删除全靠这一轮认对。
     for ev in incoming:
-        g = pool.get(gkey(ev.wg, ev.meeting, ev.agenda_item, ev.kind), ())
+        g = pool.get(gkey(ev.wg, ev.meeting, ev.meeting_suffix, ev.agenda_item, ev.kind), ())
         hit = next((o for o in g if id(o) not in taken and o.get("content_hash")
                     and o["content_hash"] == ev.content_hash), None)
         if hit is not None:
@@ -171,7 +171,7 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
         ev, hit = pair
         if hit is not None:
             continue
-        g = pool.get(gkey(ev.wg, ev.meeting, ev.agenda_item, ev.kind), ())
+        g = pool.get(gkey(ev.wg, ev.meeting, ev.meeting_suffix, ev.agenda_item, ev.kind), ())
         hit = next((o for o in g if id(o) not in taken and o["id"] == ev.id), None)
         if hit is not None:
             taken.add(id(hit))
@@ -214,7 +214,7 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
             by_id[ev.id] = new
             stats.added += 1
             stats.added_ids.append(ev.id)
-            per = stats.added_by_feature.setdefault((ev.wg, ev.meeting), {})
+            per = stats.added_by_feature.setdefault((ev.wg, ev.meeting, ev.meeting_suffix), {})
             per[ev.feature] = per.get(ev.feature, 0) + 1
             continue
 
@@ -242,7 +242,10 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     # 有 6 处图省事用了它 —— 一个"看起来官方、有文档警告但无强制力"的旁路，
     # 等于把盲区从签名默认值搬到了函数名上。让反推每次都得手写，风险才在每个调用点可见。
     for e in existing:
-        if (e.get("wg"), e.get("meeting")) in scope and id(e) not in taken:
+        key = (e.get("wg"), e.get("meeting"), e.get("meeting_suffix", ""))
+        # Two-part scope is retained for callers inspecting historical state.
+        # Pipeline callers always pass the three-part identity.
+        if (key in scope or key[:2] in scope) and id(e) not in taken:
             stats.stale_ids.append(e["id"])
     if stats.stale_ids:
         log.warning("state 里有 %d 条事件在本次解析中不再出现（保留不删，仅报告）: %s",

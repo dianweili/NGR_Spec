@@ -10,7 +10,11 @@ def _ordered(events: list[dict]) -> list[dict]:
     上游重构等一堆我们控制不了的东西 —— 不在这里排序，同样的输入两次跑出来的
     HTML 字节就会不一样，纯粹因为上游列表顺序抖动，制造无意义的 diff。
     """
-    return sorted(events, key=lambda e: (-e["meeting"], e["id"]))
+    def key(event: dict) -> tuple:
+        suffix = str(event.get("meeting_suffix") or "")
+        return (-event["meeting"], 0 if suffix else 1,
+                tuple(-ord(char) for char in suffix), event["id"])
+    return sorted(events, key=key)
 
 
 def _payload(events: list[dict], features: list[Feature], feat_state: dict,
@@ -107,8 +111,9 @@ function render() {{
   }}).join('');
 
   const shown = DATA.events.filter(e => !filterFeature || e.feature === filterFeature);
-  const items = shown.sort((a, b) => b.meeting - a.meeting).map(e =>
-    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{esc(e.meeting)}}]
+  const items = shown.sort((a, b) => b.meeting - a.meeting ||
+      String(b.meeting_suffix || '').localeCompare(String(a.meeting_suffix || ''))).map(e =>
+    `<details><summary>[${{esc(e.era)}} ${{esc(e.wg)}}#${{esc(e.meeting)}}${{esc(e.meeting_suffix || '')}}]
        ${{esc(e.agenda_item)}} — ${{esc(e.summary_zh || cut(e.text_en, 90))}}</summary>
      <pre>${{esc(e.text_en)}}</pre></details>`).join('');
 

@@ -21,6 +21,7 @@ class ParseError(Exception):
 class ParsedMeeting:
     wg: str
     meeting: int
+    meeting_suffix: str = ""
     events: list[dict] = field(default_factory=list)
     unaligned: list[str] = field(default_factory=list)
     unmatched_ratio: float = 0.0
@@ -95,18 +96,19 @@ def parse_meeting(raw_dir: Path, meeting: Meeting, *,
         })
 
     return ParsedMeeting(
-        wg=meeting.wg, meeting=meeting.number, events=events, warnings=warnings,
+        wg=meeting.wg, meeting=meeting.number, meeting_suffix=meeting.suffix,
+        events=events, warnings=warnings,
         unaligned=[h.text for h in (alignment.unaligned if alignment else [])],
         unmatched_ratio=alignment.unmatched_ratio if alignment else 0.0,
         minutes_version=read_minutes_version(raw_dir),
     )
 
 def write_parsed(parsed: ParsedMeeting, out_dir: Path | None = None) -> Path:
-    out_dir = Path(out_dir) if out_dir else P.parsed_dir(parsed.wg, parsed.meeting)
+    out_dir = Path(out_dir) if out_dir else P.parsed_dir(parsed.wg, parsed.meeting, parsed.meeting_suffix)
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / "events.json"
     payload = {
-        "wg": parsed.wg, "meeting": parsed.meeting,
+        "wg": parsed.wg, "meeting": parsed.meeting, "meeting_suffix": parsed.meeting_suffix,
         "minutes_version": parsed.minutes_version,
         "unmatched_ratio": round(parsed.unmatched_ratio, 4),
         "unaligned": parsed.unaligned,

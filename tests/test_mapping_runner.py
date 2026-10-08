@@ -318,7 +318,18 @@ def test_added_ids_are_state_side_not_incoming():
 
     # 权威结果：新增的是 NEW，且统计由 merge 算好
     assert [e["text_en"] for e in merged if e["id"] in set(stats.added_ids)] == ["NEW"]
-    assert stats.added_by_feature == {("RAN1", 126): {"waveform": 1}}
+    assert stats.added_by_feature == {("RAN1", 126, ""): {"waveform": 1}}
+
+
+def test_special_meeting_suffix_has_its_own_event_identity_and_merge_scope():
+    normal = parsed([ev(text="normal")])
+    special = {**parsed([ev(text="special")]), "meeting_suffix": "b"}
+    state, _ = merge_events([], map_meeting(normal, FEATS), "2026-09-18",
+                            scope={("RAN1", 126, "")})
+    merged, stats = merge_events(state, map_meeting(special, FEATS), "2026-09-19",
+                                 scope={("RAN1", 126, "b")})
+    assert {item["id"] for item in merged} == {"RAN1-126-10.2-a001", "RAN1-126b-10.2-a001"}
+    assert stats.stale_ids == []
 
 
 def test_history_without_seq_field_is_not_overwritten():
