@@ -1,66 +1,69 @@
+import subprocess
+
 import pytest
 
-from ngr.extract.backend import LlmError, LlmRateLimited, OpenAIResponses
+from ngr.extract.backend import CodexExec, LlmError, LlmRateLimited
 
 
-class FakeResponse:
-    def __init__(self, text='{"ok":true}', usage=None):
-        self.output_text = text
-        self.usage = usage or {"input_tokens": 2, "output_tokens": 8}
+def fake_run(stdout="", returncode=0, stderr="", response='{"results":[]}'):
+    def _run(cmd, **kwargs):
+        _run.cmd, _run.input = cmd, kwargs.get("input")
+        output_path = cmd[cmd.index("--output-last-message") + 1]
+        if returncode == 0:
+            with open(output_path, "w", encoding="utf-8") as output:
+                output.write(response)
+        return subprocess.CompletedProcess(cmd, returncode, stdout, stderr)
+    return _run
 
 
-class FakeResponses:
-    def __init__(self, answer):
-        self.answer, self.calls = answer, []
-
-    def create(self, **kwargs):
-        self.calls.append(kwargs)
-        if isinstance(self.answer, Exception):
-            raise self.answer
-        return self.answer
+def test_call_passes_prompt_via_stdin(monkeypatch):
+    run = fake_run()
+    monkeypatch.setattr(subprocess, "run", run)
+    CodexExec("gpt-6-astra", "low").call("PROMPT")
+    assert "PROMPT" in run.input
+    assert "PROMPT" not in run.cmd
 
 
-class FakeClient:
-    def __init__(self, answer):
-        self.responses = FakeResponses(answer)
+def test_call_uses_safe_required_flags(monkeypatch):
+    run = fake_run()
+    monkeypatch.setattr(subprocess, "run", run)
+    CodexExec("gpt-6-astra", "low").call("x")
+    command = run.cmd
+    assert command[:2] == ["codex", "exec"]
+    for flag in ["--ephemeral", "--sandbox", "read-only", "--output-schema", "--output-last-message"]:
+        assert flag in command
 
 
-def test_call_uses_responses_api_with_prompt_input():
-    client = FakeClient(FakeResponse())
-    OpenAIResponses("gpt-6-astra", "low", client=client).call("PROMPT")
-    assert client.responses.calls[0]["input"] == "PROMPT"
+def test_call_sets_model_and_effort(monkeypatch):
+    run = fake_run()
+    monkeypatch.setattr(subprocess, "run", run)
+    CodexExec("gpt-6-astra", "low").call("x")
+    assert run.cmd[run.cmd.index("--model") + 1] == "gpt-6-astra"
+    assert 'model_reasoning_effort="low"' in run.cmd
 
 
-def test_call_uses_model_and_reasoning_effort():
-    client = FakeClient(FakeResponse())
-    OpenAIResponses("gpt-6-astra", "low", client=client).call("x")
-    assert client.responses.calls[0]["model"] == "gpt-6-astra"
-    assert client.responses.calls[0]["reasoning"] == {"effort": "low"}
+def test_call_returns_output_file_text(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", fake_run(response='{"results":[]}'))
+    result = CodexExec("gpt-6-astra", "low").call("x")
+    assert result.text == '{"results":[]}'
+    assert result.usage == {} and result.cost_usd == 0.0
 
 
-def test_missing_api_key_raises(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    with pytest.raises(LlmError, match="OPENAI_API_KEY"):
-        OpenAIResponses("gpt-6-astra", "low").call("x")
-
-
-def test_call_returns_text_and_usage():
-    client = FakeClient(FakeResponse(usage={"input_tokens": 2, "output_tokens": 8}))
-    result = OpenAIResponses("gpt-6-astra", "low", client=client).call("x")
-    assert result.text == '{"ok":true}'
-    assert result.cost_usd == 0.0
-    assert result.usage["output_tokens"] == 8
-
-
-def test_api_error_raises():
-    client = FakeClient(RuntimeError("boom"))
+def test_nonzero_exit_raises(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", fake_run(returncode=1, stderr="boom"))
     with pytest.raises(LlmError, match="boom"):
-        OpenAIResponses("gpt-6-astra", "low", client=client).call("x")
+        CodexExec("gpt-6-astra", "low").call("x")
 
 
-def test_rate_limit_raises_ratelimited():
-    error = RuntimeError("limit")
-    error.status_code = 429
-    client = FakeClient(error)
+def test_rate_limit_message_raises_ratelimited(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", fake_run(returncode=1, stderr="usage limit reached"))
     with pytest.raises(LlmRateLimited):
-        OpenAIResponses("gpt-6-astra", "low", client=client).call("x")
+        CodexExec("gpt-6-astra", "low").call("x")
+
+
+def test_timeout_raises_llm_error(monkeypatch):
+    def timeout(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd, 600)
+    monkeypatch.setattr(subprocess, "run", timeout)
+    with pytest.raises(LlmError, match="超时"):
+        CodexExec("gpt-6-astra", "low").call("x")

@@ -1,1 +1,1 @@
-"""通过 OpenAI Responses API 生成协议摘要与综述。"""
+"""通过 Codex CLI（ChatGPT 登录态）生成协议摘要与综述。"""

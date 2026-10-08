@@ -1,15 +1,44 @@
 from __future__ import annotations
 
-import os
+import json
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
+
+
+TIMEOUT_SECONDS = 900
+RATE_LIMIT_HINTS = ("usage limit", "rate limit", "too many requests", "429")
+
+SUMMARY_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "summary_zh": {"type": "string"},
+                    "tags": {"type": "array", "items": {"type": "string"}},
+                    "impact": {"type": "string", "enum": ["high", "medium", "low"]},
+                },
+                "required": ["id", "summary_zh", "tags", "impact"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["results"],
+    "additionalProperties": False,
+}
 
 
 class LlmError(Exception):
-    """OpenAI Responses API 调用失败。"""
+    """Codex CLI 调用失败。"""
 
 
 class LlmRateLimited(LlmError):
-    """OpenAI API 配额或请求速率受限。"""
+    """ChatGPT/Codex 用量或请求速率受限。"""
 
 
 @dataclass
@@ -19,54 +48,53 @@ class CliResult:
     cost_usd: float = 0.0
 
 
-class OpenAIResponses:
-    """通过 OpenAI Responses API 调用 ChatGPT 模型。
+class CodexExec:
+    """通过 ``codex exec`` 调用当前 ChatGPT 登录态。
 
-    API 凭据仅从 ``OPENAI_API_KEY`` 读取；ChatGPT 网页订阅不被写入文件，
-    也不被当作本地脚本的凭据。client 参数仅用于测试注入。
+    Prompt 经 stdin 输入，最终消息由 ``--output-last-message`` 单独落盘；
+    ``--output-schema`` 约束模型输出，任务层仍会二次校验。模型仅获 read-only
+    sandbox，摘要任务不得读写项目文件或执行命令。
     """
 
-    def __init__(self, model: str, effort: str, *, client=None):
+    def __init__(self, model: str, effort: str):
         self.model = model
         self.effort = effort
-        self._client = client
 
-    def _get_client(self):
-        if self._client is not None:
-            return self._client
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise LlmError("未设置 OPENAI_API_KEY，无法调用 OpenAI Responses API")
-        try:
-            from openai import OpenAI
-        except ImportError as exc:
-            raise LlmError("未安装 openai SDK；请安装项目依赖后重试") from exc
-        self._client = OpenAI()
-        return self._client
+    def _cmd(self, schema: Path, output: Path) -> list[str]:
+        return [
+            "codex", "exec", "--ephemeral", "--sandbox", "read-only",
+            "--color", "never", "--model", self.model,
+            "--config", f'model_reasoning_effort="{self.effort}"',
+            "--output-schema", str(schema), "--output-last-message", str(output), "-",
+        ]
 
     def call(self, prompt: str) -> CliResult:
-        try:
-            response = self._get_client().responses.create(
-                model=self.model,
-                input=prompt,
-                reasoning={"effort": self.effort},
-            )
-        except LlmError:
-            raise
-        except Exception as exc:
-            status = getattr(exc, "status_code", None)
-            if status == 429 or "ratelimit" in type(exc).__name__.lower():
-                raise LlmRateLimited(f"OpenAI API 额度受限: {exc}") from exc
-            raise LlmError(f"OpenAI Responses API 调用失败: {exc}") from exc
+        instructions = (
+            "你是纯文本协议摘要器。不得调用工具、读取或写入文件；"
+            "仅按提供的 JSON schema 返回最终答案。\n\n"
+        ) + prompt
+        with tempfile.TemporaryDirectory(prefix="ngr-codex-") as directory:
+            temp_dir = Path(directory)
+            schema_path = temp_dir / "summary-schema.json"
+            output_path = temp_dir / "response.json"
+            schema_path.write_text(json.dumps(SUMMARY_SCHEMA, ensure_ascii=False), encoding="utf-8")
+            try:
+                proc = subprocess.run(
+                    self._cmd(schema_path, output_path), input=instructions,
+                    capture_output=True, text=True, encoding="utf-8", timeout=TIMEOUT_SECONDS,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise LlmError(f"codex exec 超时（{TIMEOUT_SECONDS}s）") from exc
+            except OSError as exc:
+                raise LlmError(f"无法启动 codex exec: {exc}") from exc
 
-        usage = getattr(response, "usage", None) or {}
-        if hasattr(usage, "model_dump"):
-            usage = usage.model_dump()
-        elif not isinstance(usage, dict):
-            usage = dict(usage)
-
-        return CliResult(
-            text=getattr(response, "output_text", "") or "",
-            usage=usage,
-            # Responses API 不返回逐请求账单金额；用量字段由 Budget 记录。
-            cost_usd=0.0,
-        )
+            if proc.returncode != 0:
+                error = (proc.stderr or proc.stdout or "").strip()
+                if any(hint in error.lower() for hint in RATE_LIMIT_HINTS):
+                    raise LlmRateLimited(f"ChatGPT/Codex 用量受限: {error}")
+                raise LlmError(f"codex exec 退出码 {proc.returncode}: {error}")
+            try:
+                text = output_path.read_text(encoding="utf-8")
+            except OSError as exc:
+                raise LlmError("codex exec 没有生成最终响应文件") from exc
+        return CliResult(text=text)

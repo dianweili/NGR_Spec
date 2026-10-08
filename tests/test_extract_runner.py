@@ -7,7 +7,7 @@ from ngr.extract.cache import LlmCache
 from ngr.extract.runner import extract_all
 
 
-CFG = ExtractConfig(backend="openai", max_calls_per_run=10, batch_size=2,
+CFG = ExtractConfig(backend="codex", max_calls_per_run=10, batch_size=2,
                     model_bulk="gpt-6-astra", model_digest="gpt-6-astra")
 
 

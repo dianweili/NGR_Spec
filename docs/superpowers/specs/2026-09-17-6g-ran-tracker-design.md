@@ -46,10 +46,10 @@
 | 当前进度 | RAN1 至 #127，TSG RAN plenary 至 #114；6G 术语为 **"6GR"** |
 | 议程号 | 纪要标题是 Word **自动编号**，正文取不到议程号 → 必须靠 `agenda.csv` 标题文本对齐 |
 | 纪要版本 | 存在 v010 → v100 演进，高版本出现时须整场重解析 |
-| LLM 后端 | OpenAI Responses API；模型由 `config/sources.yaml` 的 `extract` 段配置 |
-| 认证 | 从环境变量 `OPENAI_API_KEY` 读取；密钥不落盘、不进 Git |
+| LLM 后端 | `codex exec`；模型由 `config/sources.yaml` 的 `extract` 段配置 |
+| 认证 | 复用 Codex CLI 的 ChatGPT 登录态；不在项目中保存 API key |
 
-**用户环境约束**：所有 LLM 调用走 OpenAI Responses API。ChatGPT 网页订阅不是本地程序凭据；实际执行摘要前须配置具备模型访问权限的 `OPENAI_API_KEY`。
+**用户环境约束**：所有 LLM 调用走 `codex exec`，复用当前 ChatGPT/Codex 登录态；不调用 OpenAI API SDK，也不要求 `OPENAI_API_KEY`。
 
 ## 3. 架构：分层增量管线
 
@@ -268,24 +268,21 @@ map 步骤另有一条断言：**某个血统段在其声明的会议区间内�
 
 ## 6. extract 层（LLM）
 
-**后端唯一为 `openai`**（另加 `none`）。实现使用官方 OpenAI Python SDK 的 Responses API。
+**后端唯一为 `codex`**（另加 `none`）。实现通过本机的 `codex exec` 进行非交互调用。
 
 ### 6.1 调用方式
 
 ```python
-from openai import OpenAI
-
-client = OpenAI()     # 从 OPENAI_API_KEY 读取认证
-response = client.responses.create(
-    model="gpt-6-astra",              # 实际值来自 sources.yaml
-    input=prompt,
-    reasoning={"effort": "low"},
-)
-text = response.output_text
+codex exec --ephemeral --sandbox read-only --color never \
+  --model gpt-6-astra \
+  --config 'model_reasoning_effort="low"' \
+  --output-schema summary-schema.json \
+  --output-last-message response.json -
 ```
 
-- API key 仅由运行环境提供，绝不写进配置、提示词、日志或 state。
-- 摘要调用不附带工具；调用结果经 JSON schema 校验后才可写入 state。
+- prompt 经 stdin 输入，避免 Windows 命令行长度限制。
+- CLI 使用当前 ChatGPT 登录态；`--ephemeral` 不保留会话，`read-only` sandbox 禁止模型改动项目。
+- `--output-schema` 约束最终消息为 JSON；调用结果仍经应用层 schema 校验后才可写入 state。
 
 ### 6.2 四项任务
 
@@ -318,7 +315,7 @@ text = response.output_text
 
 ### 6.4 用量预算
 
-实际成本以 OpenAI Platform 账单和请求返回的 token usage 为准；不得沿用此前其他后端的价格估算。`max_calls_per_run` 是安全上限，不是费用估算。
+实际用量受 ChatGPT/Codex 方案的限额约束；`max_calls_per_run` 是安全上限，不是费用估算。
 
 回填分两部分。**6GR 段**（约 1000 条 `full` 事件 / 8 次会议 / 15 个特性）：
 
@@ -400,7 +397,7 @@ RAN1#127: +23 agreements (waveform +9, coding +7, ISAC +5, 未归类 +2)
 | **`ngr lineage-report`** | 打印血统命中对照表：每段命中哪些 heading、各多少条事件、哪些段命中为 0。5G-A 正则校准的主要工具 |
 | `ngr fetch-docs --wg RAN1 --meeting 127 --agenda 10.2` | 按需深挖 |
 | `ngr enrich` | 只补跑 extract |
-| `ngr doctor` | 自检：OpenAI API key 与 SDK、3GPP 可达性、配置合法性、git 状态 |
+| `ngr doctor` | 自检：Codex CLI 登录态与可执行文件、3GPP 可达性、配置合法性、git 状态 |
 
 `remap` + `lineage-report` 这一对是 5G-A 血统段能落地的前提：调正则 → `remap` → `lineage-report` 看命中 → 再调，整个循环不联网、不花额度、秒级完成。
 

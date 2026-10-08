@@ -7,7 +7,7 @@ from ngr.models import Feature, LineageSegment
 from ngr.paths import P
 
 VALID_DEPTHS = {"full", "origin", "milestone"}
-VALID_BACKENDS = {"openai", "none"}
+VALID_BACKENDS = {"codex", "none"}
 
 class ConfigError(Exception):
     pass
