@@ -60,27 +60,31 @@ class CodexExec:
         self.model = model
         self.effort = effort
 
-    def _cmd(self, schema: Path, output: Path) -> list[str]:
-        return [
+    def _cmd(self, output: Path, schema: Path | None = None) -> list[str]:
+        command = [
             "codex", "exec", "--ephemeral", "--sandbox", "read-only",
             "--color", "never", "--model", self.model,
             "--config", f'model_reasoning_effort="{self.effort}"',
-            "--output-schema", str(schema), "--output-last-message", str(output), "-",
+            "--output-last-message", str(output),
         ]
+        if schema is not None:
+            command.extend(("--output-schema", str(schema)))
+        return [*command, "-"]
 
-    def call(self, prompt: str) -> CliResult:
-        instructions = (
-            "你是纯文本协议摘要器。不得调用工具、读取或写入文件；"
-            "仅按提供的 JSON schema 返回最终答案。\n\n"
-        ) + prompt
+    def call(self, prompt: str, *, output_schema: dict | None = None) -> CliResult:
+        instructions = "你是纯文本协议摘要器。不得调用工具、读取或写入文件；"
+        instructions += ("仅按提供的 JSON schema 返回最终答案。\n\n" if output_schema is not None
+                         else "仅返回最终答案，不要附加解释。\n\n")
+        instructions += prompt
         with tempfile.TemporaryDirectory(prefix="ngr-codex-") as directory:
             temp_dir = Path(directory)
-            schema_path = temp_dir / "summary-schema.json"
+            schema_path = temp_dir / "output-schema.json"
             output_path = temp_dir / "response.json"
-            schema_path.write_text(json.dumps(SUMMARY_SCHEMA, ensure_ascii=False), encoding="utf-8")
+            if output_schema is not None:
+                schema_path.write_text(json.dumps(output_schema, ensure_ascii=False), encoding="utf-8")
             try:
                 proc = subprocess.run(
-                    self._cmd(schema_path, output_path), input=instructions,
+                    self._cmd(output_path, schema_path if output_schema is not None else None), input=instructions,
                     capture_output=True, text=True, encoding="utf-8", timeout=TIMEOUT_SECONDS,
                 )
             except subprocess.TimeoutExpired as exc:

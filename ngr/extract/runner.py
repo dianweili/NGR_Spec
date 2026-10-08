@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 
 from ngr.config import ExtractConfig
-from ngr.extract.backend import LlmError, LlmRateLimited
+from ngr.extract.backend import LlmError, LlmRateLimited, SUMMARY_SCHEMA
 from ngr.extract.budget import BudgetExhausted
 from ngr.extract.cache import cache_key
 from ngr.extract.tasks import (
@@ -81,7 +81,8 @@ def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, b
         for attempt in (1, 2):
             try:
                 response = cli.call(
-                    prompt if attempt == 1 else prompt + "\n\n上一次回复不是合法 JSON，请只输出 JSON。"
+                    prompt if attempt == 1 else prompt + "\n\n上一次回复不是合法 JSON，请只输出 JSON。",
+                    output_schema=SUMMARY_SCHEMA,
                 )
                 budget.spend(response, task="summary")
                 result = parse_summary_response(response.text, ids)

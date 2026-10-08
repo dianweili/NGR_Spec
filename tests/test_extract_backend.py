@@ -19,7 +19,7 @@ def fake_run(stdout="", returncode=0, stderr="", response='{"results":[]}'):
 def test_call_passes_prompt_via_stdin(monkeypatch):
     run = fake_run()
     monkeypatch.setattr(subprocess, "run", run)
-    CodexExec("gpt-6-astra", "low").call("PROMPT")
+    CodexExec("gpt-6-astra", "low").call("PROMPT", output_schema={"type": "object"})
     assert "PROMPT" in run.input
     assert "PROMPT" not in run.cmd
 
@@ -27,7 +27,7 @@ def test_call_passes_prompt_via_stdin(monkeypatch):
 def test_call_uses_safe_required_flags(monkeypatch):
     run = fake_run()
     monkeypatch.setattr(subprocess, "run", run)
-    CodexExec("gpt-6-astra", "low").call("x")
+    CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
     command = run.cmd
     assert command[:2] == ["codex", "exec"]
     for flag in ["--ephemeral", "--sandbox", "read-only", "--output-schema", "--output-last-message"]:
@@ -37,14 +37,14 @@ def test_call_uses_safe_required_flags(monkeypatch):
 def test_call_sets_model_and_effort(monkeypatch):
     run = fake_run()
     monkeypatch.setattr(subprocess, "run", run)
-    CodexExec("gpt-6-astra", "low").call("x")
+    CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
     assert run.cmd[run.cmd.index("--model") + 1] == "gpt-6-astra"
     assert 'model_reasoning_effort="low"' in run.cmd
 
 
 def test_call_returns_output_file_text(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run(response='{"results":[]}'))
-    result = CodexExec("gpt-6-astra", "low").call("x")
+    result = CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
     assert result.text == '{"results":[]}'
     assert result.usage == {} and result.cost_usd == 0.0
 
@@ -52,13 +52,13 @@ def test_call_returns_output_file_text(monkeypatch):
 def test_nonzero_exit_raises(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run(returncode=1, stderr="boom"))
     with pytest.raises(LlmError, match="boom"):
-        CodexExec("gpt-6-astra", "low").call("x")
+        CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
 
 
 def test_rate_limit_message_raises_ratelimited(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run(returncode=1, stderr="usage limit reached"))
     with pytest.raises(LlmRateLimited):
-        CodexExec("gpt-6-astra", "low").call("x")
+        CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
 
 
 def test_timeout_raises_llm_error(monkeypatch):
@@ -66,4 +66,4 @@ def test_timeout_raises_llm_error(monkeypatch):
         raise subprocess.TimeoutExpired(cmd, 600)
     monkeypatch.setattr(subprocess, "run", timeout)
     with pytest.raises(LlmError, match="超时"):
-        CodexExec("gpt-6-astra", "low").call("x")
+        CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})

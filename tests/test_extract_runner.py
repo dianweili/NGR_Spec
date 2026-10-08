@@ -21,7 +21,7 @@ class FakeCli:
     def __init__(self, replies):
         self.replies, self.calls = list(replies), []
 
-    def call(self, prompt):
+    def call(self, prompt, *, output_schema=None):
         self.calls.append(prompt)
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
