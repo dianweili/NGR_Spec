@@ -4,10 +4,10 @@
 
 | 特性 | 阶段 | 血统 | 累计 Agr. (6G/5G-A) | 本期新增 | 最近活动 | 未决 |
 |---|---|---|---|---|---|---|
-| [ISAC 通感一体](features/isac.md) | — | 5G-A→6G | 35 / 19 | **+28** | RAN1#126 | 0 |
-| [AI/ML 空口](features/ai_air_interface.md) | — | 5G-A→6G | 0 / 51 | **+28** | RAN1#126 | 0 |
-| [6GR 波形与帧结构](features/waveform.md) | — | 6G 原生 | 13 / 0 | **+4** | RAN1#126 | 0 |
-| [6GR 信道编码与调制](features/channel_coding.md) | — | 6G 原生 | 24 / 0 | **+11** | RAN1#126 | 0 |
+| [ISAC 通感一体](features/isac.md) | — | 5G-A→6G | 35 / 213 | **+28** | RAN1#126 | 0 |
+| [AI/ML 空口](features/ai_air_interface.md) | — | 5G-A→6G | 0 / 525 | **+28** | RAN1#126 | 0 |
+| [6GR 波形与帧结构](features/waveform.md) | — | 6G 原生 | 28 / 0 | **+4** | RAN1#126 | 0 |
+| [6GR 信道编码与调制](features/channel_coding.md) | — | 6G 原生 | 34 / 0 | **+11** | RAN1#126 | 0 |
 | [6GR 空口评估假设](features/evaluation_assumptions.md) | — | 6G 原生 | 11 / 0 | **+0** | RAN1#124 | 0 |
 | [6GR 能效](features/energy_efficiency.md) | — | 6G 原生 | 38 / 0 | **+10** | RAN1#126 | 0 |
 | [6GR 多天线系统](features/multi_antenna.md) | — | 6G 原生 | 315 / 0 | **+146** | RAN1#126 | 0 |

@@ -324,3 +324,283 @@ R1-2601696	Feature Lead summary #5 on 6G waveform	Moderator (Nokia)
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.2.1-c004`
 
+### [6G/Rel-20 RAN1#123] `agreement` frame-structure-ecea07cd Frame structure
+
+```text
+RAN1 assumes maximum channel bandwidth 800MHz or 400MHz at network side for FR2-1.
+800MHz or 400MHz, to be down-selected in the future
+FFS: 800MHz or 400MHz at UE side.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-frame-structure-ecea07cd-a001`
+
+### [6G/Rel-20 RAN1#123] `agreement` frame-structure-ecea07cd Frame structure
+
+```text
+For how to enable UE to support 400MHz bandwidth when a network supports 400 MHz Channel Bandwidth (CBW), the following options 1/2/3/4/5 are considered from RAN1 understanding for studying
+Option 5: Variance of Option 3 by assuming single FFT and 2 RF chain.
+FFS which aspects of the BB processor in option 3 and 4 should be separated/parallelled.
+Note: DL and UL design options may be considered independently.
+To provide potential specification impact of each option.
+To provide investigations on performance/energy efficiency/cost/complexity for the above options.
+Inform RAN4 about the above information.
+R1-2509577	Draft LS on 400MHz maximum bandwidth around 7GHz	CMCC
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-frame-structure-ecea07cd-a002`
+
+### [6G/Rel-20 RAN1#123] `agreement` frame-structure-ecea07cd Frame structure
+
+```text
+Draft LS R1-2509577 is endorsed in principle. Final LS is approved in R1-2509578.
+R1-2509625	FL summary for Frame Structure (Final)	Moderator (CMCC)
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-frame-structure-ecea07cd-a003`
+
+### [6G/Rel-20 RAN1#123] `conclusion` frame-structure-ecea07cd Frame structure
+
+```text
+Extended CP will not be further studied for TN communication.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-frame-structure-ecea07cd-c001`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+Add the following metrics for UL PAPR reduction to the existing agreement (made in RAN1#122b)
+Net gain@10% BLER assuming similar spectral efficiency and same occupied bandwidth for each compared method
+ACLR, EVM, IBE
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a001`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+General evaluation assumptions for UL low-PAPR proposals
+|  | 3GPP 6GR |
+| --- | --- |
+| Carrier frequency and scenario | 4GHz |
+| Channel BW | At least 100MHz for Urban (4GHz) |
+| Occupied BW | To be discussed with detailed simulation assumptions |
+| SCS | 30 kHz for 4GHz |
+| Channel model | TDL-C 300ns for 4GHz |
+| UE speed | 3km/h |
+| Number of Tx antennas for TDL channel | 1 |
+| Number of Rx antennas for TDL channel | 1 and 4 for 4GHz |
+| Number of DMRS symbols/slot (location as defined in NR) | 2 |
+| Number of PUSCH data symbols/slot | 12 |
+| HARQ configuration | No retransmissions |
+| Frequency hopping | Disabled |
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a002`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+For single user evaluation assumption for MCS and subcarriers UL low-PAPR proposals with spectrum extension
+| No Spectrum Extension | With Spectrum Extension |  |  |  |
+| --- | --- | --- | --- | --- |
+| MCS | #subcarriers | #SCs before extension ) | Occupied BW: #SCs after extension () | Spectrum extension Extension: |
+| NR MCS |  |  |  |  |
+For single user evaluation assumption for MCS and subcarriers UL low-PAPR proposals with spectrum truncation
+| No Spectrum Truncation | With Spectrum Truncation |  |  |  |
+| --- | --- | --- | --- | --- |
+| MCS | #subcarriers | #SCs before truncation ) | Occupied BW: #SCs after truncation () | Spectrum truncation factor Truncation: |
+| NR MCS |  |  | 𝐵 |  |
+Note: other values for extension or truncation are not precluded.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a003`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+For both CP-OFDM and DFT-S-OFDM, for single user evaluation assumption for MCS and subcarriers UL low-PAPR proposals with tone reservation.
+| MCS | Occupied BW: #subcarriers | #reserved tones (inband/sideband) | Ratio of reserve |
+| --- | --- | --- | --- |
+| NR MCS |  |  | A/𝐵 |
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a004`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+Table is endorsed to characterize each proposal as a potential RAN1 observation.
+Characterization of each waveform proposal
+|  | Description |
+| --- | --- |
+| Name of the proposal |  |
+| Motivation of the proposal | E.g. TN, NTN, ISAC, etc… |
+| Applicable link direction | DL/UL/both |
+| Enhancement to CP-OFDM? | No/Yes |
+| Enhancement to DFT-s-OFDM? | No/Yes |
+| Additional OFDM-compatible waveform? | No/Yes |
+| Target channel(s)/signal(s) | PDCCH/PDSCH/PUCCH/PUSCH/xxx |
+| Target modulation |  |
+| Motivation / use case | Improved spectral efficiency, … |
+| Key Metric / KPI | Spectral efficiency, … |
+| Key spec impact foreseen |  |
+| MRSS compatibility | Please explain |
+| Multiplexing/coexistence with other waveforms | Please explain |
+| Multi-user multiplexing | Please explain |
+| MIMO compatibility | Please explain |
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a005`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+For UL PAPR reduction, values for occupied BW B:
+{2, 4, 8, 16, 24, 30, 32, 64, 128, 240, 256} PRBs.
+Other PRB allocations are not precluded.
+Edge, outer and inner PRB allocations as defined in TS 38.101 should be considered.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a006`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+Performance benefit to be evaluated using both link level and system level simulation.
+FFS: metrics
+Link level configuration for multi-layer UL waveforms study.
+| Parameters | Values |
+| --- | --- |
+| Carrier frequency​​ | 4 GHz |
+| Subcarrier spacing​​ | 30 kHz​​ |
+| UE antenna ports | 2, 4 |
+| BS antenna ports | 64, port reduction is not precluded |
+| FDRA | 4, 8, 16, 32, 64​​ |
+| Waveform​​s | CP-OFDM DFT-s-OFDM​​ |
+| MCS/modulation​​ | NR UL MCS table with 256 QAM |
+| Number of layers​ | 2 layers​​, 4 layers |
+| Channel model​​ | CDL-A30​​, TDL-C300, CDL-C300, |
+| UE speed​​ | 3km/h​​, 30 km/h |
+| Channel est.​​ | Practical​ |
+| SRS periodicity | To be reported by the company |
+| Receiver | LMMSE |
+| HARQ retransmission​ | Disabled |
+| DMRS configuration | Configuration type 1 2 DMRS symbols per slot |
+| Number of PUSCH data | 12 symbols |
+| Waveform and MIMO configuration | 5G codebook, to be reported by the company |
+| BLER target | 10% |
+| Frequency hopping | Disabled |
+| Power class and power mode | Option 1: PC2, total power limited to 26 dBm. MaxRank 2: Each PA is limited to 23 dBm MaxRank 4: Each PA is limited to 20 dBm Option2: PC3, total power limited to 23 dBm. MaxRank 2: Each PA is limited to 20 dBm MaxRank 4: Each PA is limited to 17 dBm |
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a007`
+
+### [6G/Rel-20 RAN1#123] `agreement` waveform-6eae1e79 Waveform
+
+```text
+Table: System level configuration for multi-layer UL CP-OFDM/DFT-s-OFDM study:
+| Parameters | Values |
+| --- | --- |
+| System configuration | UMa, 21 cells, 10, 30 or 50 UEs/cell Detailed parameters not listed in this table according to UMa as defined in AI 11.2 |
+| Traffic model | FTP model 3, 0.5 Mbyte packet sizes Network load up to companies to report Full buffer (optional, for calibration) |
+| Carrier frequency | 4 GHz |
+| Channel bandwidth/Subcarrier spacing | At least 100 MHz, 30KHz |
+| Frame structure | TDD (DDDSU), S-slot D:G:U as 10:2:2 |
+| UE antenna ports | Same as link level |
+| BS antenna ports | Outdoor Combination 2 for UMa as agreed in 11.2 |
+| UE antenna model | The UE handheld model as agreed in AI 11.2, companies to report the used model. |
+| ISD | 500 m |
+| Maximum Number of layers (maxRank) per UE | Adaptive rank, maxRank 2 or 4 SU-MIMO |
+| Receiver | Same as link level, port reduction mapping to be reported |
+| Waveform and MIMO configuration | Same as link level |
+| Power class and power mode | Same as link level |
+| UL Maximum power | MPR based Pcmax according to modulation/FDRA/waveform/coherency/etc. Option 1: 38.101-1 section 6.2D definition Option 2: Based on a realistic PA model |
+| UL Power Control Settings | P0 and Alpha to be reported by the company |
+| SRS periodicity | To be reported by the company |
+Table: Link level multi-user evaluation assumption for UL low-PAPR proposals
+| Parameters | Values |
+| --- | --- |
+| User # | 2 users |
+| RB allocation | X RBs per UE, with Y RB overlap. I.e. 2X-Y RBs as the total occupied BW |
+| Per user configuration | As in the single user sim assumptions agreed earlier. |
+| Multi-user overlap RBs | Reported by companies |
+| Baseline scheme | No spectrum extension/truncation. (2X-Y)/2 RB as the occupied BW for each simulated UE. |
+| Per UE MCS | Chosen to align with the spectral efficiency |
+| Receiver type | The receiver type/algorithm to be reported by the proponent |
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-waveform-6eae1e79-a008`
+
+### [6G/Rel-20 RAN1#122] `agreement` frame-structure-ecea07cd Frame structure
+
+```text
+6GR takes the following SCS as start point for discussion for all the signals/channels except PRACH.
+For sub 6GHz
+The following subcarrier spacing is at least supported
+15kHz SCS for FDD, 30kHz SCS for TDD
+FFS: 30kHz SCS for FDD for around e.g., 1-2.5GHz
+FFS: 7.5kHz SCS for sub1GHz (FDD)
+Whether to discuss the FFS will be subject to RANP decision.
+For around 7GHz
+The following subcarrier spacing options can be studied
+30kHz, 60kHz
+FFS: For around 15GHz
+The following subcarrier spacing options can be studied
+30kHz, 60kHz, 120kHz
+Whether to discuss it will be subject to RANP decision
+For between 24.25GHz - 52.6GHz
+Subcarrier spacing 120kHz is supported
+FFS whether to allow using additional subcarrier spacing for SSB
+FFS subcarrier spacing for PRACH and up to initial access discussion.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-frame-structure-ecea07cd-a001`
+
+### [6G/Rel-20 RAN1#122] `agreement` frame-structure-ecea07cd Frame structure
+
+```text
+6GR supports normal cyclic prefix, i.e., same as the normal CP defined in NR.
+FFS potential need for other CP.
+Final summary in R1-2506604.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-frame-structure-ecea07cd-a002`
+
+### [6G/Rel-20 RAN1#122] `conclusion` frame-structure-ecea07cd Frame structure
+
+```text
+Numerologies for sensing is up to sensing agenda discussion.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-frame-structure-ecea07cd-c001`
+
+### [6G/Rel-20 RAN1#122] `agreement` waveform-6eae1e79 Waveform
+
+```text
+CP-OFDM and DFT-s-OFDM waveforms as defined in 5G NR are supported as the basis for 6GR for uplink
+Enhancements/modifications on CP-OFDM/DFT-s-OFDM will be studied as potential additions
+Other OFDM based waveforms are not precluded.
+R1-2506595	Feature Lead summary #2 on 6GR waveform	Moderator (Nokia)
+From Friday session
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-waveform-6eae1e79-a001`
+
+### [6G/Rel-20 RAN1#122] `agreement` waveform-6eae1e79 Waveform
+
+```text
+CP-OFDM waveform as defined in 5G NR is supported as the basis for 6GR for downlink
+Enhancements/modifications on CP-OFDM will be studied as potential additions
+DFT-s-OFDM or any other OFDM-based waveform will be studied as a potential additional waveform for downlink
+Note: proponents to identify at least the target use cases, signals/channels to use the waveform, and how the proposal is intended (if applicable) to support multiplexing with CP-OFDM, including MRSS, and how multi-user multiplexing is supported, etc.
+Note:
+Proponents are encouraged to provide more detailed information on their proposals for the next meeting, e.g.:
+Proponents to characterize the main motivation for modification/additional waveform proposals:
+Targeted link direction, i.e. DL, UL or both
+Targeted use case (e.g. NTN, specific frequency range, etc.), if any
+Potential motivations metrics used, and quantified gains for a proposal, e.g.
+Coverage
+Network energy efficiency
+UE energy efficiency
+Spectral efficiency
+High speed tolerance
+Scheduling flexibility
+Integration with ISAC
+Proponents provide information on the following aspects, if applicable
+MRSS compatibility
+Target channels/signals, e.g. all channels, PxSCH only, etc.
+MIMO (SU and MU-MIMO) compatibility
+Target modulations, and impact to other modulations, if applicable
+Multi-user multiplexing/scheduling flexibility
+Multiplexing/coexistence with baseline waveforms
+Impact on synchronization and initial access
+Expected specification impact
+Transmitter/receiver complexity and impact to power consumption.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-waveform-6eae1e79-a002`
+

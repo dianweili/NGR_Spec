@@ -630,3 +630,186 @@ R1-2601699	FL summary #6 on modulation, joint channel coding and modulation	Mode
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.2-a006`
 
+### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
+
+```text
+For Polar code design for UCI with payload size larger than NR range (i.e., larger than 1706 bits), at least the following option is identified for further study
+More than 2 segments
+Note: The necessity of UCI payload size larger than NR range needs to be confirmed by other agenda(s)
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a001`
+
+### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
+
+```text
+For the study of LDPC extension for data rate beyond NR range with acceptable performance-complexity tradeoff,
+To provide the initial version of LDPC BG(s) and PCM(s) in the excel spreadsheet by RAN1#124
+To provide the required SNR and complexity for target BLER, and the evaluation assumptions of the decoding algorithm
+The definition of complexity will be further discussed
+FFS: other metrics
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a002`
+
+### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
+
+```text
+For the study of channel coding for small UCI with payload size of 3~11bits, at least considering:
+5G RM code
+Identify the justifiable drawbacks of 5G RM code, if exists, study potential solution(s).
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a003`
+
+### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
+
+```text
+For the study of BG(s) and PCM(s) for LDPC extension for data rate beyond NR range, at least the following evaluation assumptions will be considered.
+| Parameters | Values or assumptions |
+| --- | --- |
+| Channel | AWGN |
+| Modulation and code rate | Uniform QAM modulations and corresponding code rates (i.e., (8,682.5/1024), (8, 797/1024), (8, 885/1024), (8, 948/1024)) in NR MCS Table 5.1.3.1-4 as starting point. Other modulation order, if used, can be reported. |
+| Interleaver | Same as 5G NR. Other interleaver scheme (intra-CB level), if used, can be reported. |
+| Code block size (bits with CRC) | CB size: same as 5G NR (8448 as baseline, other values less than 8448 can be reported). CB size: other value(s) larger than 8448 and no larger than 8448*2, e.g.,16k. Company to report the TBS. |
+| Target CB BLER | BLER=10-2, 10-4 |
+| Decoding algorithm of LDPC | Layered BP or min-sum(offset, normalized or adjusted min-sum) Company to report the details of offset, normalized or adjusted min-sum decoding algorithm, if used. Max number of iteration times: 5:1:20 Other iteration times can be reported. Decoding order: reversed order Other decoding order, if used, can be reported. |
+| Demodulation algorithm | Max-log-map |
+Note: For any comparison among 5G BG and BG(s)/PCM(s) proposed by companies, the BLER performance is compared at least under the same CB size.
+Note: all evaluation assumptions above are for simulation only and have no implication on the final design of BG(s)/PCM(s).
+For candidate comparison, both performance and complexity should be considered.
+The comparison of BLER performance is under the same computation complexity,
+Computation complexity is defined as (the number of iteration times for required BLER) *(the number of ones in the lifted parity check matrix)/ (CB size)
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a004`
+
+### [6G/Rel-20 RAN1#123] `conclusion` channel-coding-0cf828bf Channel coding
+
+```text
+No consensus on motivation(s) for potential extension/enhancement for Polar code design with payload size within NR range (larger than 11bits).
+R1-2509582	FL summary#6 for 6G channel coding	Moderator (ZTE, Apple)
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-c001`
+
+### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+```text
+For PS/GS fixed MCS performance reporting for 10% BLER (other target x% BLER can also be reported), adopt the following format for simulation as a starting point for result reporting.
+| NR reference | Scheme A (e.g, PS, 1D-NUC, 2D-NUC etc) |  |  |  |
+| --- | --- | --- | --- | --- |
+| SE | (Mod order, coding rate) | SE point specific parameters | Baseline (uniform QAM) SNR to reach target BLER | Gain/loss in dB wrt NR baseline at target BLER x% |
+| SE x | (modOrder, coding rate) | … |  |  |
+| SE y | (modOrder, coding rate) | … |  |  |
+| SE z | (modOrder, coding rate) | … |  |  |
+| SE point independent assumptions | Common assumptions for the scheme simulated, including channel type (AWGN, SISO, SIMO, MIMO) and antenna configuration, number of spatial layers, number of RB allocated, TB size, shaping algorithm used (including block length), freq domain interleaver applied or not, receiver assumption, precoding assumption, realistic channel estimation, etc |  |  |  |
+Note: For NR MCS reference, since NR has multiple MCS tables, it is not enough to provide the MCS index. Instead, need to provide the (modulation order, coding rate) pair for the simulated SE
+Note: For SE point specific parameters:
+For GS, this can be a pointer to the constellation used for this SE point
+For PS, this can be a constellation size, coding rate and shaping parameter used for this SE point
+Note: Other metrics (at least complexity) will be merged into the same table with other columns, if details of the metrics are agreeable.
+Note: For AMC study, if possible, we can use the same table format
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a001`
+
+### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+```text
+On how to evaluate complexity, storage requirement, delay and parallelism/serialism for PS and GS compared with uniform QAM.
+For PS
+The demapper complexity is compared with uniform QAM demapper complexity
+Can report the demapper complexity with PS and the demapper complexity of NR MCS with the same spectrum efficiency, and the ratio of the complexities
+Also report the number of spatial layers, dm-algorithm used and the receiver type (e.g., LMMSE or rML), and fixed point assumed or floating point assumed.
+The Distribution Matcher (DM)/Distribution De-Matcher (DDM) complexity and/or storage requirement as a function of the DM algorithm used (ESS, CCDM, etc), precision of fixed point implementation, block length, and the number of bit levels shaped per symbol
+For complexity, can report the complexity normalized by the number of information bits
+As a reference, can also report the computation complexity of LDPC decoding with 10 iterations.
+For storage requirement, can report the overall storage needed for DM/DDM for supporting all MCS in the MCS table and all shaping related parameters
+DM and DDM complexity and storage will be counted separately
+The DM/DDM processing delay, parallelism/serialism, as a function of DM design and block length, and their impact to throughput
+For GS,
+The demapper complexity is compared with uniform QAM demapper complexity
+Can report the ratio of GS demapper complexity over the uniform QAM demapper complexity
+Also report if 1D-NUC or 2D-NUC is used, # of spatial layers, and the receiver type (e.g., LMMSE or rML)
+Also need to report the assumption on complexity counting, e.g, fixed point assumed or floating point assumed
+The storage requirement for storing all the constellations corresponding to the MCS indices in the MCS table, as a function of precision of constellation point storage
+Processing delay and parallelism/serialism, if applicable, and their impact to throughput
+Note: the complexity is represented by the numbers of comparison, addition/subtraction, and multiplication/division operations, normalized by the number of information bits.
+Note: For complexity as a function of SE point, will add a column in the already agreed performance reporting table.
+Note: For complexity/storage not as a function of SE point, will add a row in the already agreed performance reporting table.
+Note: Spec impact will be separately evaluated, include BICM, scrambling, etc
+Note:
+For 4K uniform QAM DL and 1K uniform QAM UL link level performance study, the following format can be used for performance reporting.
+| (modOrder, coding rate*1024, SE) | Assumed TX/RX EVM | Channel 1 | Channel 2 | Channel 3 |
+| --- | --- | --- | --- | --- |
+|  |  | SNR to achieve target BLER | SNR to achieve target BLER | SNR to achieve target BLER |
+| (10, 900.5, 8.7939) for DL evaluation (8, 916.5, 7.1602) for UL evaluation | Legacy EVM for 1K QAM for DL and 256QAM for UL respectively |  |  |  |
+| (10, 948, 9.2578) for DL evaluation (8, 948, 7.4063) for UL evaluation | Legacy EVM for 1K QAM for DL and 256 QAM for UL respectively |  |  |  |
+| SE1 |  |  |  |  |
+| SE2 |  |  |  |  |
+| SE3 |  |  |  |  |
+| Other parameters |  |  |  |  |
+For assumed TX/RX EVM, before we receive any concrete numbers from RAN4, companies can provide their assumptions. One example can be 6dB tighter than the EVM of 1K QAM for DL and 256QAM for UL.
+Other parameters include: Channel estimation assumption (genie or realistic), channel configurations (AWGN, SISO, SIMO, MIMO and TX/RX antenna configurations, channel types, number of spatial layers,), assumed residual freq offset range, number of allocated RBs, etc
+Two highest MCS points in DL 1K QAM and UL 256QAM in NR added in the table for comparison.
+This is preliminary result and not intended for TR
+Note: For high order uniform QAM for DL 4K QAM and UL 1K QAM, to provide the UPT with the high order QAM (DL 4K QAM and UL 1K QAM) over the UPT without the high order QAM under the assumed deployment scenario.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a002`
+
+### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+```text
+For PS/GS fixed MCS performance reporting for 10% BLER (other target x% BLER can also be reported), adopt the following format for simulation as a starting point for result reporting.
+| NR reference | Scheme A (e.g, PS, 1D-NUC, 2D-NUC etc) |  |  |  |
+| --- | --- | --- | --- | --- |
+| SE | (Mod order, coding rate) | SE point specific parameters | Baseline (uniform QAM) SNR to reach target BLER | Gain/loss in dB wrt NR baseline at target BLER x% |
+| SE x | (modOrder, coding rate) | … |  |  |
+| SE y | (modOrder, coding rate) | … |  |  |
+| SE z | (modOrder, coding rate) | … |  |  |
+| SE point independent assumptions | Common assumptions for the scheme simulated, including channel type (AWGN, SISO, SIMO, MIMO) and antenna configuration, number of spatial layers, number of RB allocated, TB size, shaping algorithm used (including block length), freq domain interleaver applied or not, receiver assumption, precoding assumption, realistic channel estimation, etc |  |  |  |
+Note: For NR MCS reference, since NR has multiple MCS tables, it is not enough to provide the MCS index. Instead, need to provide the (modulation order, coding rate) pair for the simulated SE
+Note: For SE point specific parameters:
+For GS, this can be a pointer to the constellation used for this SE point
+For PS, this can be a constellation size, coding rate and shaping parameter used for this SE point
+Note: Other metrics (at least complexity) will be merged into the same table with other columns, if details of the metrics are agreeable.
+Note: For AMC study, if possible, we can use the same table format
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a003`
+
+### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+```text
+To evaluate the proposal to allow a single spectrum efficiency point to be supported by multiple MCS entries (with different modulation order and coding rate combinations with uniform QAM or with different shaping parameters, coding rate, and constellation size combinations for PS and different coding rate and constellation combinations for GS).
+When providing results, to provide the following information
+Details on the design of MCS table with overlapping MCS entries and expected size of MCS table, including performance comparison of designs with the same expected size of MCS table
+Performance benefit under different channel and rank assumptions
+As baseline, provide performance with legacy MCS table up to 256 QAM
+Can additionally provide performance with legacy MCS table up to 1K QAM
+For PS/GS, provide performance allowing each SE point to be mapped to one or more MCS entries
+For PS/GS, provide performance allowing each SE point to be mapped to only one MCS entry (from the set of one or more MCS entries)
+For uniform QAM, provide performance allowing each SE point to be mapped to one or more MCS entries
+MCS selection mechanism across multiple MCS corresponding to the same spectrum efficiency.
+If UE feedback is needed for gNB to select between multiple MCS entries corresponding to the same SE, provide details on what is to be fed back
+FFS: How different MPR for different modulation order is captured in the simulation for uplink
+FFS: How different EVM for different modulation order is captured in the simulation
+For the purpose of this study, the same set of SE points as in legacy uniform QAM table will be used as starting point.
+When reporting performance, also report other assumptions, including channel type (AWGN, SISO, SIMO, MIMO) and antenna configuration, number of spatial layers, number of RB allocated, TB size, shaping algorithm used (including block length), freq domain interleaver applied or not, receiver assumption, precoding assumption, realistic channel estimation, etc
+To propose how to align shaping parameters or how to align coding rate for facilitating comparison.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a004`
+
+### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+```text
+For DFT-s-OFDM, further study how/whether Net Gain over uniform QAM can be achieved by PS/GS.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a005`
+
+### [6G/Rel-20 RAN1#122] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+```text
+For 6GR DL, 5G NR uniform QPSK, 16QAM, 64QAM, 256QAM and 1024QAM are supported as basis for study for data channel
+FFS: Enhancements and other modulation schemes
+For 6GR UL, 5G NR uniform QPSK, 16QAM, 64QAM, and 256QAM are supported as basis for study for CP-OFDM for data channel
+FFS: Enhancements and other modulation schemes
+For 6GR UL, 5G NR pi/2 BPSK, uniform QPSK, 16QAM, 64QAM, and 256QAM are supported as basis for study for DFT-s-OFDM for data channel
+FFS: Enhancements and other modulation schemes
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-modulation-joint-channel-coding-and-modu-ff7518f4-a001`
+
