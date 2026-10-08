@@ -25,7 +25,7 @@ def test_error_and_special_commands(monkeypatch, capsys):
     monkeypatch.setattr(cli, "build_lineage_report", lambda: "# 血统命中对照表")
     assert cli.main(["lineage-report"]) == EXIT_OK
     assert "血统" in capsys.readouterr().out
-    monkeypatch.setattr(cli, "run_doctor", lambda: 1)
+    monkeypatch.setattr(cli, "run_doctor", lambda **kwargs: 1)
     assert cli.main(["doctor"]) == 1
 
 
