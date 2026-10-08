@@ -25,11 +25,11 @@ SOURCES_OK = """
       retry_backoff: [2, 8, 30]
       timeout: { connect: 10, read: 300 }
     extract:
-      backend: cli
+      backend: openai
       max_calls_per_run: 60
       batch_size: 40
-      model_bulk: sonnet
-      model_digest: opus
+      model_bulk: gpt-6-astra
+      model_digest: gpt-6-astra
 """
 
 def test_load_sources(tmp_path):
@@ -69,7 +69,7 @@ def test_sources_rejects_non_browser_user_agent(tmp_path):
         load_sources(write(tmp_path, "s.yaml", bad))
 
 def test_sources_rejects_unknown_backend(tmp_path):
-    bad = SOURCES_OK.replace("backend: cli", "backend: api")
+    bad = SOURCES_OK.replace("backend: openai", "backend: api")
     with pytest.raises(ConfigError, match="backend"):
         load_sources(write(tmp_path, "s.yaml", bad))
 
@@ -116,7 +116,7 @@ SOURCES_MISSING_HTTP = """
         minutes_re: '(?i)^Draft_Minutes.*\\.(docx|zip)$'
         artifacts: [agenda_csv, minutes_docx]
     extract:
-      backend: cli
+      backend: openai
 """
 
 def test_sources_requires_http_section(tmp_path):

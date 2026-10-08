@@ -177,8 +177,9 @@ http:
   timeout: { connect: 10, read: 300 }
 
 extract:
-  backend: cli
+  # 通过 OpenAI Responses API 调用 ChatGPT 模型；凭据从 OPENAI_API_KEY 读取，勿写进仓库。
+  backend: openai
   max_calls_per_run: 60
   batch_size: 40
-  model_bulk: sonnet
-  model_digest: opus
+  model_bulk: gpt-6-astra
+  model_digest: gpt-6-astra

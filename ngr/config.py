@@ -7,7 +7,7 @@ from ngr.models import Feature, LineageSegment
 from ngr.paths import P
 
 VALID_DEPTHS = {"full", "origin", "milestone"}
-VALID_BACKENDS = {"cli", "none"}
+VALID_BACKENDS = {"openai", "none"}
 
 class ConfigError(Exception):
     pass
@@ -184,8 +184,8 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
         backend=backend,
         max_calls_per_run=_to_int_min(e.get("max_calls_per_run", 60), "extract.max_calls_per_run", 1),
         batch_size=_to_int_min(e.get("batch_size", 40), "extract.batch_size", 1),
-        model_bulk=e.get("model_bulk", "sonnet"),
-        model_digest=e.get("model_digest", "opus"),
+        model_bulk=e.get("model_bulk", "gpt-6-astra"),
+        model_digest=e.get("model_digest", "gpt-6-astra"),
     )
     return SourcesConfig(wgs=wgs, http=http, extract=extract)
 

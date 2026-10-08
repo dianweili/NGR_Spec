@@ -46,10 +46,10 @@
 | 当前进度 | RAN1 至 #127，TSG RAN plenary 至 #114；6G 术语为 **"6GR"** |
 | 议程号 | 纪要标题是 Word **自动编号**，正文取不到议程号 → 必须靠 `agenda.csv` 标题文本对齐 |
 | 纪要版本 | 存在 v010 → v100 演进，高版本出现时须整场重解析 |
-| `claude -p` 固定开销 | 单次调用约 **16,337** cache-creation token；建 1 小时 ephemeral 缓存，连续调用降为 ~1,400 create + ~14,936 read（$0.066 → $0.0095） |
-| 认证 | **`--bare` 不可用** —— 该模式只认 `ANTHROPIC_API_KEY`/apiKeyHelper，不读 OAuth，会绕开 Max 订阅认证 |
+| LLM 后端 | OpenAI Responses API；模型由 `config/sources.yaml` 的 `extract` 段配置 |
+| 认证 | 从环境变量 `OPENAI_API_KEY` 读取；密钥不落盘、不进 Git |
 
-**用户环境约束**：只有 Claude Max 订阅，**无 Anthropic API 账户**。所有 LLM 调用必须走 `claude -p` CLI（消耗订阅额度），不走 API SDK。
+**用户环境约束**：所有 LLM 调用走 OpenAI Responses API。ChatGPT 网页订阅不是本地程序凭据；实际执行摘要前须配置具备模型访问权限的 `OPENAI_API_KEY`。
 
 ## 3. 架构：分层增量管线
 
@@ -268,29 +268,33 @@ map 步骤另有一条断言：**某个血统段在其声明的会议区间内�
 
 ## 6. extract 层（LLM）
 
-**后端唯一为 `cli`**（另加 `none`）。不实现 API SDK 后端。
+**后端唯一为 `openai`**（另加 `none`）。实现使用官方 OpenAI Python SDK 的 Responses API。
 
 ### 6.1 调用方式
 
 ```python
-CMD = ["claude", "-p", "--output-format", "json",
-       "--model", "sonnet",           # 批量摘要 sonnet；简报/综述 opus
-       "--effort", "low",             # 批量 low；简报/综述 high
-       "--restricted",                # 去掉 Bash/PowerShell/REPL
-       "--disable-slash-commands"]    # 关闭 skills，避免干扰批处理
+from openai import OpenAI
+
+client = OpenAI()     # 从 OPENAI_API_KEY 读取认证
+response = client.responses.create(
+    model="gpt-6-astra",              # 实际值来自 sources.yaml
+    input=prompt,
+    reasoning={"effort": "low"},
+)
+text = response.output_text
 ```
 
-- **prompt 走 stdin，不走 argv** —— Windows 命令行上限约 32K，一批 40 条 agreement 远超。
-- **禁用 `--bare`** —— 见 §2，会绕开 OAuth 订阅认证。
+- API key 仅由运行环境提供，绝不写进配置、提示词、日志或 state。
+- 摘要调用不附带工具；调用结果经 JSON schema 校验后才可写入 state。
 
 ### 6.2 四项任务
 
 | 任务 | 触发 | 输入 | 输出 | 模型/effort |
 |---|---|---|---|---|
-| ① 事件摘要 | 每条新增/变更且 **`depth == "full"`** 的 event | `text_en` + 议程标题 | `summary_zh`(2–3 句)、`tags`、`impact` | sonnet / low |
-| ② 会议简报 | 每次会议解析完 | 该会议全部 event 的**摘要** | `reports/….md` 正文 | opus / high |
-| ③ 特性综述 | 该特性有新事件 | 该特性全部历史 event（见下） | `features/<slug>.md` 顶部"当前进展" + `stage` + `open_issues` + **`legacy_summary`** | opus / high |
-| ④ 候选归类建议 | 存在未映射 6GR 议程项 | 议程标题 | 建议 slug（**仅写入报告，不落库**） | sonnet / low |
+| ① 事件摘要 | 每条新增/变更且 **`depth == "full"`** 的 event | `text_en` + 议程标题 | `summary_zh`(2–3 句)、`tags`、`impact` | `model_bulk` / low |
+| ② 会议简报 | 每次会议解析完 | 该会议全部 event 的**摘要** | `reports/….md` 正文 | `model_digest` / high |
+| ③ 特性综述 | 该特性有新事件 | 该特性全部历史 event（见下） | `features/<slug>.md` 顶部"当前进展" + `stage` + `open_issues` + **`legacy_summary`** | `model_digest` / high |
+| ④ 候选归类建议 | 存在未映射 6GR 议程项 | 议程标题 | 建议 slug（**仅写入报告，不落库**） | `model_bulk` / low |
 
 **`depth` 如何改变各任务的输入：**
 
@@ -306,33 +310,35 @@ CMD = ["claude", "-p", "--output-format", "json",
 
 `stage` 是全设计中**唯一由 LLM 判定的结构化字段**（归类仍归规则），因为它本质是对一段历史的判断，没有可靠的机器规则。它随每次综述重算，历史值可从 `git log` 回溯。
 
-### 6.3 针对 16K 固定开销的三条优化
+### 6.3 成本与调用优化
 
-1. **一批 40 条事件**（非 15 条），靠大批量摊薄固定开销；批量上限由输出质量决定，不由输入长度决定。
+1. **一批 40 条事件**（非 15 条），降低请求数；批量上限由输出质量决定，不由输入长度决定。
 2. **简报只吃摘要不吃原文** —— 250 条事件原文约 150K token，其摘要仅约 37K。相应地，**会议简报只对含 `full` 段事件的会议生成** —— 纯 5G-A 历史会议不出简报（其事件无逐条摘要，且历史脉络由 `legacy_summary` 承载）。
-3. **extract 阶段必须连续跑完**，落在同一个 1 小时 ephemeral 缓存窗口内，16K 开销只付一次。
+3. **缓存按模型、提示词版本、effort 和原文哈希键控**；相同输入绝不重复请求。
 
 ### 6.4 用量预算
+
+实际成本以 OpenAI Platform 账单和请求返回的 token usage 为准；不得沿用此前其他后端的价格估算。`max_calls_per_run` 是安全上限，不是费用估算。
 
 回填分两部分。**6GR 段**（约 1000 条 `full` 事件 / 8 次会议 / 15 个特性）：
 
 | 环节 | 调用数 | 输入 | 输出 | list 等价 |
 |---|---|---|---|---|
-| 摘要（40 条/批，sonnet） | ~25 | ~1.0 M | ~150 K | ~$3 |
-| 会议简报（opus，吃摘要） | 8 | ~430 K | ~24 K | ~$2 |
-| 特性综述（opus） | ~15 | ~540 K | ~22 K | ~$2.3 |
-| 小计 | ~48 | ~2.0 M | ~200 K | **≈ $7–8** |
+| 摘要（40 条/批，`model_bulk`） | ~25 | ~1.0 M | ~150 K | 以 Platform 实际账单为准 |
+| 会议简报（`model_digest`，吃摘要） | 8 | ~430 K | ~24 K | 以 Platform 实际账单为准 |
+| 特性综述（`model_digest`） | ~15 | ~540 K | ~22 K | 以 Platform 实际账单为准 |
+| 小计 | ~48 | ~2.0 M | ~200 K | 以 Platform 实际账单为准 |
 
 **5G-A 血统段**（约 2000–3000 条 `origin` 事件，约 6 个有血统的特性，跨约 15 次会议）：
 
 | 环节 | 调用数 | 输入 | 输出 | list 等价 |
 |---|---|---|---|---|
 | 逐条摘要 | **0** | — | — | **$0**（`depth: origin` 跳过） |
-| `legacy_summary` 分批预归纳（opus） | ~18 | ~1.5 M | ~40 K | ~$3 |
-| `legacy_summary` 合并（opus） | ~6 | ~150 K | ~12 K | ~$1 |
+| `legacy_summary` 分批预归纳（`model_digest`） | ~18 | ~1.5 M | ~40 K | 以 Platform 实际账单为准 |
+| `legacy_summary` 合并（`model_digest`） | ~6 | ~150 K | ~12 K | 以 Platform 实际账单为准 |
 | 小计 | ~24 | ~1.65 M | ~52 K | **≈ $4** |
 
-**回填总计 ≈ $11–12 等价用量，约 72 次 `claude -p` 调用。** 按 `max_calls_per_run=60` 计，需分 2 次 `ngr backfill` 完成。
+**回填调用次数约 72 次。** 按 `max_calls_per_run=60` 计，需分 2 次 `ngr backfill` 完成；费用由当时选定模型和 OpenAI Platform 定价决定。
 
 选择 `origin` 而非 `full` 处理 5G-A 的收益：逐条摘要 2000–3000 条约需 ~$18–25，此处省掉。代价是历史段无法按中文检索 —— 但英文原文与链接完整保留，且 `legacy_summary` 已回答"源头脉络"这个真实需求。
 
@@ -368,10 +374,10 @@ CMD = ["claude", "-p", "--output-format", "json",
 3. **`out/reports/YYYY-MM-DD-<WG>-<n>.md`** —— 单次会议增量简报，按特性分组，末尾附未归类项与解析警告。
 4. **`out/site/index.html`** —— 单文件自包含看板，JSON 内联，无构建步骤、无外部依赖、`file://` 可开。面板：特性状态表（按工作组／时间筛选）、特性 × 会议活动热力图、事件可展开看原文。图表形式与配色在实现时遵循 dataviz 规范确定。
 
-**发布约束**：Python 脚本无法将网页发布为 Artifact —— 发布是 Claude Code 会话内的工具调用。因此：
+**发布约束**：Python 脚本无法自行将网页发布为 Artifact；发布需要用户在会话中显式要求。因此：
 
 - `ngr render`（脚本，定时跑）产出 `out/site/index.html` 并进 git —— **永远自动完成**。
-- 发布为可分享链接 —— **永远需要用户在会话中显式要求**，由 Claude 读取该文件发布，后续更新发到同一 URL。
+- 发布为可分享链接 —— **永远需要用户在会话中显式要求**，由当前会话读取该文件发布，后续更新发到同一 URL。
 
 **git 策略**：`ngr run` 结束后自动 `git add state/ out/ && git commit`，提交信息为自动生成的变更摘要，例如：
 
@@ -394,7 +400,7 @@ RAN1#127: +23 agreements (waveform +9, coding +7, ISAC +5, 未归类 +2)
 | **`ngr lineage-report`** | 打印血统命中对照表：每段命中哪些 heading、各多少条事件、哪些段命中为 0。5G-A 正则校准的主要工具 |
 | `ngr fetch-docs --wg RAN1 --meeting 127 --agenda 10.2` | 按需深挖 |
 | `ngr enrich` | 只补跑 extract |
-| `ngr doctor` | 自检：claude CLI、认证、3GPP 可达性、配置合法性、git 状态 |
+| `ngr doctor` | 自检：OpenAI API key 与 SDK、3GPP 可达性、配置合法性、git 状态 |
 
 `remap` + `lineage-report` 这一对是 5G-A 血统段能落地的前提：调正则 → `remap` → `lineage-report` 看命中 → 再调，整个循环不联网、不花额度、秒级完成。
 
@@ -455,7 +461,7 @@ schtasks /Create /TN "NGR_Spec" /SC DAILY /ST 07:00 /RL LIMITED `
 | `fetch` | mock HTTP | UA、403 退避、**403 不得被当作"文件不存在"**、目录列表先行、HEAD 增量判定、manifest 读写、纪要版本比较、frozen 跳过 |
 | **`parse`** | **真实 fixture + golden file** | **主战场，走 TDD** |
 | **`map`** | 真实 fixture + 构造的 `features.yaml` | 血统段区间匹配、多段重叠同时命中、`depth` 赋值、命中为 0 时告警、无 `agenda.csv` 时退到 `title_re` |
-| `extract` | stub `claude` 子进程 | JSON 解析、畸形输出修复重试、失败标记、批次切分、调用上限、限流优雅退出 |
+| `extract` | stub OpenAI Responses 客户端 | JSON 解析、畸形输出修复重试、失败标记、批次切分、调用上限、限流优雅退出 |
 | `render` | snapshot | Markdown／HTML 输出快照 |
 | 端到端 | fixture 会议全流程 `--no-llm` | 各层接口契合 |
 
