@@ -1,8 +1,7 @@
 # 6G RAN 特性血统配置 —— 首版，来自 Task 1 侦察实测（docs/superpowers/recon-2026-09-17.md）。
 #
-# 首版只写 4 个特性：waveform、channel_coding、isac、ai_air_interface。
-# 其余议题（MIMO、NTN、NES、LP-WUS 等）等 Task 13 的 lineage-report 跑出未归类清单后再补，
-# 不在这里抢先猜测。
+# 已纳入第 10 章所有在用议题：waveform、channel_coding、isac、ai_air_interface，
+# 以及评估假设、能效、多天线、WUS、NTN。每项均以 RAN1 agenda.csv 的议程号为锚点。
 #
 # 证据出处的两种类型：
 #   - 5G-A 段的 title_re：引用 docs/superpowers/recon-2026-09-17.md §3 逐条报告的 heading 原文
@@ -104,6 +103,62 @@ features:
           agenda: ["RAN1:10.3", "RAN1:10.3.*"]
           title_re: '(?i)channel coding and modulation for 6GR interface'
         meetings: { RAN1: [122, null] }
+        depth: full
+
+  # 6GR 评估假设：第 10.1 节是后续各技术评估的共同前提，单独保留以免
+  # 被误并入波形或多天线等具体技术议题。
+  - slug: evaluation_assumptions
+    name_zh: 6GR 空口评估假设
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.1", "RAN1:10.1.*"]
+        meetings: { RAN1: [124, null] }
+        depth: full
+
+  # 6GR 能效：涵盖 idle/connected mode 等第 10.4 节子议题。
+  - slug: energy_efficiency
+    name_zh: 6GR 能效
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.4", "RAN1:10.4.*"]
+        meetings: { RAN1: [124, null] }
+        depth: full
+
+  # 6GR 多天线系统：第 10.5 节含初始接入、MIMO operation、CSI、调度与 HARQ 等。
+  - slug: multi_antenna
+    name_zh: 6GR 多天线系统
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.5", "RAN1:10.5.*"]
+        meetings: { RAN1: [124, null] }
+        depth: full
+
+  # 6GR WUS：第 10.6 节覆盖下行、上行及与其他功能的协同运行。
+  - slug: wus
+    name_zh: 6GR 唤醒信号与运行机制
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.6", "RAN1:10.6.*"]
+        meetings: { RAN1: [124, null] }
+        depth: full
+
+  # 6GR NTN：第 10.7 节的 GNSS-based / GNSS-less-resilient NTN 设计。
+  - slug: ntn
+    name_zh: 6GR 非地面网络
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN1:10.7", "RAN1:10.7.*"]
+        meetings: { RAN1: [124, null] }
         depth: full
 
 default_depth: origin
