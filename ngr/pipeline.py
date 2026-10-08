@@ -50,7 +50,10 @@ def _write_state(events, features, feature_state, result, stats, started):
     (P.state / "features_state.json").write_text(json.dumps(feature_state, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
     runs = load_runs(P.state / "run_history.json")
     banner = build_banner(result.alerts, runs, today)
-    render_all(events, features, feature_state, P.out, banner=banner)
+    from ngr.mapping.unmapped import collect_unmapped
+    parsed = [payload for path in sorted(P.parsed.rglob("events.json")) if (payload := _load(path, {}))]
+    render_all(events, features, feature_state, P.out, banner=banner,
+               unmapped=collect_unmapped(features, parsed, sixg_roots=["10"]))
     result.stats_by_meeting = {key: dict(value) for key, value in stats.items()}
     append_run(P.state / "run_history.json", RunRecord(time.strftime("%Y-%m-%dT%H:%M:%S"), round(time.time()-started, 1), result.new_events, result.llm_calls, result.exit_code, "; ".join(result.alerts)))
 
@@ -136,3 +139,17 @@ def run_pipeline_enrich() -> PipelineResult:
     state = _enrich(events, features, state, cfg.extract, result)
     _write_state(events, features, state, result, defaultdict(dict), started)
     return result
+
+def run_fetch_docs(*, wg, meeting, agenda):
+    from ngr.fetch.docs import fetch_docs
+    cfg = load_sources(); wgcfg = cfg.wgs[wg]; http = Http(cfg.http)
+    target = next(item for item in discover_meetings(http, wg, wgcfg) if item.number == meeting)
+    payload = _load(P.parsed_dir(wg, meeting) / "events.json", {})
+    agenda_by_tdoc = {}
+    for event in payload.get("events", []):
+        for token in event.get("text_en", "").split():
+            token = token.strip("(),.;:[]")
+            if token.startswith(("R1-", "R2-", "R3-", "R4-")) and event.get("agenda_item"):
+                agenda_by_tdoc.setdefault(token + ".zip", event["agenda_item"])
+    return len(fetch_docs(http, target, wgcfg, agenda_prefix=agenda,
+                          out_dir=P.raw_dir(wg, meeting) / "docs", tdoc_agenda=agenda_by_tdoc))
