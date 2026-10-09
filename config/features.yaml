@@ -170,13 +170,16 @@ features:
       - era: 6G
         release: Rel-20
         anchor:
-          agenda: ["RAN2:10.3.2.1", "RAN2:10.3.2.2"]
+          # #132 的纪要将 Modelling 子项实际写在父标题
+          # "10.3.2 Control plane" 下，故父项也需纳入；不使用 10.3.2.*，
+          # 以免误收同级的 initial/system access (10.3.2.3)。
+          agenda: ["RAN2:10.3.2", "RAN2:10.3.2.1", "RAN2:10.3.2.2"]
         meetings: { RAN2: [132, 133] }
         depth: full
       - era: 6G
         release: Rel-20
         anchor:
-          agenda: ["RAN2:9.3.2.1", "RAN2:9.3.2.2"]
+          agenda: ["RAN2:9.3.2", "RAN2:9.3.2.1", "RAN2:9.3.2.2"]
         meetings: { RAN2: [134, null] }
         depth: full
 

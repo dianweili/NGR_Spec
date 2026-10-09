@@ -120,6 +120,12 @@ class MergeStats:
 
     **只报告不删除**：若某次 parse 回归（比如正则改动）让事件暂时缺失，删除就是永久
     数据丢失 —— 那正是本项目最怕的。缺失是信号，不是指令。"""
+    active_ids: list[str] = field(default_factory=list)
+    """本次输入事件在合并后实际采用的权威 id。
+
+    增量管线只关心 ``added``，但显式 remap 要以这份清单重建状态：
+    它既不能把旧配置遗留的 stale 事件带回去，也必须沿用正文哈希命中的旧 id。
+    """
 
 # 事件变更时要作废的 LLM 产物
 _LLM_FIELDS = {"summary_zh": None, "tags": [], "impact": None, "llm_status": "pending"}
@@ -209,6 +215,7 @@ def merge_events(existing: list[dict], incoming: list[Event], today: str,
     for ev, old in resolved:
         new = asdict(ev)
         new["id"] = ev.id
+        stats.active_ids.append(ev.id)
         if old is None:
             new["first_seen"] = today
             by_id[ev.id] = new

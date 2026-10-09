@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from ngr.config import load_features
 from ngr.models import Feature, LineageSegment
 from ngr.mapping.lineage import agenda_matches, match_event
 
@@ -56,6 +59,14 @@ def test_no_match_outside_meeting_range():
 def test_no_match_for_other_wg():
     f = feat("isac", seg(agenda=["RAN1:10.8"]))
     assert match_event([f], "RAN2", 126, "10.8", []) is None
+
+
+def test_ran2_rrc_configuration_includes_parent_control_plane_only():
+    """#132 的 RRC Modelling 结论挂在 10.3.2 Control plane 父标题下。"""
+    features = load_features(Path(__file__).parents[1] / "config" / "features.yaml")
+    rrc = next(feature for feature in features if feature.slug == "rrc")
+    assert match_event([rrc], "RAN2", 132, "10.3.2", []).feature_slug == "rrc"
+    assert match_event([rrc], "RAN2", 132, "10.3.2.3", []) is None
 
 def test_agenda_wins_over_title_re_within_same_segment():
     f = feat("x", seg(agenda=["RAN1:10.2"], title_re="(?i)nothing"))

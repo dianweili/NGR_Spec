@@ -5,6 +5,25 @@ from ngr.models import Feature
 from ngr.render.markdown import render_dashboard, render_feature_page, render_report
 from ngr.render.site import render_site
 
+
+def _report_date(events: list[dict], wg: str, meeting: int, suffix: str,
+                 fallback: str) -> str:
+    """Choose a stable report date for one meeting.
+
+    Meeting end dates are preferred.  Older records do not carry them, so use
+    their immutable first_seen date rather than the current render date; the
+    latter would create a duplicate report for every historical meeting on
+    each remap.
+    """
+    mine = [event for event in events if event["wg"] == wg and event["meeting"] == meeting
+            and event.get("meeting_suffix", "") == suffix]
+    for field in ("meeting_end", "first_seen"):
+        dates = [event.get(field) for event in mine if event.get(field)]
+        if dates:
+            return min(dates)
+    return fallback
+
+
 def render_all(events: list[dict], features: list[Feature], feat_state: dict,
                out_dir: Path, *, banner: str | None = None,
                unmapped: list[str] | None = None,
@@ -32,9 +51,7 @@ def render_all(events: list[dict], features: list[Feature], feat_state: dict,
 
     names = {f.slug: f.name_zh for f in features}
     for wg, meeting, suffix in sorted({(e["wg"], e["meeting"], e.get("meeting_suffix", "")) for e in events}):
-        date = next((e.get("meeting_end") for e in events
-                     if e["wg"] == wg and e["meeting"] == meeting and e.get("meeting_suffix", "") == suffix and e.get("meeting_end")),
-                    generated)
+        date = _report_date(events, wg, meeting, suffix, generated)
         write(f"reports/{date}-{wg}-{meeting}{suffix}.md",
               render_report(wg, meeting, events, names, suffix))
 

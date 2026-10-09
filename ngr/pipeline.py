@@ -132,15 +132,36 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False, meetings=None) -> Pipel
 
 def run_pipeline_remap() -> PipelineResult:
     started, result, features, today = time.time(), PipelineResult(), load_features(), time.strftime("%Y-%m-%d")
-    events, stats = [], defaultdict(lambda: defaultdict(int))
+    previous_events = _load(P.state / "events.json", [])
+    previous_ids = {event["id"] for event in previous_events}
+    events, stats, parsed_scopes = [], defaultdict(lambda: defaultdict(int)), set()
     for path in sorted(P.parsed.rglob("events.json")):
         payload = _load(path, {})
         if not payload: continue
-        events, merge = merge_events(events, map_meeting(payload, features), today,
-                                     scope={(payload["wg"], payload["meeting"], payload.get("meeting_suffix", ""))})
-        result.new_events += merge.added
-        for key, per in merge.added_by_feature.items():
-            for feature, count in per.items(): stats[key][feature] += count
+        scope = (payload["wg"], payload["meeting"], payload.get("meeting_suffix", ""))
+        parsed_scopes.add(scope)
+        # Merge against the pre-remap state to retain first_seen and any completed
+        # LLM work for unchanged source text.  Only active_ids are retained below:
+        # stale records from an anchor that was intentionally removed must not
+        # survive a remap.
+        merged, merge = merge_events(previous_events, map_meeting(payload, features), today,
+                                     scope={scope})
+        by_id = {event["id"]: event for event in merged}
+        events.extend(by_id[event_id] for event_id in merge.active_ids)
+    # State can contain meetings whose raw material is no longer available
+    # locally.  A remap cannot judge those, so preserve them unchanged.
+    events.extend(event for event in previous_events
+                  if (event.get("wg"), event.get("meeting"), event.get("meeting_suffix", "")) not in parsed_scopes)
+    # Remap reconstructs state from all parsed meetings, so merge.added is the
+    # whole reconstructed corpus, not this run's increment.  Report only ids
+    # absent from the prior state; otherwise a one-line feature-anchor change
+    # masquerades as thousands of new protocol decisions.
+    for event in events:
+        if event["id"] in previous_ids:
+            continue
+        result.new_events += 1
+        key = (event["wg"], event["meeting"], event.get("meeting_suffix", ""))
+        stats[key][event["feature"]] += 1
     _write_state(events, features, _load(P.state / "features_state.json", {}), result, stats, started)
     return result
 
