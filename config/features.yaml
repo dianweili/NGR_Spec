@@ -161,4 +161,23 @@ features:
         meetings: { RAN1: [124, null] }
         depth: full
 
+  # 6GR RRC：RAN2 的 6G RRC 工作。RAN2#132–133 使用第 10.3.2 节；
+  # #134 起 6GR 总章由 10 改为 9，RRC 子项随之改为 9.3.2。两个会议区间
+  # 分开写，避免把同一编号在不同议程版本中的其他内容错误纳入。
+  - slug: rrc
+    name_zh: 6GR RRC
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:10.3.2.1", "RAN2:10.3.2.2"]
+        meetings: { RAN2: [132, 133] }
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:9.3.2.1", "RAN2:9.3.2.2"]
+        meetings: { RAN2: [134, null] }
+        depth: full
+
 default_depth: origin

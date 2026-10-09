@@ -18,6 +18,12 @@ def test_normalize_strips_case_punct_and_space():
     )
 
 
+def test_normalize_strips_ran2_outline_number_from_heading():
+    assert normalize("9.3.2.1 RRC Modelling and connection management") == normalize(
+        "RRC Modelling and connection management"
+    )
+
+
 def test_exact_match():
     ag = [A("10.2", "Waveform for 6GR air interface")]
     al = align(ag, [H(2, "Waveform for 6GR air interface", 5)])

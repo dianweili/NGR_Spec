@@ -16,10 +16,16 @@ DEPTH_TOLERANCE = 1  # heading 层级与议程深度允许 ±1 偏移
 _PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
 _SPACE = re.compile(r"\s+")
 _ABBREVIATION = re.compile(r"\b[A-Z][A-Z0-9-]{1,}\b")
+_OUTLINE_PREFIX = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s+")
 
 
 def normalize(text: str) -> str:
     t = unicodedata.normalize("NFKC", text).lower()
+    # RAN2 minutes write headings as "9.3.2.1 RRC ...", while agenda.csv
+    # keeps the item number in its own column.  The number is structural rather
+    # than title content, so remove it before comparing titles.  RAN1 headings
+    # do not carry this prefix and remain unchanged.
+    t = _OUTLINE_PREFIX.sub("", t)
     t = _PUNCT.sub("", t)
     return _SPACE.sub(" ", t).strip()
 
