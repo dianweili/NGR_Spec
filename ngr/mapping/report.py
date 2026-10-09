@@ -13,9 +13,10 @@ def lineage_report(features: list[Feature], parsed_meetings: list[dict]) -> str:
 
     for parsed in parsed_meetings:
         wg, meeting = parsed["wg"], parsed["meeting"]
+        suffix = parsed.get("meeting_suffix", "")
         for raw in parsed["events"]:
             m = match_event(features, wg, meeting,
-                            raw.get("agenda_item"), raw.get("heading_path") or [])
+                            raw.get("agenda_item"), raw.get("heading_path") or [], suffix)
             if m is None:
                 continue
             feat = next(f for f in features if f.slug == m.feature_slug)

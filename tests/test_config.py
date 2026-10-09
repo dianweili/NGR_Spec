@@ -207,6 +207,33 @@ def test_load_features(tmp_path):
     assert f.lineage[1].meetings["RAN1"] == (124, None)
     assert f.lineage[0].depth == "origin"
 
+
+def test_features_loads_special_meeting_start_suffixes(tmp_path):
+    body = FEATURES_OK.replace(
+        "meetings: { RAN1: [124, null] }\n            depth: full",
+        "meetings: { RAN1: [124, null] }\n            meeting_start_suffixes: [bis]\n            depth: full",
+    )
+    segment = load_features(write(tmp_path, "f.yaml", body))[0].lineage[1]
+    assert segment.meeting_start_suffixes == ("bis",)
+
+
+def test_features_rejects_invalid_special_meeting_start_suffixes(tmp_path):
+    body = FEATURES_OK.replace(
+        "meetings: { RAN1: [124, null] }\n            depth: full",
+        "meetings: { RAN1: [124, null] }\n            meeting_start_suffixes: bis\n            depth: full",
+    )
+    with pytest.raises(ConfigError, match="meeting_start_suffixes"):
+        load_features(write(tmp_path, "f.yaml", body))
+
+
+def test_features_loads_normal_meeting_suffix_filter(tmp_path):
+    body = FEATURES_OK.replace(
+        "meetings: { RAN1: [124, null] }\n            depth: full",
+        "meetings: { RAN1: [124, null] }\n            meeting_suffixes: ['']\n            depth: full",
+    )
+    segment = load_features(write(tmp_path, "f.yaml", body))[0].lineage[1]
+    assert segment.meeting_suffixes == ("",)
+
 def test_features_rejects_bad_depth(tmp_path):
     """只改段内 depth 这一处，不能碰顶层 default_depth —— 否则两个校验分支会被同时命中，
     测试永远分不清是哪条分支在生效（这条曾经就是这么写错的，已改用精确到多行的替换目标）。"""

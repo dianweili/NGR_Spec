@@ -220,9 +220,24 @@ def _parse_segment(raw: dict, where: str, default_depth: str) -> LineageSegment:
     if not meetings:
         raise ConfigError(f"{where}.meetings 不能为空")
 
+    suffixes_raw = raw.get("meeting_suffixes")
+    suffixes = None
+    if suffixes_raw is not None:
+        suffixes = tuple(_as_list(suffixes_raw, f"{where}.meeting_suffixes"))
+        if not suffixes or any(not isinstance(suffix, str) for suffix in suffixes):
+            raise ConfigError(f"{where}.meeting_suffixes 必须是字符串列表")
+
+    start_suffixes_raw = raw.get("meeting_start_suffixes")
+    start_suffixes = None
+    if start_suffixes_raw is not None:
+        start_suffixes = tuple(_as_list(start_suffixes_raw, f"{where}.meeting_start_suffixes"))
+        if not start_suffixes or any(not isinstance(suffix, str) or not suffix for suffix in start_suffixes):
+            raise ConfigError(f"{where}.meeting_start_suffixes 必须是非空后缀字符串列表")
+
     return LineageSegment(
         era=_require(raw, "era", where), release=_require(raw, "release", where),
         depth=depth, agenda=agenda, title_re=title_re, meetings=meetings,
+        meeting_suffixes=suffixes, meeting_start_suffixes=start_suffixes,
     )
 
 def load_features(path: Path | None = None) -> list[Feature]:

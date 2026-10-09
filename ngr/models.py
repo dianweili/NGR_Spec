@@ -79,13 +79,30 @@ class LineageSegment:
     agenda: list[str]              # ["RAN1:10.2", "RAN1:10.2.*"]
     title_re: str | None
     meetings: dict[str, tuple[int, int | None]]   # {"RAN1": (124, None)}
+    meeting_suffixes: tuple[str, ...] | None = None
+    """Optional suffix filter applying across the entire meeting range.
 
-    def covers(self, wg: str, meeting: int) -> bool:
+    ``("",)`` selects ordinary sessions only, letting an old agenda chapter
+    stop before a same-number special session changes its meaning.
+    """
+    meeting_start_suffixes: tuple[str, ...] | None = None
+    """Suffixes eligible at the range's first meeting, e.g. ``("bis",)``.
+
+    RAN2#133bis introduced the new 6GR chapter numbering while ordinary #133
+    still used the old tree.  This selector restricts only the lower boundary;
+    later meetings in the same range are eligible regardless of suffix.
+    """
+
+    def covers(self, wg: str, meeting: int, suffix: str = "") -> bool:
         rng = self.meetings.get(wg)
         if rng is None:
             return False
         lo, hi = rng
-        return lo <= meeting and (hi is None or meeting <= hi)
+        if not (lo <= meeting and (hi is None or meeting <= hi)):
+            return False
+        if self.meeting_suffixes is not None and suffix not in self.meeting_suffixes:
+            return False
+        return meeting != lo or self.meeting_start_suffixes is None or suffix in self.meeting_start_suffixes
 
 @dataclass(frozen=True)
 class Feature:

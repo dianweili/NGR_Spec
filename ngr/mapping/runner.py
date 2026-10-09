@@ -70,7 +70,7 @@ def map_meeting(parsed: dict, features: list[Feature],
 
     for raw in parsed["events"]:
         m = match_event(features, wg, meeting,
-                        raw.get("agenda_item"), raw.get("heading_path") or [])
+                        raw.get("agenda_item"), raw.get("heading_path") or [], suffix)
         if m is None:
             continue
         if m.segment.depth == "milestone" and raw["kind"] == "agreement":

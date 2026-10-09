@@ -61,6 +61,25 @@ def test_no_match_for_other_wg():
     assert match_event([f], "RAN2", 126, "10.8", []) is None
 
 
+def test_special_meeting_suffix_is_required_when_configured():
+    f = feat("rrc", LineageSegment(
+        era="6G", release="Rel-20", depth="full", agenda=["RAN2:9.3.2"],
+        title_re=None, meetings={"RAN2": (133, None)}, meeting_start_suffixes=("bis",),
+    ))
+    assert match_event([f], "RAN2", 133, "9.3.2", [], "bis").feature_slug == "rrc"
+    assert match_event([f], "RAN2", 133, "9.3.2", [], "") is None
+    assert match_event([f], "RAN2", 134, "9.3.2", []).feature_slug == "rrc"
+
+
+def test_meeting_suffix_filter_excludes_special_session_across_range():
+    f = feat("old_tree", LineageSegment(
+        era="6G", release="Rel-20", depth="full", agenda=["RAN2:10.3.2"],
+        title_re=None, meetings={"RAN2": (132, 133)}, meeting_suffixes=("",),
+    ))
+    assert match_event([f], "RAN2", 133, "10.3.2", []).feature_slug == "old_tree"
+    assert match_event([f], "RAN2", 133, "10.3.2", [], "bis") is None
+
+
 def test_ran2_rrc_configuration_includes_parent_control_plane_only():
     """#132 的 RRC Modelling 结论挂在 10.3.2 Control plane 父标题下。"""
     features = load_features(Path(__file__).parents[1] / "config" / "features.yaml")

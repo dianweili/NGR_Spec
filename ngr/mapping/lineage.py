@@ -31,8 +31,8 @@ def agenda_matches(patterns: list[str], wg: str, agenda_item: str | None) -> boo
     return False
 
 def _segment_hits(seg: LineageSegment, wg: str, meeting: int,
-                  agenda_item: str | None, heading_path: list[str]) -> bool:
-    if not seg.covers(wg, meeting):
+                  agenda_item: str | None, heading_path: list[str], suffix: str = "") -> bool:
+    if not seg.covers(wg, meeting, suffix):
         return False
     if seg.agenda and agenda_matches(seg.agenda, wg, agenda_item):
         return True
@@ -42,7 +42,8 @@ def _segment_hits(seg: LineageSegment, wg: str, meeting: int,
     return False
 
 def match_event(features: list[Feature], wg: str, meeting: int,
-                agenda_item: str | None, heading_path: list[str]) -> Match | None:
+                agenda_item: str | None, heading_path: list[str],
+                meeting_suffix: str = "") -> Match | None:
     """返回首个命中的 (特性, 血统段)。
     顺序规则（保证结果可复现）：
       1. 按 features.yaml 中特性的书写顺序；
@@ -50,6 +51,6 @@ def match_event(features: list[Feature], wg: str, meeting: int,
     for feat in features:
         segs = sorted(feat.lineage, key=lambda s: 0 if s.era == "6G" else 1)
         for seg in segs:
-            if _segment_hits(seg, wg, meeting, agenda_item, heading_path):
+            if _segment_hits(seg, wg, meeting, agenda_item, heading_path, meeting_suffix):
                 return Match(feature_slug=feat.slug, segment=seg)
     return None

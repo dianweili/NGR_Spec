@@ -75,6 +75,17 @@ def _fence(text: str) -> str:
     return "`" * max(3, longest + 1)
 
 
+def _block_text(text: str) -> str:
+    """Keep source wording while removing transport-only line-end whitespace.
+
+    Meeting minutes occasionally contain spaces after a line break.  In a
+    Markdown code fence they provide no meaning, but make ``git diff --check``
+    fail for every rendered feature page.  Preserve blank lines and all
+    non-trailing content; only the invisible line terminator padding is removed.
+    """
+    return "\n".join(line.rstrip() for line in text.split("\n"))
+
+
 def _preview(text: str, limit: int) -> str:
     """单行预览。截断必须留标记 —— 否则读者会把半条决议当完整决议读。"""
     one = _inline(text)
@@ -242,8 +253,9 @@ def _render_events(events: list[dict], *, with_summary: bool) -> list[str]:
             lines += ["", e["summary_zh"]]
         elif with_summary and e.get("llm_status") == "failed":
             lines += ["", "_（摘要生成失败，见下方原文）_"]
-        fence = _fence(e["text_en"])
-        lines += ["", fence + "text", e["text_en"], fence,
+        text = _block_text(e["text_en"])
+        fence = _fence(text)
+        lines += ["", fence + "text", text, fence,
                   f"[原文出处]({meeting_url(e['wg'], e['meeting'], _meeting_suffix(e))}) · `{e['id']}`", ""]
     return lines
 

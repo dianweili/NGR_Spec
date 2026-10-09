@@ -132,6 +132,12 @@ def test_fence_is_longer_than_backticks_in_text():
     assert "rest of decision" not in after, "原文不得有任何片段跑到围栏外"
 
 
+def test_code_block_strips_only_trailing_whitespace():
+    md = render_feature_page("waveform", [E(text_en="Keep words  \nNext\t ")], WAVE, FS["waveform"])
+    assert "Keep words\nNext\n" in md
+    assert not re.search(r"[ \t]+$", md, re.M)
+
+
 def test_table_cells_escape_pipes_and_newlines():
     """`features.yaml` 是人工维护的 —— 特性名里的 `|` 和换行是用户直接能触发的输入。
 

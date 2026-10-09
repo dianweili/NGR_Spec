@@ -40,6 +40,14 @@ features:
           agenda: ["RAN1:10.8", "RAN1:10.8.*"]
         meetings: { RAN1: [124, null] }
         depth: full
+      # RAN2#133bis 起，6GR 目录改到第 9 章；ISAC 是独立叶节点。
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:9.5"]
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
 
   # AI/ML 空口：纯 5G-A 演进链条（Rel-18 SI -> Rel-19 WI -> 持续维护 + Rel-20 NR phase 2）。
   # #122 纪要里出现过一条 "AI/ML in 6GR interface"（chapter 10 下），
@@ -127,6 +135,28 @@ features:
           agenda: ["RAN1:10.4", "RAN1:10.4.*"]
         meetings: { RAN1: [124, null] }
         depth: full
+      # RAN2 的 common UP/CP 能效项在 #132/#133 之间换过编号；#133bis 起随
+      # 6GR 总章改到 9.3.3.3。区间拆开，避免把 #132 的同号 AI/ML 误归入能效。
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:10.3.3.2"]
+        meetings: { RAN2: [132, 132] }
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:10.3.3.3"]
+        meetings: { RAN2: [133, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:9.3.3.3"]
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
 
   # 6GR 多天线系统：第 10.5 节含初始接入、MIMO operation、CSI、调度与 HARQ 等。
   - slug: multi_antenna
@@ -160,9 +190,30 @@ features:
           agenda: ["RAN1:10.7", "RAN1:10.7.*"]
         meetings: { RAN1: [124, null] }
         depth: full
+      # RAN2 先讨论 TN/NTN 融合与协调，#134 起出现独立 NTN 叶节点。
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:10.2.2"]
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:9.2.2"]
+        meetings: { RAN2: [133, 133] }
+        meeting_start_suffixes: [bis]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:9.6"]
+        meetings: { RAN2: [134, null] }
+        depth: full
 
   # 6GR RRC：RAN2 的 6G RRC 工作。RAN2#132–133 使用第 10.3.2 节；
-  # #134 起 6GR 总章由 10 改为 9，RRC 子项随之改为 9.3.2。两个会议区间
+  # #133bis 起 6GR 总章由 10 改为 9，RRC 子项随之改为 9.3.2。两个会议区间
   # 分开写，避免把同一编号在不同议程版本中的其他内容错误纳入。
   - slug: rrc
     name_zh: 6GR RRC
@@ -175,12 +226,226 @@ features:
           # 以免误收同级的 initial/system access (10.3.2.3)。
           agenda: ["RAN2:10.3.2", "RAN2:10.3.2.1", "RAN2:10.3.2.2"]
         meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
         depth: full
       - era: 6G
         release: Rel-20
         anchor:
           agenda: ["RAN2:9.3.2", "RAN2:9.3.2.1", "RAN2:9.3.2.2"]
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  # 以下特性逐项覆盖 RAN2 6GR 议程树（#132–#133 为第 10 章，#133bis 起为第 9 章）。
+  # 所有锚点均为精确叶节点；同编号在不同会议的语义变化由 meetings 区间隔离。
+  - slug: ran2_ue_capability
+    name_zh: 6GR UE 能力框架
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.2.1"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.2.1"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_general_design
+    name_zh: 6GR 通用设计与新业务
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.2.3"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.2.3"] }
+        meetings: { RAN2: [133, 133] }
+        meeting_start_suffixes: [bis]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.2.2"] }
         meetings: { RAN2: [134, null] }
+        depth: full
+
+  - slug: ran2_user_plane
+    name_zh: 6GR 用户面架构
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor:
+          agenda: ["RAN2:10.3.1", "RAN2:10.3.1.0", "RAN2:10.3.1.1", "RAN2:10.3.1.4"]
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.1.1", "RAN2:9.3.1.4"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_qos_qoe
+    name_zh: 6GR QoS/QoE 与服务感知
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.1.2"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.1.2"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_mac_scheduling
+    name_zh: 6GR MAC 与调度
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.1.3"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.1.3", "RAN2:9.3.1.3.*"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_system_access
+    name_zh: 6GR 初始接入与系统信息
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.2.3"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.2.3"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_paging
+    name_zh: 6GR 寻呼
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.2.4"] }
+        meetings: { RAN2: [133, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.2.4"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_control_plane_other
+    name_zh: 6GR 控制面其他议题
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.2.5"] }
+        meetings: { RAN2: [133, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.2.5"] }
+        meetings: { RAN2: [133, 133] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_spectrum_aggregation
+    name_zh: 6GR 频谱聚合
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.2.5"] }
+        meetings: { RAN2: [134, null] }
+        depth: full
+
+  - slug: ran2_data_model_transfer
+    name_zh: 6GR 数据与模型传输
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.3.1"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.3.1"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_ai_ml
+    name_zh: 6GR AI/ML 协议支持
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.3.2"] }
+        meetings: { RAN2: [133, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.3.2"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_common_protocol_other
+    name_zh: 6GR 共用协议其他议题
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.3.3.3"] }
+        meetings: { RAN2: [132, 132] }
+        depth: full
+
+  - slug: ran2_early_reporting
+    name_zh: 6GR 提前报告
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.3.3.4"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
+        depth: full
+
+  - slug: ran2_mobility
+    name_zh: 6GR 移动性
+    lineage:
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:10.4"] }
+        meetings: { RAN2: [132, 133] }
+        meeting_suffixes: [""]
+        depth: full
+      - era: 6G
+        release: Rel-20
+        anchor: { agenda: ["RAN2:9.4"] }
+        meetings: { RAN2: [133, null] }
+        meeting_start_suffixes: [bis]
         depth: full
 
 default_depth: origin
