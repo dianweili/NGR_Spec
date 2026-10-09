@@ -13,6 +13,10 @@
 
 `run` 抓取、解析、归集、渲染；加 `--no-llm` 不调用 Codex。`backfill --wg RAN1 --from 112 --to 127` 回填区间；`remap` 在修改血统规则后离线重算；`enrich` 补跑 Codex 摘要；`lineage-report` 检查血统命中；`doctor --network` 额外测试 3GPP 连通性。
 
+## 浏览工作台
+
+每次 `run`、`remap` 或 `enrich` 都会重建 [HTML 工作台](out/site/index.html)。直接在浏览器打开该单文件即可离线浏览总览、特性目录、会议简报及带全文检索和分页的事件库；Markdown 文件仍保留为可 diff 的归档产物。
+
 摘要由本机 `codex exec` 使用当前 ChatGPT/Codex 登录态完成。首次回填应先使用 `--no-llm`，检查 `lineage-report` 后再运行 `enrich`。
 
 默认摘要策略针对 ChatGPT Plus 的共享额度：使用 `gpt-6-luna`、每批最多 12 条、每次 `enrich` 最多发起 1 次调用。先检查 `data/state/usage_log.jsonl` 与生成的 Markdown，再手动运行下一轮；格式错误或失败重试同样会占用该上限，避免静默超额。

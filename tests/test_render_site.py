@@ -111,3 +111,24 @@ def test_feature_order_is_preserved_not_sorted():
         _re.search(r'id="ngr-data">(.*?)</script>', h, _re.S).group(1)
         .replace(chr(92) + "u003c", "<"))["features"]]
     assert slugs(a) == ["waveform", "isac"] and slugs(b) == ["isac", "waveform"]
+
+
+def test_site_embeds_meeting_report_index_and_summary_progress():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    data = json.loads(re.search(r'id="ngr-data"[^>]*>(.*?)</script>', html, re.S).group(1))
+    assert data["stats"]["meetings"] == 1
+    assert data["stats"]["summarized"] == 1
+    assert data["meetings"] == [{
+        "agreements": 1, "events": 1,
+        "features": [{"events": 1, "name_zh": "6GR 波形", "slug": "waveform"}],
+        "key": "RAN1-126", "label": "RAN1#126", "meeting": 126,
+        "source_url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/",
+        "suffix": "", "summarized": 1, "wg": "RAN1",
+    }]
+
+
+def test_site_has_navigation_meeting_filter_and_paged_event_browser():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    for fragment in ('data-nav="meetings"', 'renderMeetings()', 'renderEvents()',
+                     'id="meeting-filter"', 'PAGE_SIZE = 30', 'data-page="next"'):
+        assert fragment in html
