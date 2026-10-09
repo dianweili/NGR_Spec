@@ -553,6 +553,409 @@ Noted
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.2-p011`
 
+### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.1 RRC Modelling and connection management
+
+```text
+1	For delay insensitive/ bursty traffic, RAN2 continues the study with focus on “Inactive” state.  FFS what it is called and exact modelling.
+2	For delay sensitive and bursty traffic, RAN2 can continue studying further aspects related to UE power saving from mobility perspective in connected mode (e.g. benefits/security impact/feasibility of UE not notifying the network every cell switch with pre-configuration).
+Not treated
+Modeling
+R2-2602614	Views on 6G Inactive State/Sub-State	Apple	discussion	Rel-20	FS_6G_Radio	R2-2602229
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-a001`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.1 RRC Modelling and connection management
+
+```text
+The proposed “inactive sub-state” in RRC CONNECTED state has two main designs:
+The sub-state transition between inactive and normal is same as the transition between “DRX ON” and “DRX OFF” in the WUS based CDRX design.
+The UE based mobility design utilizes the CLTM framework and considers additional power saving design (e.g. no measurement report).
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-o001`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.1 RRC Modelling and connection management
+
+```text
+An inactive/idle state with stored context is unlikely to meet the needs of devices with bursty, delay-sensitive traffic.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-o002`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.1 RRC Modelling and connection management
+
+```text
+An RRC_CONNECTED substate is unlikely to meet the needs of devices with infrequent, delay-insensitive traffic such as low-end IoT.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-o003`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.1 RRC Modelling and connection management
+
+```text
+Some foreseeable use cases would be best served by regular transitions from a low-power substate (e.g., C-DRX-based) to continuous downlink monitoring.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-o004`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+For small data exchange in inactive state, Network is not required to reserve dedicated radio resource for the UE in the neighbour cells. When UE is in inactive state, dedicated signalling for resource configuration is not required before the small data exchange for both MT and MO cases.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p001`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+The state transition from connected state to inactive state should be done via explicit network signalling (e.g. RRCRelease) that is security protected.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p002`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+Cell selection and reselection should be supported as UE based mobility for inactive state. No connected mode RLM/RRM is applicable for the inactive state and the UE power consumption in inactive state should be comparable to that of idle state.
+Noted
+R2-2601528	Discussion on Inactive/Sub-state for 6G	Ericsson, T-Mobile USA	discussion	Rel-20
+Observation 1	UE based mobility is supported for the additional state, i.e., Inactive/Sub-state, to achieve UE power consumption on par with the RRC Idle state.
+Observation 2	It is unclear how UE-dedicated WUS can work when the UE cell-level location is unknown and without requiring UE specific resources to be reserved in the target cells in advance.
+Proposal 1	Mobility in Inactive/Sub-state should not require UE specific resources to be reserved in the target cell in advance (such as RACH preambles, C-RNTI, SR resources, etc).
+-	Huawei asks what use case this is addresses.    ZTE thinks that for very small delay services the UE can stay in connected.    ZTE asks for sub-state is it both UL and DL.  Huawei confirms.
+Noted
+Discussion
+-	Interdigital asks about the sub-state, as for inactive it is very clear where the power saving gains are coming from, so where is it coming from for the sub-state.   Oppo thinks that we can have some power saving gains from the UE not always reporting.
+-	Samsung understood that we would try to discuss common functionality.
+-	ZTE thinks that the power saving gain comes from C-DRX and WUS and not from sub-state.  Vivo thinks it is because the UE doesn’t need to notify the NW when it changes cells.
+-	Apple thinks that power saving should be handled with conditional mobility and DRX/LP-WUS.
+-	Qualcomm thinks that for delay sensitive what we are actually doing is looking at connected state enhancements and more from a power saving perspective. WE shouldn’t mix it with inactive discussion as they serve different purposes.
+-	Mediatek thinks that for delay sensitive we didn’t agree that we need sub-state for connected but rather study on power saving.
+-	Docomo would like to ensure that we are not duplicating the solution.
+-	AT&T would like to discuss further the resource capacity issue in inactive state.    Samsung thinks that the pain point for inactive state was paging and that why we agreed to have a single paging mechanism.
+-	Huawei thinks that we should add bursty for connected mode.   CATT thinks that we can consider bursty traffic in connected or inactive.   Ericsson also thinks that inactive can handle both bursty and insensitive, there shouldn’t be a limitation.
+-	Nokia thinks that it can be handled in both cases
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p003`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+To support two target scenarios, RAN2 should study both the RRC INACTIVE state and “inactive sub-state” in RRC CONNECTED state.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p004`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+Support 6G RRC INACTIVE state, which is based on 5G RRC INACTIVE state design and replace RAN paging with 6G single paging design.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p005`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+Split the study of “inactive substate” into the following two directions in RRC CONNECTED state:
+1) WUS based CDRX design
+2) Conditional connected mobility.
+R2-2601882	Options for power saving "inactive-like" operation	MediaTek Inc.	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p006`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+RAN2 plan to support a C-DRX-based substate of RRC_CONNECTED with UE-controlled mobility and no measurement reporting for the benefit of devices with bursty but delay-sensitive traffic.  Transitions between this substate and conventional RRC_CONNECTED (with continuous downlink monitoring and network-controlled mobility) should be as efficient as possible in terms of signalling overhead, transition time, and power consumption.  FFS if the mobility area is the same as the TA.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p007`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+Study connection suspend/resume mechanisms for a UE going to or coming from RRC_IDLE, using the LTE mechanisms as a starting point (including CN awareness and CN paging).
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p008`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.1 RRC Modelling and connection management
+
+```text
+RAN2 plan to address the C-DRX enhancements for bursty and delay-sensitive traffic first, with the initial assumptions (subject to being revisited) that the idle-mode enhancements for wakeup triggering will initially follow paging decisions and identifier definition will follow the model of the C-DRX solution.
+R2-2601437	Discussion on RRC Modelling and Connection Management	LG Electronics Inc.	discussion
+R2-2601439	Discussion on 6GR RRC Modelling and Connection Management	CATT	discussion	Rel-20
+R2-2601449	Discussion on RRC Modelling of IDLE with suspend	vivo, Huawei, HiSilicon, NTT DOCOMO INC.	discussion	Rel-20
+R2-2601490	RRC state modelling	Lenovo	discussion	FS_6G_Radio
+R2-2601493	Pain points of NR RRC connection re-establishment and how to resolve them in 6GR	MediaTek Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2601505	Substate, RRC modeling and basic RRC procedures in 6GR	Xiaomi	discussion	Rel-20	FS_6G_Radio
+R2-2601516	Discussion on 6G RRC state(s) and functionalities	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+R2-2601724	RRC state functionalities	Panasonic	discussion	Rel-20
+R2-2601796	Discussion on 6G RRC states	Fraunhofer IIS, Fraunhofer HHI	discussion	Rel-20	FS_6G_Radio
+R2-2601859	RRC Modelling and connection management	Ofinno	discussion
+R2-2601882	Options for power saving "inactive-like" operation	MediaTek Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2602043	RRC modelling and connection management	Nokia	discussion	Rel-20	FS_6G_Radio
+R2-2602052	Discussion on RRC Modelling and connection management in 6G	Transsion Holdings	discussion	Rel-20
+R2-2602073	Discussion on RRC state for 6GR	HONOR	discussion	Rel-20	FS_6G_Radio
+R2-2602109	Discussion on functions of RRC state	Spreadtrum, UNISOC	discussion	Rel-20
+R2-2602163	Discussion on Inactive state / sub-state	Sony	discussion	Rel-20	FS_6G_Radio
+R2-2602195	RRC State Model for 6GR	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2602229	Views on 6G Inactive State/Sub-State	Apple	discussion	Rel-20	FS_6G_Radio
+=> Revised in R2-2602614
+R2-2602614	Views on 6G Inactive State/Sub-State	Apple	discussion	Rel-20	FS_6G_Radio
+R2-2602278	Further discussion on RRC functionality in Inactive	NEC	discussion	Rel-20	FS_6G_Radio
+R2-2602326	Discussion on inactive state/sub-state	Toyota ITC	discussion	Rel-20
+R2-2602354	Discussion on RRC Inactive vs Sub-state in 6GR	Rakuten Symphony	discussion	Rel-20
+R2-2602375	RRC Modelling for 6GR	Kyocera	discussion
+R2-2602393	Discussion on RRC states in 6G	NTT DOCOMO	discussion	Rel-20
+R2-2602405	Discussion on small data transmission in the new 6G RRC state	KT Corp.	discussion
+R2-2602420	Discussion on 6G RRC states	CMCC	discussion	Rel-20	FS_6G_Radio
+R2-2602453	Discussion on 6G RRC inactive state	Google Korea LLC	discussion	FS_6G_Radio
+R2-2602490	RRC functionality and connection management in 6GR	SHARP Corporation	discussion	R2-2600557
+R2-2602496	Discussion on RRC functionality and connection management	Samsung	discussion	Rel-20	FS_6G_Radio
+R2-2602539	Discussion on 6G RRC states	Qualcomm Incorporated	discussion
+R2-2602543	RRC modelling and connection management	1Finity	discussion	Rel-20
+R2-2602587	Further discussion on functionalities for 6GR RRC states	TCL	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.1-p009`
+
+### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Agree on the following for 6G RRC structure:
+1)	Define additional parameterized types that are consistently used in 6G RRC. FFS on the details of the parameterized types
+2)	Utilize ID-based linking in 6G RRC configuration to allow cross-referencing parts of the configuration elsewhere. FFS how the IDs are defined
+3)	Except for mandatory features, UE need not comprehend the entire ASN.1 configuration. FFS how this can be accomplished (e.g. containers, ASN.1 modules, …)
+4)	We aim to make the proposals more detailed in terms of ASN.1. The discussion does not pre-empt other decisions in other sessions or WGs, these decisions are purely from RAN2 perspective, and we will adapt to their decisions as needed.
+[AT133bis][004][6G] RRC structure and ASN.1 (Nokia, Ericsson)
+Intended outcome:
+For RRC structure:
+Discuss offline companies views/interests for selecting a single approach (e.g. via combining all the approaches)
+Discuss the mitigation mechanisms for the downsides of the chosen approach(es) in an offline discussion during RAN2#133bis. The goal of the offline discussion would be to at least find out if there are any issues requiring further discussion in the next meeting(s).
+For RRC structure and ASN.1
+Next steps and guidance for RRC structure (e.g. evaluation, details and examples, etc) and ASN.1 topic
+Deadline:  Friday
+R2-2602812	Report of [AT133bis][004][6G] RRC structure and ASN.1 (Nokia, Ericsson)	Nokia (Rapporteur), Ericsson (rapporteur)	report	Rel-20	FS_6G_Radio
+Noted
+After comeback:
+-	Rapporteurs explains that instead of contributions we can continue the discussion in a more constructive manner.   We can have an email discussion until August to identify some questions and we can discuss in the may meeting offline and the report will only be discussed online in august.   We should not try to shoot down proposals but just understand how it works first.
+-	Ericsson thinks that companies should consolidate their proposals so they are easier to understand as a full idea.
+-	Qualcomm thinks that we shouldn’t invite new ideas and it should be based on already provided examples.
+-	Nokia thinks that we should keep thinking.
+-	Huawei thinks that we should provide the examples based on the real NR fields.
+-	Nokia highlights that we should use the email reflector for some technical discussion rather than just providing inputs.  It will be clear when technical discussions are invited over the reflector.
+Have a long email discussion until August.   Phase the email discussion such that first phase discussion questions/guidance can be discussed offline in RAN2#134 (No official meeting report expected in RAN2#134).    Second phase continues until RAN2#135.
+NOTE: based on examples already provided in the previous email discussions and the agreements
+[POST133bis][009][6G CP] RRC structure and ASN.1 (Nokia, Ericsson)
+Intended outcome:  Report in August meeting providing more details on RRC structure.  Exact scope and definition of the phases up to rapporteurs
+Deadline:  August email discussion deadline
+R2-2602329	Report of [POST133][006][6G] ASN.1 discussion	Ericsson	discussion	Rel-20	FS_6G_Radio	Late
+Delta Signalling
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-a001`
+
+### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+All fields (except for fields that should always be configured(i.e. logically mandatory fields)) that support delta signalling (i.e., the possibility to maintain/keep their previous value) shall also offer means to release them (explicitly by signalling or implicitly upon absence).
+Continue discussions on refining the proposed delta signalling solution directions (“partial full config”, “release by default + signal to keep”) and continue their evaluation in terms of robustness and signalling overhead. Investigate whether it is meaningful to combine them in some way. Take related aspects into account (e.g. “configuration constraints”).
+3	Continue discussions on analysing and quantifying the listed (potential) benefits and drawbacks of OCTET STRINGs in terms of message size and processing time. Aim to derive rules in which cases (message size, number of extensions, …) OCTET STRINGs should be used or avoided.
+4	Aim to introduce a parameterized type to generalize the handling of delta-signalling lists (instead of NR’s separate- and case-specific lists for AddMod- and Release). Discuss further details of such (e.g. whether and how to support release+add) taking agreements on delta signalling and configuration constraints into account.
+5	RAN2 should aim to capture at least typical constraints (setup vs. modify) in the signalling structure.   FFS the details and how/when to apply it
+6	RAN2 should introduce configuration constrains when it is necessary to rule out some configuration.
+7	Consider the extensible ID (CHOICE of INTEGERs) as a tool in the toolbox that could serve as a safety net when it is difficult to predict the required size of IDs (and lists) that are difficult to extend by other means. RAN2 will decide on a case-by-cases basis, whether and where to use extensible IDs.
+8	Study and discuss further in which scenarios parallel lists have benefits over per-element extensions and over critical extensions of the entire lists. Investigate also the signalling overhead of the different solutions for practical sizes of lists.
+9	Continue study lists extensions.
+Reconfiguration Failure
+R2-2601506	Further discussion on (re)configuration failure handling in 6GR	Xiaomi, Samsung, Apple, InterDigital Inc., Sharp, Kyocera, Ofinno	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-a002`
+
+### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+1	When a (re-)configuration failure occurs the UE reports the reason(s) for the (re-)configuration failure (e.g. what part of configuration caused the failure).  FFS on details of reporting.  FFS whether the UE can avoid re-establishment in such scenarios and/or if we can improve the re-establishment procedure.
+Stored Configurations
+R2-2601843	Stored RRC configurations for 6G	Nokia, CMCC, Jio Platforms, Apple, Samsung, Interdigital	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-a003`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+NR’s delta signalling results in too many cases where the gNB must apply a full configuration since it cannot determine a delta-configuration that brings UE and gNB reliably to the same configuration state.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-o001`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+A target gNB implementing an earlier ASN.1 version can skip non-comprehended extensions and NCEs at the end of the message. But it fails to decode the remainder of the message when the source gNB uses e.g. a newly defined CHOICE option that was declared as spare (NULL) in the target gNB’s ASN.1 version.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-o002`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+If a UE discovers extensions of a later release than it implements, it may assume a network- or transmission error and should declare that it cannot comply with the configuration
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-o003`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Need codes in ASN.1 comments, field descriptions, condition tables and procedural text are fragile, and handling thereof cannot be automated reliably. This contributes to the problem that gNBs fall back to a full configuration too often.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-o004`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Fields that are kept by default (“Need M”) and that do not offer means for explicit release (SetupRelease), can cause substantial signalling overhead and to the observed problem of too many full configurations.
+Noted
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-o005`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Discuss the potential for selecting a single approach (e.g. via combining all the approaches) over reflector until the RAN2#133bis start.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p001`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Continue to discuss the mitigation mechanisms for the downsides of the chosen approach(es) in an offline discussion during RAN2#133bis. The goal of the offline discussion would be to at least find out if there are any issues requiring further discussion in the next meeting(s).
+Noted
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p002`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Study on (re)configuration failure handling in 6GR should aim at both enabling the UE to provide sufficient information to the NW on erroneous/inapplicable configurations and reducing service interruption between UE and the NW as much as possible.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p003`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Support UE reporting of the erroneous/inapplicable configurations to the NW for (re)configuration failure (i.e. UE can only apply a part of RRC reconfiguration) in 6GR. FFS the specific configurations whose failure needs to be reported and the reporting granularity for such configurations.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p004`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+RAN2 further studies how to avoid UE service interruption and/or enable the UE reporting of erroneous/inapplicable configurations in 6GR upon (re)configuration failure, taking the following candidate solutions as the baseline:
+1.	Enhanced RRC Re-establishment
+	Solution 1-A: UE triggers RRC Re-establishment during which the erroneous/inapplicable configurations are reported to the NW;
+2.	Partial (re)configuration success
+	Solution 2-A: UE applies the good/appliable configurations and ignores the erroneous/inapplicable configurations which are reported to the NW, if the reconfiguration failure happens to the "non-critical" configurations; otherwise, UE triggers RRC reestablishment.
+	Solution 2-B: UE applies the good/appliable configurations and reports the erroneous/inapplicable configurations for which the UE applies default/fallback values configured by the NW, if reconfiguration failure happens to "non-critical" configurations; otherwise, UE triggers RRC re-establishment.
+3.	(Re)configuration failure information reporting w/o Re-establishment or partial (re)configuration
+	Solution 3-A: UE continues using the current configurations to resume its communication and reports to the NW the erroneous/inapplicable configuration(s) (based on which NW may decide to keep the UE continuing with the current configuration or perform further reconfiguration).
+	Solution 3-B: UE applies the NW-configured fallback/default configuration to resume its communications, and reports the erroneous/inapplicable configuration parameter(s) to the NW (where the fallback/default configuration may include minimum set of configurations that enable UE's basic data transfer).
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p005`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+As a general principle, (re)configuration failure handling by the UE should be under NW control. FFS how the NW controls UE behaviour for (re)configuration handling, pending the specific solution to be adopted.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p006`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+RAN2 carries out the pros and cons analyses for the listed candidate solutions in Proposal 3, as the next step for 6GR (re)configuration failure study.
+Noted
+R2-2601990	Simplified RRC connection re-establishment for RRC reconfiguration failure	MediaTek Inc., Nokia, Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+Proposal 1 	Do not define partial application of the RRC configuration in RRC reconfiguration failure or categorization of the UE configuration parameters to critical and non-critical parameters in 6GR.
+Proposal 2 	RAN2 to study improvement on RRC reconfiguration failure (non-mobility scenario) handling in 6GR based on a simplified RRC connection re-establishment procedure, in which the UE applies simple physical layer and MAC configurations for the purposes of re-establishment signalling, in which cell search, security key update, and bearer re-establishment are not performed, and during which the user data transfer is resumed without subsequent RRC reconfiguration procedure.
+Proposal 3	After triggering the simplified RRC connection re-establishment procedure, the UE signals the network about it. This signalling identifies the UE in unambiguous and secure manner. The network responds with reconfiguration of the UE with more sophisticated physical layer and MAC configurations for the user data transfer to continue. Signalling during the procedure could also let the network know which part(s) of RRC reconfiguration caused the RRC reconfiguration failure.
+Noted
+Discussion
+-	Qualcomm explains that the main problem was not being able to apply one minor configuration and now we are making things worst.   The intention is to not always do re-establishment.
+-	Huawei thinks that improved re-establishment is improving service interruption as it is not the usual re-establishment.  The network would reconfigure the UE.   Xiaomi thinks that we can’t avoid the interruption as we need to do random access.
+-	CMCC would like to understand the main issue and according to the real field results this happens very rarely 2% amongst the re-establishment failures that also occur 2% of the time.   We can just report something and that’s it.   Qualcomm thinks that the network doesn’t know why it happens, 27% of failure happen because of network configuration.  CATT agrees with CMCC.
+-	Ericsson agrees that we can get more information from the UE but this doesn’t mean that a new configuration will be provided.   We should make sure that the network is aware of the issue as soon as possible.   We won’t be able to get rid of the re-establishment procedure and we shouldn’t allow a partial reconfiguration as this may cause a misalignment.   ZTE has the same concerns and solution 2 and 3 don’t work from network perspective.   There are some benefits from improving the procedure by for example not triggering the full re-establishment procedure on other cells, just trigger it on the current cell.   Xiaomi explains that the UE would report which part of the configuration it applied, for example SCell configuration, or configuration on CHO canadidate cells.   In this case the PCell connection can still work.
+-	Oppo agrees with ZTE and Ericsson and there seems to be complexity in the partial configuration.  However, they are open to optimize the procedure and see what can be saved.
+-	Samsung thinks that even if we don’t standardize the UE can still do partial configuration so we should enhance the procedure to support some reporting and study how to enhanced.
+-	Nokia thinks that there are ways to improve the re-establishment procedure, by skipping cell reselection, UP resetting etc.
+-	Lenovo thinks that at least we report it to the network.   Qualcomm thinks that telling the network I couldn’t is not useful, it needs to tell more to the NW.
+-	Apple thinks that even today we have some workaround that doesn’t require the UE to re-establish and this is now forcing the UE to always do re-establish.    Anyways, we have UE reporting.
+-	LG agrees that the UE needs to report the problem and the reason of the problem.
+-	Vivo thinks that partial configuration is a good option and it is already an implementation workaround.
+-	Interdigital thinks that there will some cases where re-establishment is needed and for the reporting we can either report right away or after re-establishment.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p007`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Study how to efficiently store and reuse RRC configurations for frequent RRC state transitions or configuration changes at least in the same serving cell.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p008`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Study use of stored RRC configurations that can be activated in an on-demand manner by the network for both transition to CONNECTED and during CONNECTED mode.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p009`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+RAN2 to study and adopt a Reference Configuration framework for 6G RRC, allowing the network to configure the UE by indicating an Identifier (ID) or Index that refers to a known set of baseline parameters (e.g., a reference configuration, stored configuration, or predefined profile).
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p010`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+Study how to enable efficient signalling (e.g. via a modular RRC) to allow network to modify stored configurations at activation time for dynamically allocated resources (e.g. UE-specific resources such as C-RNTI and PUCCH resources).
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p011`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.2 RRC Structure and (re)configuration
+
+```text
+The stored configurations should support delta signalling, allowing the network to activate a baseline stored configuration with specific parameter modifications (deltas) in the same message.
+-	Ericsson points out we had reference configuration in 5G but they didn’t work well.   If we make delta signaling that actually is efficient we don’t need to have stored configurations.  Maintaining the reference with mobility has some complexity.    Mediatek has the same understanding as Ericsson on reference configuration.   Proposal 5 is complex.
+-	Nokia explains that the proposal is for at least the same serving cell that avoids the mobility related issues, and we should avoid the reference configuration issues we introduced in 5G.
+-	Oppo asks what is the dependency on modular RRC.  Nokia thinks it would work well with modular but it is not dependent on it.
+-	Huawei agrees with Ericsson and in 5G the usage of reference configuration was very loosely specified and if we want something with even more flexibility it is even more complex.   Also agrees with meditek that we are doing a delta on a stored config which is complex.  Nokia explains that we are doing that for inactive.  We get a delta on top of stored config.
+-	Xiaomi ask based on what information would the network configure the UE for later use.    Nokia explains that it depends on what the network wants to enable for the UE.  For example voice call or data, or something that the NW can learn.
+-	Qualcomm thinks the intent is good to improve things from 5G, like improving reference config from 5G.   So we should study how to improve.
+-	Lenovo asks how is this different from RRC inactive.   Nokia explain that it is one of the use cases.   We can see how to enable this in connected and aim to have the same solution.
+-	LG thinks this can be very useful for CA configuration case.
+-	ZTE asks if it is only for common or only for dedicated config.  What is on-demand.  Nokia explain that ondemand means it is under network control.  Common config is a monster we should avoid.
+-	Apple thinks that this is very valuable.
+-	Ericsson thinks that we need to clarify UE behavior with this configuration, and what we are saving.
+Noted
+Not treated
+R2-2601450	6GR RRC Structure and (re)configuration	vivo	discussion	Rel-20
+R2-2601481	Discussion on 6G RRC ASN.1 Encoding	OPPO	discussion	Rel-20	FS_6G_Radio
+R2-2601492	Way forward for RRC Reconfiguration failures	Lenovo	discussion	FS_6G_Radio
+=> Revised in R2-2602592
+R2-2602592	Way forward for RRC Reconfiguration failures	Lenovo	discussion	FS_6G_Radio	R2-2601492
+R2-2601674	Considerations on partial RRC reconfiguration failure	CATT	discussion	Rel-20	FS_6G_Radio
+R2-2601860	RRC Structure and (re)configuration.	Ofinno	discussion
+R2-2601951	Aspects not covered by email discussions: Reconfiguration failure handling	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
+R2-2602001	Considerations on RRC reconfiguration failure	ZTE Corporation, Sanechips	discussion	Rel-20	NR_cov_Ph3
+R2-2602051	Discussion on RRC structure and (re)configuration in 6G	Transsion Holdings	discussion	Rel-20
+R2-2602196	RRC Reconfiguration for 6GR	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2602230	Views on 6G RRC structure and (re)configuration	Apple	discussion	Rel-20	FS_6G_Radio
+R2-2602285	6G RRC structure and reconfiguration	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio	Late
+R2-2602300	Module-level failure reporting on RRC configuration	Fraunhofer IIS, Fraunhofer HHI	discussion
+R2-2602327	Enhancing 6G RRC Signaling Robustness through Exception Handling	Toyota ITC	discussion	Rel-20
+R2-2602363	Discussion on Radio Protocol Architecture – Control Plane	Rakuten Symphony, 1Finity , Jio Platforms	discussion	Rel-20
+R2-2602371	Reconfiguration failure handling in 6G	AT&T	discussion	FS_6G_Radio
+R2-2602399	On making the network aware of partial RRC reconfiguration failure	Jio Platforms	discussion	Rel-20	FS_6G_Radio
+R2-2602436	Discussion on 6GR RRC Structure and (re)configuration	CMCC	discussion	Rel-20	FS_6G_Radio
+R2-2602454	Discussion on RRC structure and reconfiguration	Sharp	discussion	Rel-20	FS_6G_Radio
+R2-2602455	Discussion on 6G RRC Modular Design and Configuration	Google Korea LLC	discussion	FS_6G_Radio
+R2-2602487	Discussion on RRC ASN.1 Restructuring and modular	Samsung, Verizon	discussion	Rel-20
+R2-2602549	Discussion on RRC (re)configuration structure	LG Electronics France	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.2-p012`
+
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.2.1 RRC Modelling and connection management
 
 ```text

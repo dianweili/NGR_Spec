@@ -6,6 +6,587 @@ _尚无综述_
 
 ## 6GR 演进
 
+### [6G/Rel-20 RAN2#134] `agreement` 9.5 ISAC
+
+```text
+1	From RAN2 perspective, study both UEs and TRPs operating as TX and/or RX Ses across all modes
+2	Further study what radio aspects/configuration/report, control aspects (and what is controlled) are done by SF/aNB
+3	For SE selection need to further understand the criteria, which nodes (UE, aNB, SF) need to be involved, and what information is required to perform the selection and how aNB and SF coordinate.   Consider sensing entity selection/re-selection in the case of moving target mobility in this study.
+4	Study service continuity in the case of UE sensing entity moving
+RRC states – if time allows
+R2-2603273	On ISAC procedures, protocols, etc.	Apple Inc.	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-a001`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+Support both UEs and TRPs operating as Tx and/or Rx SEs.
+Noted
+R2-2602961	Discussion on RAN2 ISAC in 6G	vivo, CAICT	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p001`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+From the perspective of UE roles, a UE can be a sensing signal transmitter and/or sensing signal receiver according to the sensing mode.  The study of sensing procedures can be categorized into the following:
+UE as sensing signal transmitter
+UE as sensing signal receiver
+Noted
+Sensing mode prioritization
+R2-2604084	Discussion on ISAC Aspects from RAN2 Perspective	CEWiT	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p002`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 should structure the study of UE-involved sensing in the following order of priority:
+UE as sensing Rx: UE measurements of DL sensing reference signals (TRP-UE DL bistatic)
+UE as sensing Tx: UE transmission of UL sensing reference signals (UE-TRP UL bistatic)
+UE-to-UE sensing: UE transmit/receive for UE-UE bistatic and UE monostatic scenarios.
+Noted
+R2-2603216	Discussion on wireless sensing	OPPO	discussion	Rel-20
+RAN2 should avoid prioritizing bi-static over mono-static sensing in the initial stage of the ISAC study, as the fundamental UE functionalities (transmission and reception of reference signals) are procedurally similar from an L2 perspective.
+Noted
+Discussion
+-	Xiaomi doesn’t think we need to prioritize.   Mediatek would like to have a harmonized solutions.
+SF location and functions
+R2-2603117	Initial views on 6G ISAC study	Samsung	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p003`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+Sensing protocol design should serve the sensing procedure, and consider at least the following issues which may need inputs from RAN3 and SA2:
+What function(s) is needed in RAN and Sensing Function (SF) respectively to support the sensing procedure;
+Where the SF entity locates, in CN or in RAN
+Noted
+R2-2604122	Comparing RRC and LPP alike for Sensing Procedure	Ericsson, Bell Mobility	discussion	Rel-20
+Proposal 1	The Sensing Function is a Network Function located in Core Network.
+Noted
+R2-2603259	Protocols and procedures for sensing	MediaTek Inc.	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p004`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+The sensing function controls the sensing service procedures (including reception/measurement configuration for an Rx SE), and the serving aNB controls the radio resource allocation to a Tx UE SE.
+Noted
+R2-2603190	Procedures and Protocol Aspects for Sensing	Qualcomm Incorporated	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p005`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+The Rx and Tx Sensing Entities (i.e., UEs and/or TRPs) participating in a sensing session are selected and controlled by the Sensing Function (SF).
+Noted
+Discussion
+-	Xiaomi explains that for 5G the roles of SF connectivity with sensing entity including UE and TRP, service sensing information/configuration, and data transport.   Ericsson thinks that in 5G there is no UE involvement.
+-	Interdigital thikns that we need to have a radio part that will terminate in aNB and a service part that can be in serving function.  Some thinks like measurements are not clear where they would be.
+-	Qualcomm thinks termination is more relate to transport.
+-	CMCC and Opp thinks that data transfer should be in aNB for latency purposes.
+-	Ericsson thinks that SA2 is discussing the sensing selection from the registered UE but the final selectin should be done aNB as there are other considerations.
+-	Apple agrees that there will be some service related functions that go to SF and some radio resource that go aNB.   There will be cases where SF selects but there are cases where the UE selects itself.   We should keep in mind sensing assisted communications.   Xiaomi and interdigital thinks that we should first focus on how to support service function.
+-	ATT also thinks that sensing selection should be in aNB as it doesn’t have all information.
+-	KPN thinks that there are some cases that there are some cases that SF happens in SF but in some cases aNB needs to be involved.
+-	Interdigital thinks that we need to discuss how the selection is done first
+-	Xiaomi thinks that we need to have SF do the sensing data processing.
+-	Huawei thinks we need to better understand what is configuration and for selection the aNB should make a final decision
+-	Nokia thinks that one node triggers and selects the selection but the entities need to coordinate.
+-	Vodafone asks if we can do sensing in idle mode, and we should restrict to RRC connected mode.  MEdiatek thinks we should not restrict for connected mode.  Xiaomi thinks that there are two scenarios.
+-	Qualcomm thinks that SF has to do the final check based on many information.  If the gNB wants to use the sensing service the aNB already includes the UEs that can participate in the sensing.
+UE capability framework
+R2-2603900	Discussion on procedures and protocol aspects for ISAC	Spreadtrum, UNISOC	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p006`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+Discuss whether the UE ISAC capability reporting can reuse the unified 6G UE capability framework
+R2-2603986	Discussion on ISAC	HONOR	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p007`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 may first identify the basic ISAC UE capabilities (e.g., sensing modes, reporting levels, etc.) based on the outcomes of 5G-Advanced, and further extend the UE capabilities in line with the ongoing 6G discussions
+R2-2604059	Views on 6G ISAC	NTT DOCOMO INC.	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p008`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 to study UE sensing capability reporting procedures to enable the network to determine whether a UE can participate in sensing-related procedures, while avoiding binding UE capability reporting directly to specific sensing modes or service models.
+Capability reporting
+R2-2602971	Considerations for 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p009`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+For the UE capability reporting procedure, the UE shall report both higher-layer sensing capabilities (e.g., supported sensing modes, calculation capabilities) and AS-layer sensing capabilities (e.g., RS-related capabilities) to the SF. The UE shall also report AS-layer sensing capabilities to the RAN as part of the UE AS capability.
+R2-2603929	Discussion on 6G ISAC	ZTE Corporation, Beijing Digital Nebula, Sanechips	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p010`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+UE sends the sensing capability to serving aNB using Uu interface. SF can retrieve UE sensing capability via the aNB or AMF, if needed.
+Sensing configuration protocol
+R2-2603273	On ISAC procedures, protocols, etc.	Apple Inc.	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p011`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 to study UE-SF interactions with LPP-like protocol to allow e.g. sensing configuration signalling.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p012`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 to study UE-gNB interactions with RRC signalling to allow e.g. RAN to dynamically adapt sensing configurations to the dynamic radio conditions.
+Noted
+R2-2603187	Discussion on 6G ISAC	NEC	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p013`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 to study how sensing configurations are configured/activated, modified, or deactivated/released through RRC signaling or higher-layer application protocols.
+Noted
+R2-2603563	Discussion for ISAC in 6G	Lenovo	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p014`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+The sensing configuration is transmitted from SenF/RAN node to sensing UE by a request or unsolicited way, and can be transmitted by broadcast signalling or dedicated to the sensing UE.
+Noted
+Discussion
+-	Xiaomi thinks that for sensing assisted communication RAN1 agreed to study an option that data goes to the gNB.   Ericsson thinks that the plenary has agreed to have sensing assisted communication but we should strive for a common protocol that works for both communication and sensing.
+-	Qualcomm thinks that the main point is who is the consumer of the sensing of the data and we will have transport mechanisms to carry.
+-	Vivo UE as Rx entity (this needs to be further discussed and UE Tx entity (configuration is mainly about the UL reference signal)
+-	CMCC thinks that we need RRC protocol for data processing.   ZTE thinks we should first understand why we need a new protocol, RRC can do this.  We can’t get rid of RRC no matter what, even if we have a new protocol.   Xiaomi explains that the consumer can be UE, SF, AF.  The SF needs to stay involved.  CATT thinks that we can rely on RRC.
+-	Huawei thinks that we need to wait for RAN1 what data is being carried.
+-	Xiaomi explains that there is cooperative sensing and there needs to be a SF.
+-	CeWit thinks that we need to understand who does the processing and results calculated.
+-	LG thinks that we need to consider the two cases.
+-	Kyocera thinks that we should discuss broadcast and dedicated
+-	Nokia thinks what are the content and the termination points and then we can talk the protocol.
+Sensing configuration contents
+R2-2603654	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p015`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+Sensing configuration is provided by the aNB, including:
+Configuration of sensing resources, sensing signals, etc.
+Configuration of measurement data report, e.g., content, triggering conditions.
+Measurement and reporting
+R2-2603563	Discussion for ISAC in 6G	Lenovo	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p016`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 to discuss whether to use 6G RRC measurement framework for sensing measurement, or to design LPP-like sensing measurement framework.
+R2-2603098	Sensing functionalities and procedures	CATT	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p017`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+The UE transmits the sensing measurement data to aNB and it is visible at aNB. How the sensing measurement data are processed at aNB and whether/how the sensing measurement data are forwarded to SF are in RAN3 scope.
+R2-2603654	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p018`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+Regarding how to report sensing measurement data from UE to RAN, RAN2 should wait for the discussion in RAN1 on the measurement data content.
+Sensing data transfer
+R2-2602971	Considerations for 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p019`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+For sensing data characteristics and termination point:
+Data size: Depends on sensing version and the reported data (e.g., final results or intermediate results)
+Latency: Less relaxed latency;
+Termination point: SF;
+Data Consumer: sensing service consumer (i.e., AF, UE, and NF);
+Whether sensing report is transferred via CP, UP or data plane (if defined) depends on the size of sensing data and latency requirement.
+Service continuity
+R2-2603117	Initial views on 6G ISAC study	Samsung	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p020`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+For service continuity, RAN2 to study sensing continuity for a moving target and sensing continuity of a mobile sensing UE (consider both connected and idle/inactive UE).
+Noted
+R2-2603486	Discussion on Sensing Entity (Re)Selection	LG Electronics Inc.	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p021`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+Sensing Entity (re)selection is supported by UE capability reporting procedures, including reactive response and proactive unsolicited procedures, to ensure service continuity during the movement of Sensing Entities or sensing objects.
+Noted
+Discussion
+-	Apple thinks sensing target mobility is an optimization but UE mobility is a based functionality.
+-	Nokia thinks that we first need to a have a baseline.
+-	CMCC and Xioami thinks that the moving target mobility is important.
+-	MediaTek thinks that moving target mobility is really entity selection/reselection and the mobile sensing UE moving is continuity at service level.
+-	Lenovo thinks we need to consider sensing mode change
+-	ATT thinks that we should consider stationary UEs.
+-	Nokia thinks that we should take into account whether location information can help.   Apple thinks that TRP location would also be great to have.   Ericsson points out that there are cases where there operator controlled SE UEs.
+-	Huawei thinks that the SE UE mobility shouldn’t impact our 6G mobility mechanism design.   Xiaomi thinks that the SE UE mobility and measurements will not be impacted.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p022`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 to study how ISAC procedures can be enabled in RRC_IDLE/INACTIVE (or their 6G equivalents), without prejudice to the final 6G RRC state model
+R2-2603251	On 6G ISAC aspects	Nokia 	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p023`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+```text
+RAN2 assumes UEs involved in sensing procedures to be in RRC_CONNECTED state. Other UE (sub)states may be studied when sufficient progress is made on their definition as well as sensing procedures
+R2-2603074	Discussion on ISAC in 6G	Sharp	discussion
+paper not following proposal limit will not be treated
+R2-2603313	RAN2 considerations for ISAC	Ofinno	discussion	Rel-20	FS_6G_Radio
+R2-2603335	Discussion on ISAC	China Telecom	discussion	Rel-20	FS_6G_Radio
+R2-2603385	Discussion on ISAC	Panasonic	discussion
+R2-2603391	Discussion on ISAC for 6GR 	Tejas Networks Limited	discussion	Rel-20	FS_6G_Radio
+R2-2603487	Uu Enhanced Procedures and Protocol for 6G ISAC	Hanbat National University	discussion
+R2-2603628	Discussion on various aspects related to ISAC	Sony	discussion	Rel-20	FS_6G_Radio
+R2-2603670	Procedures and protocol aspects for ISAC	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2603679	Discussion on 6GR ISAC Framework	Google	discussion	Rel-20	FS_6G_Radio
+R2-2603757	Characteristics of sensing entities and signaling framework in 6G ISAC	AT&T, FirstNet	discussion	FS_6G_Radio
+R2-2603783	Views on ISAC	Fraunhofer IIS, Fraunhofer HHI	discussion	R2-2602302
+R2-2603936	Discussion on RAN2 aspects of ISAC	China Unicom	discussion	Rel-20	FS_6G_Radio	Withdrawn
+R2-2603938	Analysis of ISAC	Kyocera	discussion
+R2-2603940	Discussion on RAN2 aspects of ISAC	China Unicom, UESTC, SUTD, Queen Mary University of London	discussion	Rel-20	FS_6G_Radio
+R2-2603953	Discussion on ISAC for 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
+=> Revised in R2-2604180
+R2-2604180	Discussion on ISAC for 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
+R2-2604123	Procedures and Protocol Aspects for Sensing	KPN N.V.	discussion	Rel-20	FS_6G_Radio
+R2-2604147	Discussions on 6G ISAC	ROBERT BOSCH GmbH	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p024`
+
+### [6G/Rel-20 RAN2#133bis] `agreement` 9.5 ISAC
+
+```text
+1	RAN2 can study what is required to support sensing functionalities/procedures assuming there will be a sensing function.  Where the sensing function is located is up to other WGs (e.g. SA2/RAN3).    Study can consider where the functionalities/procedures would need to be logically located.
+2	Study at least the following RAN2 aspects:
+UE capability reporting procedures,
+Sensing configuration procedures
+Sensing reporting procedures (e.g. measurements)
+Transport of data/control signaling
+Sensing Entity Selection (including re-selection)
+Not treated
+R2-2601544	General considerations on RAN2 6G ISAC	CATT	discussion	Rel-20	FS_6G_Radio
+R2-2601707	Discussion on wireless sensing	OPPO	discussion	Rel-20	Late
+R2-2601825	On sensing modes, protocols, and architecture	Apple Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2601899	Discussion on 6G ISAC	ZTE Corporation, Beijing Digital Nebula, Sanechips	discussion	Rel-20	FS_6G_Radio
+R2-2601963	Discussion on 6G ISAC in Day 1	LG Electronics Inc.	discussion	Rel-20
+R2-2601975	Discussion on ISAC	China Telecom	discussion	Rel-20	FS_6G_Radio
+R2-2602047	Discussion on ISAC	Google	discussion	Rel-20	FS_6G_Radio
+R2-2602054	Initial Considerations for 6GR ISAC Use Cases	Hanbat National University	discussion	Rel-20
+R2-2602126	Discussion for ISAC in 6G	Lenovo	discussion	Rel-20
+R2-2602169	Discussion on various aspects related to sensing	Sony	discussion	Rel-20	FS_6G_Radio
+R2-2602302	Views on ISAC	Fraunhofer IIS, Fraunhofer HHI	discussion
+R2-2602318	Sensing protocol(s) and procedures	MediaTek Inc.	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-a001`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.5 ISAC
+
+```text
+RAN has agreed that 6GR on ISAC at least supports use cases of detection and/or tracking of passive objects (at least including UAVs, human, vehicles and AGVs), and communication assistance.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-o001`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.5 ISAC
+
+```text
+Different sensing modes and interaction assumptions create different RAN2 impacts, especially once UE involvement is introduced.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-o002`
+
+### [6G/Rel-20 RAN2#133bis] `observation` 9.5 ISAC
+
+```text
+The aNB monostatic and aNB-aNB bistatic sensing modes have no RAN2 impact.
+Proposal 1a：The study of aNB monostatic and aNB-aNB bistatic sensing modes is left to other working groups. And the study of UE-UE bistatic and UE monostatic sensing modes is pending the progress of other working groups.
+Noted
+R2-2601615	On 6G ISAC	Nokia	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-o003`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 study on ISAC aims at a generic procedure and protocol design that can accommodate all the supported sensing modes and meet the requirements of the supported use cases.
+-	CMCC indicates that not all modes have UE impacts.   Docomo agrees.
+-	Xiaomi thinks that even for other cases we may have some things that we can have the same design.
+Noted
+R2-2601527	Discussion on 6G ISAC higher layer procedures and protocols	T-Mobile USA Inc.	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p001`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 sensing technology protocols and procedures should enable a wide range of 6G sensing use cases, using TR 22.870 as a starting point. RAN2 should consider both outdoor and indoor deployments to address a wide range of potential use cases.
+Noted
+Sensing modes
+R2-2602388	RAN2 ISAC Impacts	Ericsson, Verizon	discussion	Rel-20
+Observation 2	RAN2 should do prioritization on which sensing modes should be studied first as it will be difficult to pursue all sensing modes at once.
+Proposal 1	RAN2 studies UE-TRP, TRP-UE bistatic modes before pursuing UE to UE bistatic, UE monostatic sensing modes.
+Noted
+R2-2602170	RAN2 Scope and Considerations for 6G ISAC	Rakuten Mobile, Inc	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p002`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 identifies the first-phase sensing modes and interaction assumptions that introduce distinct RAN2 impacts, and prioritizes those as the starting point for the work.
+Noted
+R2-2601699	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p003`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+For an initial 6G ISAC study, RAN2 prioritizes a baseline involving mono-static aNB sensing and an extension to bi-static aNB sensing. Sensing modes involving UEs are not precluded.
+Noted
+R2-2602236	Procedures and protocol aspects for ISAC	InterDigital	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p004`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+The study should address the UE-involved sensing work in the following order:
+1) UE measurements of DL sensing reference signals;
+2) UE transmission for UL sensing reference signals; and
+3) UE transmit/receive sensing signals for UE to UE scenario.
+-	ZTE asks why is bullet 3 separate as it is covered by bullet 2 and why do we need an order.   Interdigital thinks that for 3 we’d focus on the difference like resource allocation and that would have to be done after we understand 1 and 2.  If we start with 1, we look at configuration, protocol, and validation of measurements and those things have less dependency.
+Noted
+R2-2601824	On UE-centric sensing	Apple Inc., MediaTek Inc., ASUSTek, OPPO, Google, vivo, Lenovo	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p005`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+Define UE-centric sensing as a mode where the UE acts as the initiator of the sensing session, the sole Rx sensing entity, the sole processor of the sensing data to produce sensing results, and the sole final consumer of the sensing results. The UE and/or other sensing entities may transmit sensing signals.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p006`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+Study UE-centric sensing operation mode, as applicable to UE monostatic, network-to-UE bistatic/multi-static and UE-to-UE bistatic/multi-static modes.
+-	Ericsson asks what are the key questions that need to be answered.   Apple thinks that this implies that we need to support mono static and UE TRP bistatic to be supported, maybe it becomes a subset of UE based.
+-	Tmobile is concerned about the network involvement.   Apple explains the network is in control about the resource usage, but we are just not reporting measurements to the network, it stays in UE.     Docomo also has the same concern.
+-	ZTE thinks that this is not sensing mode it is a service type that should be studied in SA2 then RAN2 can discuss this after SA2.   Ericsson agrees.   Apple thinks that we have understand who process the results, in positioning it is called version.   ZTE thinks that is also SA2 scope and that is specified in SA2 as a service.  Xiaomi thinks who does the measurements/calculation is in RAN2.   Interdigital agrees it is service modelling and we are opening the door to not knowing where the measurements go also not clear if this can meet the KPIs.
+-	Nokia thinks we should avoid these scenarios as we don’t know what and how it works so we should have some understanding on what to expect and request from other WGs.   See first what the network offers and then evolve.
+Noted
+Discussion
+-	Xiaomi asks what would be different between TRP-UE and UE-to-UE as from protocol perspective it is the same.   Ericsson explains that some cases there procedures would be different in SA2 etc.
+-	Interdigital thinks that the main thing to address is do the work in a certain order, we first need to find what is common in terms of procedures across use cases and coordination with other groups, whatever is related to UE selection, capabilities, configurations, measurements, protocol architecture and other aspects like transmission we need to wait for RAN1/RAN4.   Xiaomi agrees those are good procedures as a baseline.  Qualcomm thinks that we should first start with architecture.   Samsung thinks that we can look at the procedures in common.
+-	Qualcomm the main difference is whether we have monostatic or bi-static and we should consider the different modes to enable them with a common framework.  RAN3 was involved in stage 3 work.
+-	Mediatek thinks that it is not productive to talk about sensing modes, but rather about procedures like in interdigital proposal.
+-	Xiaomi thinks that we should think of RAN2 impacts.
+-	Oppo doesn’t think we can exclude monostatic.
+-	CMCC thinks that we should prioritize but we have some dependencies where the SF is located
+-	Apple thinks that we can either do bottom up or bottom down and we shouldn’t make the same as SL.
+-	Ericsson thinks that we should look at whether it is a RRC like procedure with configuration or something like LPP which is transparent to aNB.  Architecture is a big term which is also SA2 and RAN3 work.   Ericsson indicates that we did it for positioning but this is not the same.  Also we agree that we should start with DL and UL procedure and understand who is receiving.
+Sensing architecture and protocol
+R2-2601459	Discussion on RAN2 Scope and Cross-WG Dependencies for 6G ISAC	vivo	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p007`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+As to the sensing architecture, RAN2 can assume that there is an SF (sensing function) in the core network responsible for sensing management and sensing data processing to facilitate the subsequent discussion. Whether the SF can be deployed in other nodes, e.g., RAN node, can be left to other WGs (e.g., RAN3).
+Noted
+R2-2601699	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p008`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+The sensing architecture should be discussed in SA2 and RAN3 first.
+Noted
+R2-2601823	Procedures and Protocol Aspects for Sensing	Qualcomm Incorporated	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p009`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 should study an end‑to‑end (SF–UE) Sensing Protocol that is independent of the underlying transport layers.
+Noted
+Discussion
+-	Mediatek agrees with Qualcomm and it is a UE terminated protocol so there is a lot of radio resource management so it does belong to RAN2.  The alternative would be like 3G positioning.
+-	Ericsson thinks that we need to take care of the implementation complexity as positioning wasn’t implemented.   We should learn about our mistakes and how we can make things simpler.   CMCC thinks it can RAN based or LPP based.   CATT agrees.   Xiaomi thinks that positioning wasn’t supported because of LPP but rather because there was no use case, and anyways in 3G it was RRC based.
+-	Mediatek Sensing function controls the sensing operation procedures and the base station controls the radio resource allocation to the UE sensing entity.
+-	Ericsson thinks that we can assume that the SF is logically in the CN.  CMCC thinks in 5GA it is in RAN.  Xiaomi thinks it is a deployment decision.  Interdigitial doesn’t think it matters where it is located as long as it is a logical function and what needs to be visible to the RAN is what matters.
+-	Oppo thinks that we need to understand the type of data characteristics to also understand where data needs to go.
+Not treated
+Sensing procedure
+R2-2602364	Initial views on 6G ISAC study	Samsung	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p010`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+Sensing procedure includes at least:
+UE capability reporting,
+Sensing assistance information transfer,
+Sensing measurement and reporting configuration,
+Sensing measurement reporting (i.e., sensing data transfer).
+-	Apple would like to make sure that not all these procedures will be required at the end.
+-	Qualcomm thinks that UE assistance includes reference signal configuration resources for transmitter and receiver.  This are UE requests.
+Sensing information transfer
+R2-2602456	Views on 6G ISAC	NTT DOCOMO	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p011`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 should define the initial ISAC/Sensing study scope to include UE sensing capability signalling, sensing configuration and activation procedures, and UE-to-network sensing data reporting.
+R2-2602369	Sensing modes, Interaction models, and RAN2 Impact for 6G ISAC	AT&T	discussion	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p012`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 discusses whether existing RRC signaling procedures are sufficient to support sensing framework in terms of connection control, configuration management, resource management, UE capability signaling, and UE authorization
+Not treated
+Sensing configuration
+R2-2601699	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p013`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+Sensing configuration is provided by aNB, including
+Configuration of sensing resources, sensing signals, etc.
+Configuration of measurement data report, e.g., content, format, triggering conditions.
+Not treated
+Sensing entity selection
+R2-2602089	Discussion on RAN2 considerations for ISAC in 6G	Tejas Network Limited	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p014`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 shall discuss internally and co-ordinate with SA2 and RAN3 for defining a generalized framework for sensing entity selection.
+R2-2601515	Insight on 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p015`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 confirms the below two assumptions of sensing service request and further study RAN2 impact:
+Sensing service request for a UE, i.e., select a specific UE as sensing entity;
+Sensing service request for an Area, i.e., sensing entity is selected based on sensing area.
+Not treated
+Sensing measurement and reporting
+R2-2602333	Discussion on ISAC in 6G	Sharp Laboratories of America	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p016`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 to study whether existing mechanisms for configuration and measurement reporting are sufficient to support ISAC. Details FFS.
+R2-2601727	Discussion on 6G ISAC	NEC	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p017`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+Study reusing communication measurement framework to accommodate ISAC-related measurements
+R2-2602081	Discussion on ISAC	HONOR	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p018`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+RAN2 could study the traffic characteristics of sensing data based on RAN1 simulation results and assumptions, evaluate the impact on scheduling mechanisms, and align with the ongoing 6G ISAC study in RAN1.
+Service continuity
+R2-2602434	Discussion on ISAC for 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p019`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+For Service Continuity, both movement of sensing entity or/and sensing target should be considered.
+-	Mediatek asks what impact CMCC sees.  CMCC and Qualcomm explains that when sensing target moves we need to re-select and then we also have sensing entity that can move.   ZTE is concerned if we have “and” as it would be complicated if they both move.
+-	Interdigital thinks service continuity can be viewed as sensing entity selection.   CMCC thinks that the selection only considers Uu interface but we should also consider aNB interface.
+-	Apple doesn’t like the word service continuity.
+-	AT&T thinks that all sensing UEs are stationary so there is no need for this.  Nokia has similar concerns with mobility and should we make an assumption single cell mobility.    ZTE doesn’t thinks we can’t assume stationary and sensing requirement cannot be stationary.  Apple UEs are not stationary.
+Noted
+R2-2601869	Initial RAN2 considerations for ISAC	Ofinno	discussion
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p020`
+
+### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+```text
+To discuss the RRC states applicable for ISAC operation. 6G should at least support UEs in RRC_CONNECTED and study the feasibility of enabling ISAC in low power (sub)states (RRC IDLE, INACTIVE) to optimize UE energy efficiency.
+Noted
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p021`
+
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
 
 ```text

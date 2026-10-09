@@ -6,6 +6,379 @@ _尚无综述_
 
 ## 6GR 演进
 
+### [6G/Rel-20 RAN2#134] `agreement` 9.6 NTN
+
+```text
+For GNSS free, study non UE-location-based mobility (including HO, cell selection/reselection, measurements).    Wait for RAN1 and RAN plenary progress for location-based mobility solutions where the UE location can be determined without relying on non-3GPP systems like GNSS.
+For GNSS degraded, wait for RAN1 progress
+Similar to 5G, L2 timer impacts are expected for NTN, but can discuss after RAN1 further progress.
+Multi-orbit operation
+R2-2603509	Discussion on 6G NTN	OPPO	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-a001`
+
+### [6G/Rel-20 RAN2#134] `observation` 9.6 NTN
+
+```text
+For GNSS-free, non UE-location-based solutions are preferable, since they follow the 6G objective of TN/NTN harmonization.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-o001`
+
+### [6G/Rel-20 RAN2#134] `observation` 9.6 NTN
+
+```text
+In NR-NTN, critical MAC timers for RACH and C-DRX are heavily dependent on GNSS-based RTT calculations.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-o002`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+For GNSS-free operation, RAN2 assumes that UE without GNSS capability cannot acquire its location in NTN, before RAN plenary makes further progress on the support of RAT-dependent positioning in NTN.
+-	CATT thinks that there is a requirement that NTN needs to support positioning.  Xiaomi explains that in plenary they only agreed to ecid positioning.
+-	Mediatek thinks that we need to wait to RAN1.
+Noted
+R2-2603425	Discussion on 6G NTN	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p001`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+RAN2 to wait for RAN1 progress regarding GNSS-degraded operation.
+Noted
+R2-2603739	Discussion on NTN mobility and GNSS-Free for 6G	THALES, Novamint, Gatehouse Satcom, Sateliot, Iridium, Ericsson, TNO, SES, ST Engineering iDirect, ESA	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p002`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+RAN2 to study non-location-based mobility, as well as location-based mobility solutions where the UE location can be determined without relying on non-3GPP systems like GNSS.
+Noted
+Discussion on GNSS-free
+-	LG also thinks that we can discuss non-location based type of solutions.
+-	Huawei thinks that we should look into non-location based.
+R2-2603155	Discussion on 6GR NTN Scenarios	Sharp	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p003`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+For GNSS-less/degraded operations, 6GR NTN supports time-based mobility and beam-level RSRP-based mobility as alternative triggering conditions.
+Noted
+R2-2604189	Discussion on the 6G NTN	Google, AUMOVIO	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p004`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+RAN2 to study mechanisms enabling GNSS-independent RTT estimation for 6G NTN, where the estimated RTT is at least used for delaying the start of RA related timers (e.g., ra-ResponseWindow and ra-ContentionResolutionTimer) and for extending the C-DRX related timers (e.g., drx-HARQ-RTT-TimerDL and drx-HARQ-RTT-TimerUL).
+-	Mediatek thinks that this is also dependent on timers.
+-	Samsung thinks that we can consider the timers as part of the work item phase.
+-	Ericsson thinks that we can start the timers based on the DL too.
+-	Interdigital thinks that there are different solution to consider for GNSS-free/degraded so we should maybe need to study.   Oppo agrees.  Qualcomm doesn’t understand the impact to RAN2.
+Noted
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p005`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+For multiorbit mobility and NTNTN mobility, study QoSbased cell reselection to enable RRC IDLE mode UEs to preferentially camp on GEO cell and, when triggered by MT or MO data arrival, select an appropriate cell for access based on service requirements.
+-	Qualcomm asks what is mean by QoS.   Oppo explains that is a service.
+Noted
+R2-2603539	Discussion on 6GR NTN related designs	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p006`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+RAN2 to study multi-orbit operation assuming same operator:
+Paging and initial access procedure:
+Option 1): UE paged by GEO, and accesses via GEO, then the NW handover or redirect the UE to LEO;
+Option 2): UE paged by GEO, then performs cell reselection to LEO, and performs initial access on LEO (i.e., cross-carrier paging response);
+Option 3): UE paged by GEO, and directly performs initial access via LEO based assistance information provided by GEO (i.e., cross-carrier random access).
+Feasibility of providing coverage information for other orbits for efficient switch including cell selection/reselection and measurement triggering.
+-	Option 2 and 3 need to be studied a bit more.
+-	ZTE also thinks that we should study both option 2 and 3.
+-	Xioami thinks that option 2 can work for both MT and MO case, so we should prioritize that one.   ZTE thinks that option 3 can also apply for MO.    CATT agrees that the options apply to both MO and MT.
+-	Huawei explains that the difference between 2 and 3 is how the information for accessing the information is provided.
+-	Option 3 should be discussed in TN first and option 2 is more friendly for UE, so we can start with option 2.    ZTE thinks that when we study the multicarrier we can add multi-orbit and aim to have the same solution.
+-	Ericsson asks where the power savings is.
+-	Nokia asks if we increase the risks.   Thales and Qualcomm think that there are problems of UE attacking the LEO if there is false paging.   Qualcomm also explains that we have to acquire synchronization that takes a long time.    ZTE and Xioami thinks that the false paging is not specific to NTN, even in TN it not protected.   Samsung explains that network triggered mobility should be secure.  Xiaomi explains that the paging can be in both GEO and LEO.
+-	Google explains that there are cons with option 2, latency increase and option 3 overhead.
+-	Service based reselection can solve the problem and you don’t need to tell the UE which orbit to to respond to.
+Noted
+Discussion
+-	MEdiatek asks if the UE is expected to monitor the other orbit.   Interdigital thinks that there can be solution on where the GEO cell tells you rather than monitoring the other orbits.  There may be deployments where there is no LEO coverage.   ZTE thinks that anyways the UE will monitor other cells without needing to know whether it is GEO or LEO
+-	Fraunhofer asks if this is like a redirection and can be similar to RACH case for TN.  .
+-	Ericsson asks what problem do you see and what KPI do you expect to solve with this solution.     Nokia explains that coverage is a big problem, GEO can provide coverage by LEO provides better service.     Also power is a consideration.
+-	Apple thinks that GEO and LEO are on different carriers so this is similar to multi carrier idle.   So We can consider one solution for TN and NTN.   CMCC thinks that the benefit is even higher than for TN as the satellites are moving very fast, so GEO should provide some information and the let the UEs camp there.    Xiaomi thinks that it is not necessary the case that cells are in different carrier.
+-	Qualcomm explains that there are regulations that you have to avoid interference so it is likely for FR1 it is on different carriers.
+-	Huawei asks if we intend to specify what services should go to which orbit.  Mediatek thinks that reselection should be UE behaviour and not specify too much.
+-	Qualcomm would like to make sure that we shouldn’t override the reselection frequency priority.
+Agreements on multi-orbit
+-	Continue the discussion on multi-carrier idle mode in TN session and include multi-orbit as one of the scenarios to be discussed.
+-	Study service-based reselection at least for inter-frequency scenario.
+-	Understand the gains/benefits compared to option 1 and/or any specific NTN related problems/concerns after some discussions on TN session have taken place.
+TN-NTN mobility
+R2-2603828	Discussion on 6G NTN mobility	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
+Proposal 4 Consider the following aspects for mobility between TN and NTN:
+capability handling
+identification of essential measurement and handover assistance information
+trigger events for measurement relaxation (i.e., skip NTN while in good coverage of TN and vice versa)
+use of unique satellite ID and same formats/granularity/unit for its parameters.
+Noted
+R2-2602962	Further Considerations on  6GR NTN	vivo	discussion	Rel-20
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p007`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+For intra-RAT 6G TN-NTN cell reselection, at least consider the following mechanism:
+In case of TN to NTN mobility, RRM based S-measure for measurement initiation should be considered as baseline;
+In case of NTN to TN mobility, the distance between UE and the reference location or the serving time of the serving NTN cell can be considered for measurement initiation.
+-	China telecom thinks we can do better than 5G by not putting the restrictions.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p008`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+For intra-RAT 6GR TN-NTN mobility, at least consider the following measurement report conditions:
+For TN->NTN
+Distance between UE and a reference location of the neighbor cell becomes shorter than configured threshold;
+Serving cell becomes worse than the absolute threshold and distance between UE and a reference location of the neighbor cell becomes shorter than configured threshold;
+For NTN->TN:
+The distance between UE and a reference location of the serving cell becomes larger than configured threshold and neighbor cell become better than the absolute threshold.
+Agreements on mobility
+-	Study NTN specific trigger conditions for measurement relaxation/initiation for idle/inactive and connected (e.g. S-measure, reference location, time, etc) for mobility between TN/NTN and NTN/NTN.
+Measurement enhancements
+R2-2603509	Discussion on 6G NTN	OPPO	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p009`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+For SMTC and measurement gap design in 6G NTN:
+a)	Reuse the following mechanisms from 5G NTN: multiple SMTC/MG, UE based SMTC adjustment for RRC IDLE mode UEs, PDD report for RRC CONNECTED mode UEs.
+b)	Study beam based SMTC configuration to reduce signalling overhead and GNSS dependency.
+R2-2604129	Solutions for 6G NTN	Ericsson, Novamint, Iridium, ESA	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p010`
+
+### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+```text
+Study solutions, based on a reference location of the serving cell, to account for the UE-aNB propagation delay difference between different satellites in the measurement timing in 6G NTN.
+R2-2603034	Consideration on 6G NTN design	ZTE Corporation, Sanechips	discussion	Rel-20	FS_6G_Radio
+R2-2603082	NTN SIB messages Design Consideration on 6G TN_NTN Mobility	T-Mobile USA Inc, Deutsche Telekom AG	discussion	Withdrawn
+R2-2603204	Discussion on GNSS operations and mobility aspects	CATT	discussion	Rel-20	FS_6G_Radio
+R2-2604189	Discussion on the 6G NTN	Google, AUMOVIO	discussion	Rel-20	FS_6G_Radio
+R2-2603314	NTN in 6G	Ofinno	discussion	Rel-20	FS_6G_Radio
+R2-2603392	Discussion on different aspects of NTN Framework	Tejas Networks Limited	discussion	Rel-20	FS_6G_Radio
+R2-2603410	Consideration on mobility aspects for 6G NTN	LG Electronics Inc.	discussion
+R2-2603449	Consideration on multi-orbit mobility in 6G NTN	ETRI	discussion	Rel-20
+R2-2603485	Measurement and Mobility for NTN	NEC	discussion	Rel-20	FS_6G_Radio
+R2-2603529	Discussion on assistance information to support mobility between TN and NTN	ITRI, Acer Incorporated	discussion	FS_6G_Radio
+R2-2603558	NTN aspects for 6GR	Lenovo	discussion	Rel-20
+R2-2603578	Discussion on 6G NTN	Samsung	discussion
+R2-2603585	NTN for 6G	Nokia	discussion	FS_6G_Radio
+R2-2603630	GNSS-degraded/GNSS-free operations on 6G NTN mobility	Sony	discussion	Rel-20	FS_6G_Radio
+R2-2603631	Cell selection/re-selection in 6G multi-orbit mobility	Sony	discussion	Rel-20	FS_6G_Radio
+R2-2603684	Consideration of 6G NTN mobility	China Telecom	discussion	Rel-20
+R2-2603735	Views on 6G NTN	Apple	discussion	Rel-20	FS_6G_Radio
+R2-2603772	Discussion on mobility framework for NTN including multi-orbit scenarios	Turkcell	discussion	Rel-20	FS_6G_Radio
+R2-2603834	NTN SIB messages Design Consideration on 6G TN/NTN Mobility	T-Mobile USA Inc., Deutsche Telekom AG	discussion
+R2-2603874	Considerations on 6G NTN	CMCC	discussion	Rel-20	FS_6G_Radio
+R2-2603883	Views on 6G NTN	NTT DOCOMO	discussion
+R2-2603915	Mobility Aspects for 6G NTN	MediaTek Inc.	discussion
+R2-2603987	Discussion on NTN for 6GR	HONOR	discussion	Rel-20	FS_6G_Radio
+R2-2604007	Discussion on 6G mobility for NTN	ASUSTeK	discussion	Rel-20
+R2-2604019	Discussion on 6G NTN	1FINITY Inc.	discussion	Rel-20	FS_6G_Radio
+R2-2604036	Overview of 6GR NTN mobility	Amazon Web Services	discussion
+R2-2604085	Views on 6GR NTN Mobility	CEWiT	discussion	Rel-20	FS_6G_Radio
+R2-2604095	Discussion on 6G NTN mobility	CSCN	discussion	Rel-20	FS_6G_Radio
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p011`
+
+### [6G/Rel-20 RAN2#132] `agreement` 10.2.2 TN/NTN integration
+
+```text
+1	The basic assumption with 5G NTN deployment scenarios (LEO, MEO, GSO) and payload type can be adopted in 6G NTN.   FFS whether we will study with and/or without GNSS, depending on RANP and other WG discussion first.
+2	For 6G NTN, RAN2 will consider at least the following features/procedures to treated together with the TN design (e.g. common features/procedures):
+-	HARQ
+-	L2 timer handling, e.g., the timer value range should cover both TN and NTN, adaptive UP timer start time based on RTT;
+-	Measurement framework (including measurement gap)
+-	Mobility framework (including TN and NTN mobility)
+-	TAC. e.g., support multiple TACs per PLMN in one cell;
+-	SIB acquisition/design
+-	PWS (Public Warning System) services over an intended area;
+-	Initial access framework (including network type indiciation)
+3	At least the following NTN features will be further studied in RAN2 (maybe treated in NTN specific AI).  Focus will be on RAN2 impacts.
+-	Uplink time and frequency pre-compensation;
+-	TA reporting;
+-	Satellite switch with re-sync;
+-	Beam hopping.
+-	Discontinuous coverage
+NOTE:  Common design can be considered if something can be applicable to TN as well later
+4	The following features can be discussed in RANP
+-	MBS broadcast and multicast via NTN;
+-	Dual connection;
+-	Carrier Aggregation.
+-	VLEO
+Not treated
+R2-2508045	Consideration of TN and NTN Integration in 6GR	vivo	discussion	Rel-20
+R2-2508077	Discussion on the general aspects of 6G NTN	Xiaomi	discussion	Rel-20	FS_6G_Radio
+R2-2508130	Introduction of explicit Network Type Indicator for 6G	T-Mobile USA Inc.	discussion
+R2-2508148	Discussion on TN and NTN integration	CATT, CUC	discussion	Rel-20	FS_6G_Radio
+R2-2508183	Discussion on requirement for 6GR NTN	Transsion Holdings	discussion
+R2-2508203	Discussion on NTN Requirements for 6GR	AST SpaceMobile	discussion	Late
+R2-2508219	Discussion for TN/NTN integration	Sharp	discussion	Rel-20	FS_6G_Radio
+R2-2508284	Discussion on harmonized design for TN and NTN	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
+R2-2508301	Discussion on the harmonized 6GR for TN and NTN	Google	discussion	Rel-20	FS_6G_Radio
+R2-2508327	On 6G TN-NTN integration	Samsung	discussion	Rel-20
+R2-2508359	Initial considerations on NTN design for 6G	Nokia Denmark	discussion	Rel-20	FS_6G_Radio
+R2-2508411	Harmonized Design for TN and NTN in 6G	MediaTek Inc.	discussion
+R2-2508415	Overview of harmonized 6G Radio design for TN and NTN	Amazon Web Services	discussion
+R2-2508448	Views on 6G NTN	Apple	discussion	Rel-20	FS_6G_Radio
+R2-2508460	Discussion on 6G TN/NTN integration	Fujitsu	discussion	Rel-20	FS_6G_Radio
+R2-2508491	Discussion on TN/NTN Integration	ETRI	discussion	Rel-20
+R2-2508528	Views on 6G TN/NTN integration	NTT DOCOMO, INC.	discussion
+R2-2508541	Discussion on 6GR TN/NTN integration	Sony	discussion	Rel-20	FS_6G_Radio
+R2-2508555	TN/NTN Integration	NEC	discussion
+R2-2508593	Discussion on NTN for 6GR	HONOR	discussion	Rel-20	FS_6G_Radio
+R2-2508625	NTN Integration in 6G	Ofinno	discussion	Rel-20
+R2-2508639	TN/NTN integration in 6G Radio Design	InterDigital	discussion	Rel-20	FS_6G_Radio	Withdrawn
+R2-2508659	Considerations on TN/NTN integration for 6GR	Lenovo	discussion	Rel-20
+R2-2508703	Essential requirements for NTN and way forward in the common design with TN	Ericsson	discussion	Rel-20	FS_6G_Radio
+R2-2508736	Considerations on TN/NTN integration and connected mode  mobility in 6GR	AUMOVIO	discussion
+R2-2508777	6G NTN TN Harmonization Requirement	Jio Platforms	discussion	Rel-20	FS_6G_Radio	Revised
+R2-2508813	Views on TN NTN integration for 6G	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
+R2-2508840	Considerations on TN/NTN integration for 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
+R2-2508865	TN/NTN integration in 6G Radio Design	InterDigital, Inc.	discussion	Rel-20
+R2-2508869	Discussion on TN-NTN integration for 6G	LG Electronics France	discussion	Rel-20
+R2-2508911	Consideration on 6G TN-NTN integration	ZTE Corporation,  Sanechips	discussion	Rel-20
+R2-2508933	Discussion on TN/NTN integration	Spreadtrum, UNISOC	discussion	Rel-20
+R2-2508999	ANR for NTN-TN integration	LG Uplus	discussion	Late
+R2-2509006	Discussion on TN/NTN Integration	TCL	discussion	Rel-20	Withdrawn
+R2-2509019	6G NTN TN Harmonization Requirement	Jio Platforms	discussion	Rel-20	FS_6G_Radio	R2-2508777
+R2-2509041	Discussion on TN/NTN integration	CSCN	discussion	Rel-20	FS_6G_Radio
+R2-2509048	Discussion on TN/NTN Integration and Unification	TCL	discussion	Rel-20
+R2-2508416	Overview of 6GR NTN mobility	Amazon Web Services	discussion
+moved from 10.4
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-a001`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+Study 6G radio interface adaptations to support practical NTN deployment scenarios across all orbits (VLEO, LEO, MEO, GSO), and evaluate the impact of NTN characteristics (e.g., initial access timers, HARQ, mobility management, paging).
+-	Mediatek asks if VLEO will be a common case or whether it should be discussed in RANP.  Thales indicates that we can start with LEO, MEO and later consider VLEO
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p001`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+The 6G radio access shall study from Day-1:
+•	A unified grant-free initial access mechanism applicable to both NTN and TN.
+•	A control plane signaling adapted to support network energy savings and address NTN-specific constraints (e.g. beam hopping techniques, reduced overhead, etc.)
+-	Xiaomi asks if for high load we still go for RACH less.   Thales thinks that we need solution that allow faster connection and it also beneficial for TN.  Xiaomi explains that for high load the network needs to do contention.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p002`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+The 6G radio access shall from Day-1 allow to dynamically activate/deactivate the retransmission mechanisms (e.g., HARQ) at user plane level depending on the type of services and operating point
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p003`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+Study a design for 6G procedures that support mobility from TN to NTN and from NTN to TN for UEs in both Idle and Connected modes.
+-	Oppo asks if this is only to 5G or considering 4G as well.   Thales explains this is general but we can consider the NTN to NTN 5G to 6G as well.
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p004`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+Study mobility mechanisms for 6G satellite networks (NTN to NTN), for both idle and connected modes. The study should address:
+•	Inter-beam mobility
+•	Inter-cell mobility
+•	Inter-satellite mobility
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p005`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+RAN2 to consider the following mobility mechanisms in 6GR study, in order of priority:
+•	Time-based and Location-based Conditional Handover (CHO)
+•	RACH-less handover
+•	Cell switch mechanism triggered by MAC (e.g. LTM)
+•	Group handover
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p006`
+
+### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+```text
+Study the following essential NTN capabilities for supporting NTN services in 6G:
+•	NTN based positioning mechanisms for Positioning, Navigation, and Timing services.
+•	Network verified UE location for regulatory services
+•	Geo-fencing (e.g. intended service area) for Broadcast, multicast and PWS.
+[4 min]
+Noted
+R2-2508295	Discussion on TN and NTN integration	OPPO	discussion	Rel-20	FS_6G_Radio
+Proposal 1	The basic assumption in 5G NTN, e.g., NTN scenarios, payload type, etc., can be adopted in 6G NTN and UE without GNSS capability can also be studied in 6G NTN.
+-	Mediatek asks if this means GNSS resilient.
+-	Vivo asks if it is both GNSS and without GNSS.  Oppo thinks with should be studied, the discussion is more for the case without GNSS
+-	Apple thinks that for RAN2 we should start with GNSS and without we need RAN1 first.
+Proposal 2	Define 3 types of features for NTN/TN feature discussions: common essential features, NTN specific essential features and NTN specific optional features.
+-	Mediatek thinks it is a good idea to have categorizations.  For common it should be common but with some NTN small optimization.
+-	CMCC thinks that all features apply to NTN.  WE should think with NTN features also apply to TN.
+-	Interdigital thinks that it makes sense and proposal 6 describes what it is.
+-	Qualcomm thinks that we should design TN functionalities and identify what needs to be extended, and those would be common.
+-	Sharp thinks we can use this words temporarily but then later revisit, as we may have some things that are NTN specific like ephemeris free but at the end we want the design to be common.
+Proposal 3	In 6G NTN, RAN2 consider the following features as common essential features:
+Proposal 4	In 6G NTN, RAN2 considers the following features as NTN specific essential features:
+-	NTN specific SIB acquisition;
+-	Mediatek asks why this is separate, shouldn’t we have a common design.  Thales and Google agrees.
+-	Satellite switch with re-sync;
+-	ZTE thinks that this is like a group mobility and there may be cases that may be applicable for TN.
+-	Ericsson thinks that we don’t know if this is need.  Chair explains that could be concluded that it is not needed as part of study.  Nokia thinks that we need to understand 6G first.
+-	Huawei thinks that location based should be NTN specific.  CMCC thinks that location based can be considered common as it may be applicable to both TN and NTN.
+-	Uplink time and frequency pre-compensation;
+-	Vivo asks why this is in RAN2.  Google thinks that calculation of TA is RAN2.  Xiaomi thinks that RAN1 specifies everything.
+-	Discontinuous coverage;
+-	Qualcomm and Xiaomi don’t think this should be in the scope as it is for IoT NTN
+-	Novamint thinks that this is an essential feature missing.   Amazon also thinks this is important to study.    Nokia agrees as we might not have coverage from day 1.   Interdigital thinks that we need to add store and forward.
+-	Samsung thinks that we should assume we have connectivity in 6G.   Interdigital thinks that just like TN it takes time before we have full coverage.  Huawei agrees, initially we have sparse deployment.
+-	Oppo also sees benefits to this feature.
+-	Qualcomm thinks that this should be a plenary discussion.
+Proposal 5	In 6G NTN, the following features belong to specific optional features which can be considered later:
+-	MBS broadcast and multicast via NTN;
+-	Dual connection;
+-	Carrier Aggregation.
+Proposal 6	In 6G NTN, RAN2 can handle the defined three NTN feature categories with the follow principle:
+-	for common essential features, consider the harmonized design for TN and NTN since day1;
+-	for NTN specific essential features, can be discussed whether support them since day1;
+-	for NTN specific optional features, can be discussed in later release.
+[4 min]
+Noted
+```
+[原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p007`
+
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
 
 ```text

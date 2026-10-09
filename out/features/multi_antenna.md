@@ -5490,7 +5490,7 @@ Other KPI is not precluded.
 #22
 Baseline for performance evaluation
 Rel-19 Type I Scheme A/B
-Rel-19 eType II Codebook 
+Rel-19 eType II Codebook
 Ideal SVD for calibration
 [NR AI-CSI compression, when applicable]
 #23
