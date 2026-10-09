@@ -105,12 +105,18 @@ def _legacy_summary(feature: Feature, legacy: list[dict], cli, cache, budget) ->
         if hit is not None:
             pieces.append(hit["text"])
             continue
-        budget.check()
-        response = cli.call(build_feature_prompt(feature, [], chunk))
+        entry = budget.reserve(task="legacy_chunk")
+        try:
+            response = cli.call(build_feature_prompt(feature, [], chunk))
+        except (LlmError, LlmRateLimited) as exc:
+            budget.record_failure(entry, exc)
+            raise
         text = response.text.strip()
         if not text:
-            raise LlmError("5G-A 历史归纳返回空文本")
-        budget.spend(response, task="legacy_chunk")
+            error = LlmError("5G-A 历史归纳返回空文本")
+            budget.record_failure(entry, error)
+            raise error
+        budget.record_result(entry, response)
         cache.put(key, {"text": text})
         pieces.append(text)
 
@@ -123,12 +129,18 @@ def _legacy_summary(feature: Feature, legacy: list[dict], cli, cache, budget) ->
     hit = cache.get(key)
     if hit is not None:
         return hit["text"]
-    budget.check()
-    response = cli.call(LEGACY_SYSTEM + "\n\n把下面几段归纳合并成一段连贯的中文：\n\n" + merged)
+    entry = budget.reserve(task="legacy_merge")
+    try:
+        response = cli.call(LEGACY_SYSTEM + "\n\n把下面几段归纳合并成一段连贯的中文：\n\n" + merged)
+    except (LlmError, LlmRateLimited) as exc:
+        budget.record_failure(entry, exc)
+        raise
     text = response.text.strip()
     if not text:
-        raise LlmError("5G-A 历史合并返回空文本")
-    budget.spend(response, task="legacy_merge")
+        error = LlmError("5G-A 历史合并返回空文本")
+        budget.record_failure(entry, error)
+        raise error
+    budget.record_result(entry, response)
     cache.put(key, {"text": text})
     return text
 
@@ -160,10 +172,18 @@ def digest_features(features: list[Feature], events: list[dict], feat_state: dic
             if hit is not None:
                 entry.update(hit)
             else:
-                budget.check()
-                response = cli.call(build_feature_prompt(feature, six_events), output_schema=FEATURE_SCHEMA)
-                budget.spend(response, task="feature_digest")
-                parsed = parse_feature_response(response.text)
+                budget_entry = budget.reserve(task="feature_digest")
+                try:
+                    response = cli.call(build_feature_prompt(feature, six_events), output_schema=FEATURE_SCHEMA)
+                except (LlmError, LlmRateLimited) as exc:
+                    budget.record_failure(budget_entry, exc)
+                    raise
+                budget.record_result(budget_entry, response)
+                try:
+                    parsed = parse_feature_response(response.text)
+                except SchemaError as exc:
+                    budget.record_failure(budget_entry, exc)
+                    raise
                 cache.put(key, parsed)
                 entry.update(parsed)
         except (BudgetExhausted, LlmRateLimited) as exc:

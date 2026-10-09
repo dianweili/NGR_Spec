@@ -1,0 +1,7 @@
+{
+  "impact": "low",
+  "summary_zh": "对于载荷处于 NR 范围内且大于 11 bits 的 Polar code 设计潜在扩展或增强，其动机尚无共识。",
+  "tags": [
+    "Polar code"
+  ]
+}

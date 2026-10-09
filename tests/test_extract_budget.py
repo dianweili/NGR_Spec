@@ -29,6 +29,15 @@ def test_totals_accumulate():
     assert round(budget.cost_usd, 4) == 0.03
 
 
+def test_reservation_counts_a_failed_request_against_limit():
+    budget = Budget(max_calls=1)
+    entry = budget.reserve("summary")
+    budget.record_failure(entry, RuntimeError("invalid JSON"))
+    with pytest.raises(BudgetExhausted):
+        budget.reserve("summary")
+    assert entry["status"] == "failed"
+
+
 def test_log_appends_jsonl(tmp_path):
     budget = Budget(max_calls=5)
     budget.spend(CliResult("x", {"output_tokens": 5}, 0.01), task="summary")

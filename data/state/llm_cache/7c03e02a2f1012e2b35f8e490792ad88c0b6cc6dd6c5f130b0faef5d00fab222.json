@@ -1,0 +1,9 @@
+{
+  "impact": "high",
+  "summary_zh": "针对超出 NR 范围数据速率的 LDPC 扩展研究，需在 RAN1#124 前提供初版 LDPC BG(s) 和 PCM(s)，并给出目标 BLER 所需 SNR、复杂度及译码算法评估假设。复杂度定义将进一步讨论，其他指标仍为 FFS。",
+  "tags": [
+    "LDPC",
+    "BG",
+    "PCM"
+  ]
+}

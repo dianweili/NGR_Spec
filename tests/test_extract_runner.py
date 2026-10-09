@@ -76,6 +76,14 @@ def test_malformed_json_retries_once_then_marks_failed(tmp_path):
     assert stats.failed == 1
 
 
+def test_retry_cannot_exceed_actual_call_budget(tmp_path):
+    events, cli = [ev(1)], FakeCli(["not json", reply(["RAN1-126-10.2-a001"])])
+    stats = extract_all(events, CFG, cli_factory=lambda model, effort: cli, cache=LlmCache(tmp_path), budget=Budget(1))
+    assert len(cli.calls) == 1
+    assert stats.budget_exhausted is True
+    assert events[0]["llm_status"] == "pending"
+
+
 def test_rate_limit_stops_cleanly_keeping_done_work(tmp_path):
     events = [ev(index) for index in range(1, 5)]
     cli = FakeCli([reply([events[0]["id"], events[1]["id"]]), LlmRateLimited("limit")])

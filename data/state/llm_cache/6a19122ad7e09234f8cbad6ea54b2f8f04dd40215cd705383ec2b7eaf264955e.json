@@ -1,0 +1,8 @@
+{
+  "impact": "medium",
+  "summary_zh": "RAN1 假设 FR2-1 网络侧最大信道带宽为 800MHz 或 400MHz，具体值将在未来择一确定。UE 侧是否采用 800MHz 或 400MHz 仍为 FFS。",
+  "tags": [
+    "FR2-1",
+    "channel bandwidth"
+  ]
+}

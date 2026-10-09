@@ -1,0 +1,9 @@
+{
+  "impact": "high",
+  "summary_zh": "6GR 上行以 5G NR 定义的 CP-OFDM 和 DFT-s-OFDM 波形为基础。对两种波形的增强或修改将作为潜在补充进行研究，且不排除其他基于 OFDM 的波形。",
+  "tags": [
+    "CP-OFDM",
+    "DFT-s-OFDM",
+    "uplink"
+  ]
+}

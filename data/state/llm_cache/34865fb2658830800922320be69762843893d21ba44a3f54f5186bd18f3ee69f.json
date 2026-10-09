@@ -1,0 +1,9 @@
+{
+  "impact": "high",
+  "summary_zh": "6GR DL 数据信道将 5G NR uniform QPSK、16QAM、64QAM、256QAM 和 1024QAM 作为支持基础进行研究。UL 数据信道方面，CP-OFDM 以 QPSK 至 256QAM 为基础，DFT-s-OFDM 另包括 pi/2 BPSK；增强和其他调制方案仍为 FFS。",
+  "tags": [
+    "QAM",
+    "CP-OFDM",
+    "DFT-s-OFDM"
+  ]
+}

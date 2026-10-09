@@ -326,6 +326,8 @@ R1-2601696	Feature Lead summary #5 on 6G waveform	Moderator (Nokia)
 
 ### [6G/Rel-20 RAN1#123] `agreement` frame-structure-ecea07cd Frame structure
 
+RAN1 假设 FR2-1 网络侧最大信道带宽为 800MHz 或 400MHz，具体值将在未来择一确定。UE 侧是否采用 800MHz 或 400MHz 仍为 FFS。
+
 ```text
 RAN1 assumes maximum channel bandwidth 800MHz or 400MHz at network side for FR2-1.
 800MHz or 400MHz, to be down-selected in the future
@@ -522,6 +524,8 @@ Table: Link level multi-user evaluation assumption for UL low-PAPR proposals
 
 ### [6G/Rel-20 RAN1#122] `agreement` frame-structure-ecea07cd Frame structure
 
+6GR 将除 PRACH 外的所有信号和信道的 SCS 作为讨论起点。低于 6 GHz 时至少支持 FDD 15kHz、TDD 30kHz；约 7 GHz 可研究 30/60kHz，24.25–52.6 GHz 支持 120kHz，其他列出的 SCS 选项是否讨论仍待 RANP 决定或保持 FFS。
+
 ```text
 6GR takes the following SCS as start point for discussion for all the signals/channels except PRACH.
 For sub 6GHz
@@ -546,6 +550,8 @@ FFS subcarrier spacing for PRACH and up to initial access discussion.
 
 ### [6G/Rel-20 RAN1#122] `agreement` frame-structure-ecea07cd Frame structure
 
+6GR 支持 normal cyclic prefix，即与 NR 定义的 normal CP 相同。是否需要其他 CP 仍为 FFS。
+
 ```text
 6GR supports normal cyclic prefix, i.e., same as the normal CP defined in NR.
 FFS potential need for other CP.
@@ -555,12 +561,16 @@ Final summary in R1-2506604.
 
 ### [6G/Rel-20 RAN1#122] `conclusion` frame-structure-ecea07cd Frame structure
 
+sensing 的 numerologies 由 sensing 议题讨论决定。
+
 ```text
 Numerologies for sensing is up to sensing agenda discussion.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-frame-structure-ecea07cd-c001`
 
 ### [6G/Rel-20 RAN1#122] `agreement` waveform-6eae1e79 Waveform
+
+6GR 上行以 5G NR 定义的 CP-OFDM 和 DFT-s-OFDM 波形为基础。对两种波形的增强或修改将作为潜在补充进行研究，且不排除其他基于 OFDM 的波形。
 
 ```text
 CP-OFDM and DFT-s-OFDM waveforms as defined in 5G NR are supported as the basis for 6GR for uplink
@@ -572,6 +582,8 @@ From Friday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_122/) · `RAN1-122-waveform-6eae1e79-a001`
 
 ### [6G/Rel-20 RAN1#122] `agreement` waveform-6eae1e79 Waveform
+
+6GR 下行以 5G NR 定义的 CP-OFDM 波形为基础，其增强或修改将作为潜在补充进行研究；DFT-s-OFDM 或其他基于 OFDM 的波形也将作为潜在下行补充波形研究。提案者需说明目标用例、信号/信道及与 CP-OFDM（包括 MRSS）的复用方式等，并提供相关性能、兼容性和复杂度信息。
 
 ```text
 CP-OFDM waveform as defined in 5G NR is supported as the basis for 6GR for downlink

@@ -632,6 +632,8 @@ R1-2601699	FL summary #6 on modulation, joint channel coding and modulation	Mode
 
 ### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
 
+对于载荷大于 NR 范围（即超过 1706 bits）的 UCI Polar code 设计，至少将 more than 2 segments 作为进一步研究选项。是否需要超出 NR 范围的 UCI 载荷，需由其他议题确认。
+
 ```text
 For Polar code design for UCI with payload size larger than NR range (i.e., larger than 1706 bits), at least the following option is identified for further study
 More than 2 segments
@@ -640,6 +642,8 @@ Note: The necessity of UCI payload size larger than NR range needs to be confirm
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a001`
 
 ### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
+
+针对超出 NR 范围数据速率的 LDPC 扩展研究，需在 RAN1#124 前提供初版 LDPC BG(s) 和 PCM(s)，并给出目标 BLER 所需 SNR、复杂度及译码算法评估假设。复杂度定义将进一步讨论，其他指标仍为 FFS。
 
 ```text
 For the study of LDPC extension for data rate beyond NR range with acceptable performance-complexity tradeoff,
@@ -652,6 +656,8 @@ FFS: other metrics
 
 ### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
 
+针对 3~11 bits 小载荷 UCI 的信道编码研究，至少考虑 5G RM code。若 5G RM code 存在可论证的缺点，应识别并研究潜在解决方案。
+
 ```text
 For the study of channel coding for small UCI with payload size of 3~11bits, at least considering:
 5G RM code
@@ -660,6 +666,8 @@ Identify the justifiable drawbacks of 5G RM code, if exists, study potential sol
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a003`
 
 ### [6G/Rel-20 RAN1#123] `agreement` channel-coding-0cf828bf Channel coding
+
+LDPC 扩展的 BG(s) 和 PCM(s) 评估将考虑给定的 AWGN 信道、调制与码率、交织器、码块大小、目标 BLER 及译码算法假设，这些假设仅用于仿真，不影响最终设计。候选方案需同时比较性能和复杂度，且 BLER 性能比较须在相同计算复杂度下进行，计算复杂度按所需 BLER 的迭代次数与提升后校验矩阵中 1 的数量之积除以 CB size 定义。
 
 ```text
 For the study of BG(s) and PCM(s) for LDPC extension for data rate beyond NR range, at least the following evaluation assumptions will be considered.
@@ -681,6 +689,8 @@ Computation complexity is defined as (the number of iteration times for required
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-channel-coding-0cf828bf-a004`
 
 ### [6G/Rel-20 RAN1#123] `conclusion` channel-coding-0cf828bf Channel coding
+
+对于载荷处于 NR 范围内且大于 11 bits 的 Polar code 设计潜在扩展或增强，其动机尚无共识。
 
 ```text
 No consensus on motivation(s) for potential extension/enhancement for Polar code design with payload size within NR range (larger than 11bits).
@@ -802,6 +812,8 @@ For DFT-s-OFDM, further study how/whether Net Gain over uniform QAM can be achie
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a005`
 
 ### [6G/Rel-20 RAN1#122] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+6GR DL 数据信道将 5G NR uniform QPSK、16QAM、64QAM、256QAM 和 1024QAM 作为支持基础进行研究。UL 数据信道方面，CP-OFDM 以 QPSK 至 256QAM 为基础，DFT-s-OFDM 另包括 pi/2 BPSK；增强和其他调制方案仍为 FFS。
 
 ```text
 For 6GR DL, 5G NR uniform QPSK, 16QAM, 64QAM, 256QAM and 1024QAM are supported as basis for study for data channel

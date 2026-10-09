@@ -1,0 +1,9 @@
+{
+  "impact": "high",
+  "summary_zh": "6GR 将除 PRACH 外的所有信号和信道的 SCS 作为讨论起点。低于 6 GHz 时至少支持 FDD 15kHz、TDD 30kHz；约 7 GHz 可研究 30/60kHz，24.25–52.6 GHz 支持 120kHz，其他列出的 SCS 选项是否讨论仍待 RANP 决定或保持 FFS。",
+  "tags": [
+    "SCS",
+    "PRACH",
+    "RANP"
+  ]
+}

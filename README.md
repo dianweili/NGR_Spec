@@ -15,6 +15,8 @@
 
 摘要由本机 `codex exec` 使用当前 ChatGPT/Codex 登录态完成。首次回填应先使用 `--no-llm`，检查 `lineage-report` 后再运行 `enrich`。
 
+默认摘要策略针对 ChatGPT Plus 的共享额度：使用 `gpt-6-luna`、每批最多 12 条、每次 `enrich` 最多发起 1 次调用。先检查 `data/state/usage_log.jsonl` 与生成的 Markdown，再手动运行下一轮；格式错误或失败重试同样会占用该上限，避免静默超额。
+
 ## 配置与退出码
 
 在 `config/features.yaml` 添加特性和 `lineage` 段：每段声明工作组会议范围，以及议程锚点或标题正则。修改后运行 `remap`，无需重新联网。

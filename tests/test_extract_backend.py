@@ -30,7 +30,7 @@ def test_call_uses_safe_required_flags(monkeypatch):
     CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
     command = run.cmd
     assert command[:2] == ["codex", "exec"]
-    for flag in ["--ephemeral", "--sandbox", "read-only", "--output-schema", "--output-last-message"]:
+    for flag in ["--ephemeral", "--sandbox", "read-only", "--ignore-user-config", "--ignore-rules", "--output-schema", "--output-last-message"]:
         assert flag in command
 
 

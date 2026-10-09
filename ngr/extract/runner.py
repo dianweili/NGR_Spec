@@ -70,34 +70,30 @@ def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, b
         batch = [event for _, event in chunk]
         ids = [event["id"] for event in batch]
         prompt = build_summary_prompt(batch)
-        try:
-            budget.check()
-        except BudgetExhausted:
-            stats.budget_exhausted = True
-            log.info("配额用尽，剩余 %d 条留待下次", len(pending) - offset)
-            break
-
         result = None
         for attempt in (1, 2):
+            try:
+                entry = budget.reserve(task="summary")
+            except BudgetExhausted:
+                stats.budget_exhausted = True
+                log.info("配额用尽，剩余 %d 条留待下次", len(pending) - offset)
+                return stats
             try:
                 response = cli.call(
                     prompt if attempt == 1 else prompt + "\n\n上一次回复不是合法 JSON，请只输出 JSON。",
                     output_schema=SUMMARY_SCHEMA,
                 )
-                budget.spend(response, task="summary")
+                budget.record_result(entry, response)
                 result = parse_summary_response(response.text, ids)
                 break
-            except LlmRateLimited:
+            except LlmRateLimited as exc:
+                budget.record_failure(entry, exc)
                 stats.rate_limited = True
                 log.warning("额度受限，本次运行到此为止；已完成的结果已保存")
                 return stats
             except (SchemaError, LlmError) as exc:
+                budget.record_failure(entry, exc)
                 log.warning("批次 %d 第 %d 次失败: %s", offset // cfg.batch_size, attempt, exc)
-                try:
-                    budget.check()
-                except BudgetExhausted:
-                    stats.budget_exhausted = True
-                    return stats
 
         if result is None:
             for event in batch:

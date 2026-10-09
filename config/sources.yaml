@@ -178,8 +178,9 @@ http:
 
 extract:
   # 通过 codex exec 复用当前 ChatGPT 登录态；不需要 OPENAI_API_KEY。
+  # Plus 订阅采用小批次、单调用轮次：每次确认质量和额度后再继续。
   backend: codex
-  max_calls_per_run: 60
-  batch_size: 40
-  model_bulk: gpt-6-astra
-  model_digest: gpt-6-astra
+  max_calls_per_run: 1
+  batch_size: 12
+  model_bulk: gpt-6-luna
+  model_digest: gpt-6-luna

@@ -22992,9 +22992,9 @@
     "feature": "waveform",
     "first_seen": "2026-10-08",
     "id": "RAN1-122-frame-structure-ecea07cd-a001",
-    "impact": null,
+    "impact": "high",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 122,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -23004,8 +23004,12 @@
       "minutes_version": 100,
       "para": 3577
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "6GR 将除 PRACH 外的所有信号和信道的 SCS 作为讨论起点。低于 6 GHz 时至少支持 FDD 15kHz、TDD 30kHz；约 7 GHz 可研究 30/60kHz，24.25–52.6 GHz 支持 120kHz，其他列出的 SCS 选项是否讨论仍待 RANP 决定或保持 FFS。",
+    "tags": [
+      "SCS",
+      "PRACH",
+      "RANP"
+    ],
     "text_en": "6GR takes the following SCS as start point for discussion for all the signals/channels except PRACH.\nFor sub 6GHz\nThe following subcarrier spacing is at least supported\n15kHz SCS for FDD, 30kHz SCS for TDD\nFFS: 30kHz SCS for FDD for around e.g., 1-2.5GHz\nFFS: 7.5kHz SCS for sub1GHz (FDD)\nWhether to discuss the FFS will be subject to RANP decision.\nFor around 7GHz\nThe following subcarrier spacing options can be studied\n30kHz, 60kHz\nFFS: For around 15GHz\nThe following subcarrier spacing options can be studied\n30kHz, 60kHz, 120kHz\nWhether to discuss it will be subject to RANP decision\nFor between 24.25GHz - 52.6GHz\nSubcarrier spacing 120kHz is supported\nFFS whether to allow using additional subcarrier spacing for SSB\nFFS subcarrier spacing for PRACH and up to initial access discussion.",
     "wg": "RAN1"
   },
@@ -23018,9 +23022,9 @@
     "feature": "waveform",
     "first_seen": "2026-10-08",
     "id": "RAN1-122-frame-structure-ecea07cd-a002",
-    "impact": null,
+    "impact": "medium",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 122,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -23030,8 +23034,11 @@
       "minutes_version": 100,
       "para": 3598
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "6GR 支持 normal cyclic prefix，即与 NR 定义的 normal CP 相同。是否需要其他 CP 仍为 FFS。",
+    "tags": [
+      "normal cyclic prefix",
+      "CP"
+    ],
     "text_en": "6GR supports normal cyclic prefix, i.e., same as the normal CP defined in NR.\nFFS potential need for other CP.\nFinal summary in R1-2506604.",
     "wg": "RAN1"
   },
@@ -23044,9 +23051,9 @@
     "feature": "waveform",
     "first_seen": "2026-10-08",
     "id": "RAN1-122-frame-structure-ecea07cd-c001",
-    "impact": null,
+    "impact": "low",
     "kind": "conclusion",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 122,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -23056,8 +23063,11 @@
       "minutes_version": 100,
       "para": 3596
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "sensing 的 numerologies 由 sensing 议题讨论决定。",
+    "tags": [
+      "sensing",
+      "numerologies"
+    ],
     "text_en": "Numerologies for sensing is up to sensing agenda discussion.",
     "wg": "RAN1"
   },
@@ -24006,9 +24016,9 @@
     "feature": "channel_coding",
     "first_seen": "2026-10-08",
     "id": "RAN1-122-modulation-joint-channel-coding-and-modu-ff7518f4-a001",
-    "impact": null,
+    "impact": "high",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 122,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24018,8 +24028,12 @@
       "minutes_version": 100,
       "para": 3704
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "6GR DL 数据信道将 5G NR uniform QPSK、16QAM、64QAM、256QAM 和 1024QAM 作为支持基础进行研究。UL 数据信道方面，CP-OFDM 以 QPSK 至 256QAM 为基础，DFT-s-OFDM 另包括 pi/2 BPSK；增强和其他调制方案仍为 FFS。",
+    "tags": [
+      "QAM",
+      "CP-OFDM",
+      "DFT-s-OFDM"
+    ],
     "text_en": "For 6GR DL, 5G NR uniform QPSK, 16QAM, 64QAM, 256QAM and 1024QAM are supported as basis for study for data channel\nFFS: Enhancements and other modulation schemes\nFor 6GR UL, 5G NR uniform QPSK, 16QAM, 64QAM, and 256QAM are supported as basis for study for CP-OFDM for data channel\nFFS: Enhancements and other modulation schemes\nFor 6GR UL, 5G NR pi/2 BPSK, uniform QPSK, 16QAM, 64QAM, and 256QAM are supported as basis for study for DFT-s-OFDM for data channel\nFFS: Enhancements and other modulation schemes",
     "wg": "RAN1"
   },
@@ -24838,9 +24852,9 @@
     "feature": "waveform",
     "first_seen": "2026-10-08",
     "id": "RAN1-122-waveform-6eae1e79-a001",
-    "impact": null,
+    "impact": "high",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 122,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24850,8 +24864,12 @@
       "minutes_version": 100,
       "para": 3494
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "6GR 上行以 5G NR 定义的 CP-OFDM 和 DFT-s-OFDM 波形为基础。对两种波形的增强或修改将作为潜在补充进行研究，且不排除其他基于 OFDM 的波形。",
+    "tags": [
+      "CP-OFDM",
+      "DFT-s-OFDM",
+      "uplink"
+    ],
     "text_en": "CP-OFDM and DFT-s-OFDM waveforms as defined in 5G NR are supported as the basis for 6GR for uplink\nEnhancements/modifications on CP-OFDM/DFT-s-OFDM will be studied as potential additions\nOther OFDM based waveforms are not precluded.\nR1-2506595\tFeature Lead summary #2 on 6GR waveform\tModerator (Nokia)\nFrom Friday session",
     "wg": "RAN1"
   },
@@ -24864,9 +24882,9 @@
     "feature": "waveform",
     "first_seen": "2026-10-08",
     "id": "RAN1-122-waveform-6eae1e79-a002",
-    "impact": null,
+    "impact": "high",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 122,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24876,8 +24894,12 @@
       "minutes_version": 100,
       "para": 3500
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "6GR 下行以 5G NR 定义的 CP-OFDM 波形为基础，其增强或修改将作为潜在补充进行研究；DFT-s-OFDM 或其他基于 OFDM 的波形也将作为潜在下行补充波形研究。提案者需说明目标用例、信号/信道及与 CP-OFDM（包括 MRSS）的复用方式等，并提供相关性能、兼容性和复杂度信息。",
+    "tags": [
+      "CP-OFDM",
+      "DFT-s-OFDM",
+      "MRSS"
+    ],
     "text_en": "CP-OFDM waveform as defined in 5G NR is supported as the basis for 6GR for downlink\nEnhancements/modifications on CP-OFDM will be studied as potential additions\nDFT-s-OFDM or any other OFDM-based waveform will be studied as a potential additional waveform for downlink\nNote: proponents to identify at least the target use cases, signals/channels to use the waveform, and how the proposal is intended (if applicable) to support multiplexing with CP-OFDM, including MRSS, and how multi-user multiplexing is supported, etc.\nNote:\nProponents are encouraged to provide more detailed information on their proposals for the next meeting, e.g.:\nProponents to characterize the main motivation for modification/additional waveform proposals:\nTargeted link direction, i.e. DL, UL or both\nTargeted use case (e.g. NTN, specific frequency range, etc.), if any\nPotential motivations metrics used, and quantified gains for a proposal, e.g.\nCoverage\nNetwork energy efficiency\nUE energy efficiency\nSpectral efficiency\nHigh speed tolerance\nScheduling flexibility\nIntegration with ISAC\nProponents provide information on the following aspects, if applicable\nMRSS compatibility\nTarget channels/signals, e.g. all channels, PxSCH only, etc.\nMIMO (SU and MU-MIMO) compatibility\nTarget modulations, and impact to other modulations, if applicable\nMulti-user multiplexing/scheduling flexibility\nMultiplexing/coexistence with baseline waveforms\nImpact on synchronization and initial access\nExpected specification impact\nTransmitter/receiver complexity and impact to power consumption.",
     "wg": "RAN1"
   },
@@ -24890,9 +24912,9 @@
     "feature": "channel_coding",
     "first_seen": "2026-10-08",
     "id": "RAN1-123-channel-coding-0cf828bf-a001",
-    "impact": null,
+    "impact": "medium",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 123,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24902,8 +24924,12 @@
       "minutes_version": 100,
       "para": 3479
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "对于载荷大于 NR 范围（即超过 1706 bits）的 UCI Polar code 设计，至少将 more than 2 segments 作为进一步研究选项。是否需要超出 NR 范围的 UCI 载荷，需由其他议题确认。",
+    "tags": [
+      "Polar code",
+      "UCI",
+      "segments"
+    ],
     "text_en": "For Polar code design for UCI with payload size larger than NR range (i.e., larger than 1706 bits), at least the following option is identified for further study\nMore than 2 segments\nNote: The necessity of UCI payload size larger than NR range needs to be confirmed by other agenda(s)",
     "wg": "RAN1"
   },
@@ -24916,9 +24942,9 @@
     "feature": "channel_coding",
     "first_seen": "2026-10-08",
     "id": "RAN1-123-channel-coding-0cf828bf-a002",
-    "impact": null,
+    "impact": "high",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 123,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24928,8 +24954,12 @@
       "minutes_version": 100,
       "para": 3483
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "针对超出 NR 范围数据速率的 LDPC 扩展研究，需在 RAN1#124 前提供初版 LDPC BG(s) 和 PCM(s)，并给出目标 BLER 所需 SNR、复杂度及译码算法评估假设。复杂度定义将进一步讨论，其他指标仍为 FFS。",
+    "tags": [
+      "LDPC",
+      "BG",
+      "PCM"
+    ],
     "text_en": "For the study of LDPC extension for data rate beyond NR range with acceptable performance-complexity tradeoff,\nTo provide the initial version of LDPC BG(s) and PCM(s) in the excel spreadsheet by RAN1#124\nTo provide the required SNR and complexity for target BLER, and the evaluation assumptions of the decoding algorithm\nThe definition of complexity will be further discussed\nFFS: other metrics",
     "wg": "RAN1"
   },
@@ -24942,9 +24972,9 @@
     "feature": "channel_coding",
     "first_seen": "2026-10-08",
     "id": "RAN1-123-channel-coding-0cf828bf-a003",
-    "impact": null,
+    "impact": "medium",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 123,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24954,8 +24984,11 @@
       "minutes_version": 100,
       "para": 3489
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "针对 3~11 bits 小载荷 UCI 的信道编码研究，至少考虑 5G RM code。若 5G RM code 存在可论证的缺点，应识别并研究潜在解决方案。",
+    "tags": [
+      "UCI",
+      "5G RM code"
+    ],
     "text_en": "For the study of channel coding for small UCI with payload size of 3~11bits, at least considering:\n5G RM code\nIdentify the justifiable drawbacks of 5G RM code, if exists, study potential solution(s).",
     "wg": "RAN1"
   },
@@ -24968,9 +25001,9 @@
     "feature": "channel_coding",
     "first_seen": "2026-10-08",
     "id": "RAN1-123-channel-coding-0cf828bf-a004",
-    "impact": null,
+    "impact": "high",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 123,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -24980,8 +25013,13 @@
       "minutes_version": 100,
       "para": 3493
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "LDPC 扩展的 BG(s) 和 PCM(s) 评估将考虑给定的 AWGN 信道、调制与码率、交织器、码块大小、目标 BLER 及译码算法假设，这些假设仅用于仿真，不影响最终设计。候选方案需同时比较性能和复杂度，且 BLER 性能比较须在相同计算复杂度下进行，计算复杂度按所需 BLER 的迭代次数与提升后校验矩阵中 1 的数量之积除以 CB size 定义。",
+    "tags": [
+      "LDPC",
+      "BG",
+      "PCM",
+      "BLER"
+    ],
     "text_en": "For the study of BG(s) and PCM(s) for LDPC extension for data rate beyond NR range, at least the following evaluation assumptions will be considered.\n| Parameters | Values or assumptions |\n| --- | --- |\n| Channel | AWGN |\n| Modulation and code rate | Uniform QAM modulations and corresponding code rates (i.e., (8,682.5/1024), (8, 797/1024), (8, 885/1024), (8, 948/1024)) in NR MCS Table 5.1.3.1-4 as starting point. Other modulation order, if used, can be reported. |\n| Interleaver | Same as 5G NR. Other interleaver scheme (intra-CB level), if used, can be reported. |\n| Code block size (bits with CRC) | CB size: same as 5G NR (8448 as baseline, other values less than 8448 can be reported). CB size: other value(s) larger than 8448 and no larger than 8448*2, e.g.,16k. Company to report the TBS. |\n| Target CB BLER | BLER=10-2, 10-4 |\n| Decoding algorithm of LDPC | Layered BP or min-sum(offset, normalized or adjusted min-sum) Company to report the details of offset, normalized or adjusted min-sum decoding algorithm, if used. Max number of iteration times: 5:1:20 Other iteration times can be reported. Decoding order: reversed order Other decoding order, if used, can be reported. |\n| Demodulation algorithm | Max-log-map |\nNote: For any comparison among 5G BG and BG(s)/PCM(s) proposed by companies, the BLER performance is compared at least under the same CB size.\nNote: all evaluation assumptions above are for simulation only and have no implication on the final design of BG(s)/PCM(s).\nFor candidate comparison, both performance and complexity should be considered.\nThe comparison of BLER performance is under the same computation complexity,\nComputation complexity is defined as (the number of iteration times for required BLER) *(the number of ones in the lifted parity check matrix)/ (CB size)",
     "wg": "RAN1"
   },
@@ -24994,9 +25032,9 @@
     "feature": "channel_coding",
     "first_seen": "2026-10-08",
     "id": "RAN1-123-channel-coding-0cf828bf-c001",
-    "impact": null,
+    "impact": "low",
     "kind": "conclusion",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 123,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -25006,8 +25044,10 @@
       "minutes_version": 100,
       "para": 3501
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "对于载荷处于 NR 范围内且大于 11 bits 的 Polar code 设计潜在扩展或增强，其动机尚无共识。",
+    "tags": [
+      "Polar code"
+    ],
     "text_en": "No consensus on motivation(s) for potential extension/enhancement for Polar code design with payload size within NR range (larger than 11bits).\nR1-2509582\tFL summary#6 for 6G channel coding\tModerator (ZTE, Apple)",
     "wg": "RAN1"
   },
@@ -25306,9 +25346,9 @@
     "feature": "waveform",
     "first_seen": "2026-10-08",
     "id": "RAN1-123-frame-structure-ecea07cd-a001",
-    "impact": null,
+    "impact": "medium",
     "kind": "agreement",
-    "llm_status": "pending",
+    "llm_status": "ok",
     "meeting": 123,
     "meeting_end": null,
     "meeting_suffix": "",
@@ -25318,8 +25358,11 @@
       "minutes_version": 100,
       "para": 3419
     },
-    "summary_zh": null,
-    "tags": [],
+    "summary_zh": "RAN1 假设 FR2-1 网络侧最大信道带宽为 800MHz 或 400MHz，具体值将在未来择一确定。UE 侧是否采用 800MHz 或 400MHz 仍为 FFS。",
+    "tags": [
+      "FR2-1",
+      "channel bandwidth"
+    ],
     "text_en": "RAN1 assumes maximum channel bandwidth 800MHz or 400MHz at network side for FR2-1.\n800MHz or 400MHz, to be down-selected in the future\nFFS: 800MHz or 400MHz at UE side.",
     "wg": "RAN1"
   },

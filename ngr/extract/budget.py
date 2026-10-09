@@ -28,8 +28,25 @@ class Budget:
                 f"已达本次运行上限 {self.max_calls} 次调用，剩余工作留到下次"
             )
 
-    def spend(self, result: CliResult, task: str = "") -> None:
+    def reserve(self, task: str = "") -> dict:
+        """在发起外部请求前占用一个调用名额。
+
+        额度按实际请求数而非成功响应数限制，所以格式错误后的重试也必须
+        消耗一个名额；这能保证 ``max_calls_per_run`` 是严格上限。
+        """
+        self.check()
         self.calls += 1
+        entry = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "task": task,
+            "status": "started",
+            "cost_usd": 0.0,
+            "usage": {},
+        }
+        self._entries.append(entry)
+        return entry
+
+    def record_result(self, entry: dict, result: CliResult) -> None:
         self.cost_usd += result.cost_usd
         usage = result.usage or {}
         self.input_tokens += sum(
@@ -37,12 +54,15 @@ class Budget:
             for key in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
         )
         self.output_tokens += int(usage.get("output_tokens", 0))
-        self._entries.append({
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "task": task,
-            "cost_usd": result.cost_usd,
-            "usage": usage,
-        })
+        entry.update(status="completed", cost_usd=result.cost_usd, usage=usage)
+
+    def record_failure(self, entry: dict, error: Exception) -> None:
+        entry.update(status="failed", error=str(error)[:500])
+
+    def spend(self, result: CliResult, task: str = "") -> None:
+        """兼容一次性记账调用；新代码应先 ``reserve`` 再 ``record_result``。"""
+        entry = self.reserve(task)
+        self.record_result(entry, result)
 
     def log(self, path: Path) -> None:
         """追加 usage JSONL；cost 是列表价换算的用量代理，并非订阅账单。"""

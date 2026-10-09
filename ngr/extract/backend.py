@@ -63,6 +63,7 @@ class CodexExec:
     def _cmd(self, output: Path, schema: Path | None = None) -> list[str]:
         command = [
             "codex", "exec", "--ephemeral", "--sandbox", "read-only",
+            "--ignore-user-config", "--ignore-rules",
             "--color", "never", "--model", self.model,
             "--config", f'model_reasoning_effort="{self.effort}"',
             "--output-last-message", str(output),
