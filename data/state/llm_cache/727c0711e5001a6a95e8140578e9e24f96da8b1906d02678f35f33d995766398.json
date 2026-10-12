@@ -1,8 +1,0 @@
-{
-  "impact": "medium",
-  "summary_zh": "针对 3~11 bits 小载荷 UCI 的信道编码研究，至少考虑 5G RM code。若 5G RM code 存在可论证的缺点，应识别并研究潜在解决方案。",
-  "tags": [
-    "UCI",
-    "5G RM code"
-  ]
-}

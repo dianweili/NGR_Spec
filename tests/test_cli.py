@@ -36,3 +36,10 @@ def test_remap_enrich_and_argparse_error(monkeypatch):
     assert cli.main(["enrich"]) == EXIT_LLM
     with pytest.raises(SystemExit):
         cli.main([])
+
+
+def test_enrich_forwards_temporary_batch_overrides(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_enrich", lambda **kwargs: seen.update(kwargs) or PipelineResult())
+    assert cli.main(["enrich", "--max-calls", "20", "--batch-size", "10"]) == EXIT_OK
+    assert seen == {"max_calls": 20, "batch_size": 10}

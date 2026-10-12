@@ -1,12 +1,22 @@
 # 6GR 寻呼
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+RAN2 已形成方向性共识：6G 倾向以 CN 触发寻呼统一支持 Idle 与 Inactive UE，共用单一寻呼区域和寻呼 ID，并将 AS context 保存在最后服务的 RAN 节点。UE 在有直接 Xn/Xa 时可从原 RAN 节点获取 context；无直接连接时经 CN 存储或转发的可行性及实现仍交由 SA2、RAN3 研究。寻呼无线设计目标包括以单一 PF/PO 分布公式支持 clustered 与 uniform 分布、从第一天起支持非均匀 PO，并允许网络在时延与能耗间权衡。会议已记录多项设计目标与提案，但公式细节及部分配置和信令问题尚待后续阶段处理。
+
+**未决问题**
+
+- 无 Xn/Xa 时通过 CN 存储或转发 RAN context 的可行性、流程及安全验证方式。
+- single paging area、context fetch 与 UE ID 的具体协议和实现，待 SA2、RAN3 协调。
+- PF/PO 单一分布公式的需求、局限及具体设计，留待后续会议和 WI 阶段确定。
+- 支持所有 DRX 周期的 bundling、更多或更密集的 PO/cluster 配置时，信令开销、最低周期与配置延迟如何处理。
+- 基于 UE paging capabilities 分配 PO 的机制及其与现有基于 UE-ID 的基线关系。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.2.4 Paging
+
+UE 在每个 UE paging cycle 监测一个 paging occasion。6G PF/PO design 目标是使用一个 PF/PO distribution formula，同时支持 clustered 和 uniform PF/PO；下一次会议将整理 paging formula 的 requirements 及需解决的 shortcoming/limitations，详细公式设计留待 WI phase。
 
 ```text
 1	UE monitors a single paging occasion per UE paging cycle
@@ -18,6 +28,8 @@ R2-2603015	Paging in 6G	Samsung	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.4-a001`
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.2.4 Paging
+
+原文提出 paging cluster 可包含一个或多个 PF/PO，并支持 cluster 内 PO 间隔、每个 paging frame 配置多个 paging occasions，以及每个 UE paging DRX cycle 配置一个或多个 paging clusters。6G paging 应支持 idle 和 inactive UE 的 paging、向至少处于 RRC Idle/Inactive 的 UE 通知 system information change 与 ETWS/CMAS，并使 paging capacity（包括 paging records）至少达到 5G 水平；同时提出研究基于 UE paging-related capabilities 分配 paging occasions。
 
 ```text
 A cluster can have one or multiple PF/PO
@@ -68,12 +80,16 @@ R2-2604134	Discussion on PF/PO design	Transsion Holdings	discussion
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.2.4 Paging
 
+Paging cluster 内的 paging occasions 需要更密集排列。相比 NR Rel-19，每个 paging cluster 应包含更多 POs。
+
 ```text
 The paging occasions within a paging cluster must be more densely packed, resulting in a paging cluster containing a greater number of POs compared to NR Rel-19.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.4-o001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.4 Paging
+
+提出 6G 的 PF/PO bundling 应支持所有 paging DRX cycle lengths，而不局限于特定周期，并允许更小的 N（如 T/64、T/128、T/256）。会议记录了对 signaling overhead、最低周期以及配置延迟的不同意见，结论为 Noted。
 
 ```text
 In 6G, paging design should not limit clustering of PF/POs only for specific paging DRX cycle length (e.g. shortest paging DRX cycle length). Bundling of PF/POs should be supported for all paging DRX cycle lengths. Allow smaller values of N such T/64, T/128, T/256 and so on.
@@ -88,6 +104,8 @@ R2-2603209	Discussion on 6G Paging	CATT	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.4 Paging
 
+RAN2 的目标是确保在单个 PF 内增加 POs 时，PO configurations 的 signaling overhead 不会显著增加。Nokia 和 Apple 认为该问题应予考虑，但指出其处于 stage 3；结论为 Noted。
+
 ```text
 RAN2 aim to ensure the signaling overhead of PO configurations should not be increased significantly with the increased POs within one PF.
 -	Nokia and Apple thinks it should be considered but it quite stage 3.
@@ -98,6 +116,8 @@ R2-2603562	Paging considerations for 6G	Lenovo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.4 Paging
 
+提出支持在单个 DRX cycle 内配置一个或多个 paging clusters。每个 cluster 包含一个或多个 Paging Possibility；结论为 Noted。
+
 ```text
 RAN2 to support the configuration of one or multiple paging clusters within a single DRX cycle, each containing 1 or more Paging Possibility.
 Noted
@@ -105,6 +125,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.4-p003`
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.4 Paging
+
+RAN2 同意 AS context 存储在 last aNB，并同意 CN-triggered mechanisms、single paging area（即 no RNA）和 single paging ID 的偏好，以及向 RAN3 提供 resume ID 相关协议。对于 UE 在新 aNB 恢复时的 context retrieval，已识别经 Xa 直接获取，以及无 Xa 时由 CN 存储或转发两类情形；相关影响和实现由 SA2、RAN3 决定，paging LS 已获批准。
 
 ```text
 Indicate to SA2/RAN3 that RAN2 agreed:
@@ -148,6 +170,8 @@ R2-2601675	Consideration on single CN-triggered Paging	CATT	discussion	Rel-20	FS
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.4 Paging
 
+UE 在每个 paging cycle 监测一个 paging occasion。6G PF/PO 设计目标是使用一个 distribution formula，同时支持所有 paging cycles 下的 clustered PF/PO 和 uniform PF/PO；下次会议记录 paging formula 的需求及待解决的局限，具体公式设计留待 WI 阶段。
+
 ```text
 1	UE monitors a single paging occasion per UE paging cycle
 2	For 6G PF/PO design, aim to use one single PF/PO distribution formula to support both clustered PF/PO and uniform PF/PO for all paging cycles.
@@ -160,6 +184,8 @@ R2-2602476	Views on 6G Paging	NTT DOCOMO	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.4 Paging
 
+Rel-19 paging adaptation 的 Restriction#1 是无法支持大于 32 radio frames 的 paging cycle，因为 N 的取值范围仅扩展到 1/32。原文指出，较小的 N 需要更大的 Ns 补偿 PF 数量减少，而较大的 Ns 会因 PMO offset 随 Ns 线性增加而显著增大 SIB1 size。
+
 ```text
 Restriction#1 of Rel-19 paging adaptation: it can’t support paging cycle>32 radio frames (i.e. 64/128/256 radio frames) because value range of N is only extended to 1/32 due to the following concerns:
 1)	The actual paging cycle may be restricted by UE dedicated paging cycle configured by NAS.
@@ -169,12 +195,16 @@ Restriction#1 of Rel-19 paging adaptation: it can’t support paging cycle>32 ra
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.4 Paging
 
+NR 中，paging 的 PDCCH 和 PDSCH 按 N*X 次发送，其中 N 是小区中发送的 SSB 数量，X 是每个 SSB 的重复次数。原文指出，这会造成显著开销并增加网络能耗。
+
 ```text
 In NR, PDCCH and PDSCH for paging are transmitted ‘N*X’ times, where N is the number of transmitted SSBs in the cell and X is the number of repetitions per SSB. This leads to significant overhead and increased network energy consumption.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.4-o002`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
+
+RAN2 提出对 Inactive state 的 UE paging response procedure 采用如下步骤，并请 SA2/RAN3 进一步研究：DL data 缓存在 CN（如 UPF），CN 向 paging area 内的 RAN nodes 发送 paging request，UE 通过 RRC resume 响应。若部署 Xn，UE AS context 可从 last RAN node 直接获取；否则可从 CN 获取或经 CN 转发。
 
 ```text
 RAN2 assumes the following steps can be applied to UE paging response procedure in Inactive state and ask SA2/RAN3 for further study.
@@ -190,6 +220,8 @@ R2-2602433	Discussion on Paging for 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
 
+对于 UE context transfer，RAN2 支持两种方案：new serving RAN node 与 last serving RAN node 之间有 Xn 时，由前者从后者获取 UE context；没有 Xn 时，UE context 经 NG interface 由 core network 转发。RAN2 将向 SA2 发送 LS 询问后一方案的可行性。
+
 ```text
 For UE context transfer, RAN2 support both of the following solutions:
 -Xn solution：In the scenarios with an Xn interface between a new serving RAN node and the last serving RAN node, the new serving RAN node can fetch UE context from the last serving RAN node;
@@ -200,6 +232,8 @@ R2-2601508	Single paging design in 6GR	Xiaomi	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.4-p002`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
+
+RAN2 同意 UE AS context 存储在 last serving aNB；若新 aNB 有直接 Xa interface，则可经 Xa 获取。若无 Xa interface，RAN2 提出请 SA2 研究通过 CN 获取 context 的两种选项：由 CN 存储 AS context，或经 CN 转移；影响及实现方式由 SA2 和 RAN3 决定，并需考虑安全信息及验证。
 
 ```text
 Check with SA2/RAN3 on the feasibility of below options for UE AS context retrieval and ask for their feedback:
@@ -227,6 +261,8 @@ R2-2601538	Paging in 6G	ZTE Corporation, Sanechips	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
 
+请 SA2 和 RAN3 研究支持 6G single paging mechanism 的事项：为 UE 在 idle 和 inactive state 定义 single paging area，在该区域内定义有无 Xn interface 时的 UE context fetch，并定义用于识别该区域内 context storage 的 UE ID。
+
 ```text
 Ask SA2 and RAN3 to work on the following aspects to support single paging mechanism in 6G:
 Define single paging area for UE in idle and inactive state
@@ -237,6 +273,8 @@ Define UE ID to identify the UE context storage within this paging area
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
 
+对于 MT traffic，RAN2 倾向于在 CN 缓冲 DL data 和 signaling，并为 inactive state 触发 paging。RAN2 请 SA2 和 RAN3 研究支持该方案的 procedures。
+
 ```text
 For MT traffic, RAN2 prefer to have DL data and signaling buffered in CN and trigger paging for inactive state and would like to ask SA2 and RAN3 to work on the procedures to support this.
 Noted
@@ -244,6 +282,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.4-p005`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
+
+RAN2 澄清 single paging area 的理解：6G idle state 使用的 TA-like list 也适用于 inactive state。该方案用于 single CN-triggered paging mechanism。
 
 ```text
 RAN2 to clarify the understanding of the single paging area for both idle and inactive state:
@@ -253,6 +293,8 @@ R2-2601693	Discussion on paging	NEC	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.4-p006`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
+
+single paging framework 提议在 paging message 中使用由 6GC 分配的 S-TMSI-like UE temporary identity 寻址目标 UE，并在 RRC_INACTIVE UE 的 RRCResumeRequest-like message 中包含由 last serving aNB 分配的 RNTI-like identity。RRC_IDLE 和 RRC_INACTIVE UE 共用 NAS level registration area 与 periodical registration update timer；若 6G 支持 legacy paging，PF/PO calculation 仅使用 cell default DRX cycle 和 UE specific DRX cycle，I-RNTI 与 NCC 配置给 RRC_INACTIVE UE。
 
 ```text
 For single paging framework, the following points are proposed:
@@ -271,6 +313,8 @@ R2-2602232	Views on 6G Paging	Apple	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
 
+6G PF/PO design 的目标是使用一个 single PF/PO distribution formula，原生支持所有 paging cycles 的 clustered PF/PO 和 uniform PF/PO。讨论中提出 re-using current paging formula 作为 baseline，并探讨 paging requirements、每 cell 一组参数及 signalling overhead。
+
 ```text
 For 6G PF/PO design, aim to use one single PF/PO distribution formula to natively support both clustered PF/PO and uniform PF/PO for all paging cycles.
 Noted
@@ -285,6 +329,8 @@ Discussions
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
 
+现有基于 UE-ID 的 PF/PO determination 应作为 6G baseline 保留。另有提案研究基于 UE paging-related capabilities 的 paging occasion assignment 机制，以处理不同 UE paging capability 带来的效率问题。
+
 ```text
 	The existing UE-ID-based PF/PO determination should be kept as the baseline for 6G.
 R2-2601583	Efficient 6G Paging	Ericsson	discussion
@@ -296,6 +342,8 @@ R2-2601517	Paging in 6G	Samsung	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.4-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.4 Paging
+
+被 WUS 唤醒的 UE 发送 indication（例如在 random access occasion 上发送 single shot PRACH），指示其处于特定 SSB 的覆盖范围。网络据所指示的 SSB，在 PO 上发送用于 paging 的 PDCCH/PDSCH。
 
 ```text
 UE(s) waked up by the WUS, transmits indication (e.g. single shot PRACH in random access occasion) to indicate that UE is in coverage of a specific SSB. Network transmits PDCCH/PDSCH for paging in PO using the indicated SSB(s).
@@ -320,6 +368,8 @@ R2-2602546	Views on Paging in 6G	1Finity	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.2.4 Paging
 
+RAN2 倾向于为 idle 和 inactive state 采用基于 CN triggered paging mechanism 的单一 paging mechanism，并倾向于共用一个 paging area，但需向 SA2 确认可行性。为支持 fast resume，RAN2 假设 RAN Context 至少可存储在 last RAN node；对于 UE 不在 last known cell 时的 context transfer（有或无 Xn），需进一步询问 SA2，并与 SA2、RAN3 后续讨论。
+
 ```text
 For paging RAN2 is exploring the possibilities and feasibility and has concluded on these preferences:
 1	From RAN2 perspective the preference is to have a single paging mechanism from UE and NW perspective for idle and inactive state, based on CN triggered paging mechanism.
@@ -335,12 +385,16 @@ R2-2600457	Views on 6G Paging	Apple	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+5G 的 dual-paging mechanism 增加了不必要的复杂度，并依赖并非始终可用的 Xn connectivity，从而阻碍 RRC_INACTIVE 的部署。
+
 ```text
 Lesson Learned from 5G: The dual-paging mechanism in 5G creates unnecessary complexity and relies on Xn connectivity that is not always available, hindering the deployment of RRC_INACTIVE.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o001`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
+
+为满足 6G 快速状态转换的时延要求，preferable to store the UE context in the RAN，以便快速检索。
 
 ```text
 To meet 6G latency requirements for fast state transitions, it is preferable to store the UE context in the RAN for rapid retrieval.
@@ -349,12 +403,16 @@ To meet 6G latency requirements for fast state transitions, it is preferable to 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+需要机制在直接 Xn connectivity 不可用时，通过 Core Network（或其他间接路径）在 gNB 间传输 RAN context。
+
 ```text
 Mechanisms are needed to allow the transfer of RAN context between gNBs via the Core Network (or other indirect paths) when direct Xn connectivity is unavailable.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o003`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
+
+当前规范支持 NG-RAN node 在 UE 进入或离开 RRC_INACTIVE state 时向 AMF 通知 UE 的 RRC state。
 
 ```text
 Current specs support NG-RAN node to notify the AMF of the UE RRC state when the UE enters or leaves RRC_INACTIVE state.
@@ -363,12 +421,16 @@ Current specs support NG-RAN node to notify the AMF of the UE RRC state when the
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+当前规范中，UPF 在收到发往 CM-IDLE state UE 的下行数据后，可以触发 CN paging procedures。
+
 ```text
 In current specs, UPF can trigger CN paging procedures upon receiving downlink data for UE in CM-IDLE state.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o005`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
+
+实现 RRC_INACTIVE UE 单一 paging mechanism 有两种选项：Option 1 是 UE 进入 RRC_INACTIVE 时由 RAN node 通知 core network 状态变化；Option 2 是收到 UPF 下行数据或 AMF 下行信令时，由 RAN node 指示 core network 为该 UE 触发 CN paging。
 
 ```text
 There are two Options to realize the single paging mechanisms for RRC_INACTIVE UE:
@@ -379,12 +441,16 @@ There are two Options to realize the single paging mechanisms for RRC_INACTIVE U
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+在 NR paging design 中，UE 可根据不同的 paging UE-IDs 区分 IDLE paging 和 INACTIVE paging。
+
 ```text
 In NR paging design, UE can distinguish IDLE paging and INACTIVE paging based on the different paging UE-IDs.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o007`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
+
+从降低 UE complexity 的角度进行 6G paging study 时，应考虑在 paging message 中纳入比 5G 更多的 paging cause。
 
 ```text
 6G paging study from UE complexity reduction perspective should consider including more paging cause than 5G in the paging message.
@@ -393,12 +459,16 @@ In NR paging design, UE can distinguish IDLE paging and INACTIVE paging based on
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+5G paging adaptation solution 因 backward compatibility 而 NES gain 有限，且无法灵活启用 PF bundling。
+
 ```text
 5G paging adaptation solution has limited NES gain due to backward compatibility and it can’t flexibly enable PF bundling.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o009`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
+
+从网络能效角度开展 6G paging 研究，应将非均匀 PO 分布方向以灵活方式纳入 day-1 设计考虑。
 
 ```text
 6G paging study from the network energy efficiency perspective should consider the non-uniform PO distribution direction in flexible way as day-1 design.
@@ -407,12 +477,16 @@ In NR paging design, UE can distinguish IDLE paging and INACTIVE paging based on
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+在 NR 中，paging DRX 周期不超过 32 个 radio frames 时，可以在周期开始时配置所有 PFs/POs。对于 T > 32（如 64、128、256 个 radio frames）的较长周期，无法在 DRX 周期开始时配置所有 PFs/POs。
+
 ```text
 In NR, for paging DRX cycles of up to 32 radio frames, it is possible to configure all PFs/POs at the beginning of paging DRX cycle. For longer paging DRX cycles of T > 32 such as 64, 128, 256 radio frames, all PFs/POs cannot be configured at the beginning of DRX cycle T.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o011`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
+
+原文指出，NR 设计较为僵化，始终优先考虑 paging delay，未给网络在 paging delay 与 network energy savings 之间作出选择的余地。
 
 ```text
 NR design is rigid as it always prioritizes paging delay and does not give network a choice to decide between paging delay and network energy savings.
@@ -421,12 +495,16 @@ NR design is rigid as it always prioritizes paging delay and does not give netwo
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.4 Paging
 
+网络可通过控制 UE paging occasions 的时机，使其与预期 paging frequency 相匹配，从而实现能耗节省。
+
 ```text
 The network can achieve energy savings by controlling the timing of the paging occasions of UEs relative to the expected paging frequency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-o013`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+RAN2 倾向于将 CN-triggered paging 作为 6G 中 IDLE 和 INACTIVE（或等效子状态）UE 的统一 paging 机制。讨论中提出了 paging 区域大小以及该机制是否适用于 connected 子状态等问题。
 
 ```text
 RAN2 preference is for CN-triggered paging as the unified paging mechanism for both IDLE state and INACTIVE state (or equivalent substate) UEs in 6G.
@@ -439,12 +517,16 @@ RAN2 preference is for CN-triggered paging as the unified paging mechanism for b
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+RAN2 将向 SA2 发送 LS，说明其倾向于对 6G Inactive 状态（或等效子状态）的 UE 采用 CN-initiated paging。
+
 ```text
 RAN2 to send an LS to SA2 indicating the preference for CN-initiated paging for UEs in the 6G Inactive state (or equivalent substate)
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-p002`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+RAN2 应假设：Xn 可用时优先从 RAN 快速检索 context；Xn 不可用时，则通过 CN/RAN3 机制传输 context。讨论中将 CN context fetching 视为 fallback。
 
 ```text
 RAN2 should assume context retrieval mechanisms that prioritize fast retrieval from the RAN when Xn is available, while assuming context transfer via the CN/RAN3 mechanisms when Xn is unavailable.
@@ -456,6 +538,8 @@ RAN2 should assume context retrieval mechanisms that prioritize fast retrieval f
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+RAN2 将与 RAN3 和 SA2 协调，确定通过 CN 节点（NG interface）传输 RAN context、以支持 Xn 部署稀疏场景下 mobility 的可行性。该事项为 Noted。
+
 ```text
 RAN2 to coordinate with RAN3 and SA2 to determine the feasibility of transferring RAN context via CN nodes (NG interface) to support mobility in sparse Xn deployments
 Noted
@@ -464,6 +548,8 @@ R2-2600957	Discussion on Paging open issues for 6GR	CMCC	discussion	Rel-20	FS_6G
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-p004`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+UE 进入 RRC_INACTIVE 时，RAN node 通知 core network 状态变化；该事项为 Noted。讨论涉及通知对 latency 的影响、paging area、context 保留位置及相关机制等问题。
 
 ```text
 Upon a UE entering the RRC_INACTIVE, RAN node informs the core network the RRC state change.
@@ -491,12 +577,16 @@ Discussion on paging
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+在同时支持 IDLE paging 和 INACTIVE paging 的单一 paging 设计中，UE 需要通过 paging record 区分两类 paging。可采用不同的 paging UE-IDs 或新的 state indication。
+
 ```text
 In the single paging design for both IDLE paging and INACTIVE paging, UE needs to be able to distinguish between the two types of paging through the paging record, either through different paging UE-IDs or the new state indication.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-p006`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+对于 single CN triggered paging，RAN2 假设可使用 single paging ID，目前没有动机在 paging message 中区分状态。对于 resume，UE ID 尚待讨论，可能不同于 paging ID；此外，Rel-19 NR paging mechanism（支持 clustered POs）被视为研究基线。
 
 ```text
 6G paging should support the paging cause included in paging message.
@@ -519,6 +609,8 @@ R2-2600457	Views on 6G Paging	Apple	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+6G paging 从第一天起应支持 non-uniform PO distribution design。
+
 ```text
 6G paging should support the non-uniform PO distribution design from day-1.
 Noted
@@ -528,12 +620,16 @@ R2-2600058	Paging in 6G	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+6G paging design 应允许网络在 paging delay 与 network energy savings 之间进行选择。
+
 ```text
 Paging design in 6G should give network choice to decide between paging delay and network energy savings.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-p009`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+6G paging design 支持在 paging DRX cycle 中采用 distributed 或 bundled PF/PO，且 bundling 应适用于所有 paging DRX cycle 长度。
 
 ```text
 Paging design in 6G should enable both distributed and bundled PF/POs in paging DRX cycle. The bundling should be supported for all paging DRX cycle lengths.
@@ -548,12 +644,16 @@ R2-2601124	Paging in 6G	Nokia	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+6G 应支持 legacy approach（non-clustered paging allocation）和 clustered paging allocation，以适配不同场景中的 paging frame 分配。
+
 ```text
 6G should enable both legacy approach (non-clustered paging allocation) and clustered paging allocation to allocate paging frame to support different scenarios in 6G.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-p011`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+应可将 paging periodicities 配置为 SSB periodicities 的倍数，以便与 SSB transmissions 对齐；也应允许在计算中配置 offsets，使 paging occasions 不必恰好位于 SSB 的相同 slots。
 
 ```text
 It should be possible to configure paging periodicities to be multiples of SSB periodicities in order to align with SSB transmissions and also offsets to calculations should be allowed to not require paging occasions being exactly in the same slots as SSBs
@@ -563,6 +663,8 @@ R2-2600714	Paging in 6G	ZTE Corporation, Sanechips	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
 
+支持 paging 的 Cell DTX，且 PF 和 PO 位于 Cell DTX on duration 内。
+
 ```text
 Support Cell DTX for paging, with PF and PO located in Cell DTX on duration.
 Paging occasions Configuration for Network Energy
@@ -571,6 +673,8 @@ R2-2600440	Paging for 6GR	InterDigital France R&D, SAS	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.4-p013`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.4 Paging
+
+Paging occasion configuration 应能适配不同的网络和 UE 活跃程度；提议研究由 paging load 调整、供 UE 监测的可变数量 paging occasions。RAN2 假设采用 single DL wake-up scheme；对于 UE 节能，PEI 和 LP-WUS 的 upper layer procedure 与参数应尽量统一。
 
 ```text
 Paging occasion configuration is designed to be adaptable to different levels of network activity (e.g., resulting from a different number of served UEs) and UE activity (e.g., potential/active services at the UE).

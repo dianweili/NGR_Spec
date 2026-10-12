@@ -1,12 +1,22 @@
 # 6GR 空口评估假设
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+RAN1#124 已为 6GR 评估规定多类载频下的 UE、CPE 与 BS 天线配置及辐射假设，并更新了功率、UE 分布和速度等系统级仿真条件。FTP3 extension 和 Massive Communication (IoT) 的业务负载假设也已给出，包括多包大小模型及可选的较大 L2 PDU。整体评估框架已较为具体，但若干配置仍需公司报告或在评估阶段进一步确定。
+
+**未决问题**
+
+- FWA 场景的适用性仍为 FFS。
+- 约 30 GHz 场景的具体仿真功率由公司报告；低于 30 GHz 的 EIRP limit 也可进一步考虑。
+- 室内与室外 CPE 的预选标准或机制可在评估阶段讨论。
+- 其他 UE 天线配置及 FTP3 Alt2 相关取值仍可由公司报告或在评估阶段决定。
+- TR38.914 中 RAN1 尚未讨论的场景仍属于候选评估场景。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
+
+为低于 30 GHz 的 6GR evaluation 规定 UE antenna modelling 组合，覆盖 1、2、4、8、16 个 antenna elements，并列出对应 TXRU、Alt 1/Alt 2 配置及适用载频。Alt 1 和 Alt 2 中的天线位置作为性能校准示例；TR 38.901 section 7.3 的其他天线阵列结构或位置也可用于评估。
 
 ```text
 For 6GR evaluation, RAN1 to model the UE antenna as follows for below 30GHz carrier frequency,
@@ -30,6 +40,8 @@ Note: The mapping between the combination and the device types might be separate
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
 
+为约 30 GHz 载频的 6GR evaluation 规定 UE antenna configuration 遵循 Table 1，UE antenna radiation pattern 遵循 Table 2。其他天线配置也可考虑，并由公司报告。
+
 ```text
 For 6GR evaluation, RAN1 to model the UE antenna as follows for around 30GHz carrier frequency,
 UE antenna configuration follows Table 1 below.
@@ -39,6 +51,8 @@ Other antenna configuration can be considered and up to companies to report.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.1-a002`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
+
+给出了约 30 GHz UE 天线配置：每个 panel 为 8 个 antenna elements，Config 0、1、2 分别采用 1、2、4 个 panels，并规定每 panel 的 TXRU 配置。天线单元最大方向增益 GE,max 为 5 dBi。
 
 ```text
 Table 1: UE antenna configuration for around 30GHz
@@ -113,6 +127,8 @@ Table 2: UE antenna radiation pattern for around 30GHz [see Table A.2.1-8 TR38.8
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
 
+规定 6GR evaluation 的 FWA/CPE 单天线单元辐射方向图候选包括 Isotropic、具有不同 half power beamwidth 和 maximum directional gains 的 Directional，以及 Omnidirectional。CPE 可配备 1 至 3 个天线面板，且面板方向可优化。
+
 ```text
 For 6GR evaluation, RAN1 to model the radiation pattern of a single antenna element for FWA/CPE including,
 Candidate1: Isotropic,
@@ -139,6 +155,8 @@ Table 2: Omnidirectional radiation power pattern of a single antenna element for
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
 
+定义约 4 GHz 载频下的 4 TXRU outdoor BS antenna configuration：32 个 antenna elements、4 个 TXRU，阵列参数为 (8, 2, 2, 1, 1; 1, 2)，(dH,dV)=(0.5, 0.8)λ。该组合标为 Optional。
+
 ```text
 Define a 4 TXRU outdoor BS antenna configuration for about 4GHz carrier frequency as below.
 | Outdoor |  |  |  |  |
@@ -149,6 +167,8 @@ Define a 4 TXRU outdoor BS antenna configuration for about 4GHz carrier frequenc
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.1-a005`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
+
+系统级仿真中，低于 30 GHz 时仅 CPE 假设 UE transmission power 为 35 dBm，并注明可考虑 EIRP limit。约 30 GHz 的各场景表格规定 peak EIRP 下限 23 dBm、上限 43 dBm；仅 CPE 的范围为 35 至 55 dBm，具体仿真功率由公司报告。
 
 ```text
 Regarding the agreement on UE transmission power assumptions in system-level simulation, the further update is highlighted as follows in red:
@@ -163,6 +183,8 @@ Note: EIRP limit could be considered
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
 
+评估中，BS Tx power 随带宽按比例增加，并受最大功率限制：室外为 56dBm、室内为 33dBm。option1 的值引用 Report ITU-R M. [IMT-2030. EVAL]；option2 的值按模拟带宽比例缩放，并受最大 BS Tx power 56dBm 限制。
+
 ```text
 Regarding the gNB transmission power assumptions in the evaluations, update the second note of the agreement as follows:
 | Note: For evaluation purpose, BS Tx power scales up with bandwidth proportionally under the limitation of the maximum BS Tx power is 56dBm for outdoor and 33dBm for indoor for the above carrier frequencies. Note: The values defined in option1 refer to the Report ITU-R M. [IMT-2030. EVAL]. The values defined in option2 is calculated based on the proportional scaling with simulation bandwidth under the limitation of the maximum BS Tx power of 56dBm. |
@@ -171,6 +193,8 @@ Regarding the gNB transmission power assumptions in the evaluations, update the 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.1-a007`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
+
+系统级模拟的 UE 分布和速度表进一步更新，涵盖 Indoor Hotspot、Dense Urban、Rural、Urban Macro 和 Suburban Macro 场景，并列出各场景的 UE 数量、室内外比例及速度选项。FWA 的适用性仍为 FFS；每个 micro TRxP 假设的 UE 数量不大于对应 macro TRxP。
 
 ```text
 The agreed table for UE distribution and UE speed for system-level simulation, the further update is highlighted in cyan as follows:
@@ -183,6 +207,8 @@ The agreed table for UE distribution and UE speed for system-level simulation, t
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
 
+RAN1 将在 6GR 评估中采用表列的 CPE antenna height、UE distribution 和 UE speed 假设，覆盖 Rural、Urban Macro 和 Suburban Macro。室内与室外 CPE 的预选标准或机制可在评估阶段进一步讨论。
+
 ```text
 RAN1 to assume the UE antenna height and UE distribution for CPE for 6GR evaluations as follows:
 Note: Indoor and outdoor CPE pre-selection criterion or mechanism could be further discussed in the evaluation phase.
@@ -194,6 +220,8 @@ Note: Indoor and outdoor CPE pre-selection criterion or mechanism could be furth
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.1-a009`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
+
+FTP3 extension 的多包大小配置设定为 X=2，各包大小的到达服从 Poisson distribution，且 λ₁=K·λ₂、K≥1，并假设 S₁<S₂。Alt1 为每个 UE 模拟一种包大小，UE 数量比为 G；Alt2 为每个 UE 以独立 Poisson Process 模拟两种包大小，相关取值可在评估阶段决定。
 
 ```text
 Regarding FTP3 extension with multiple packet sizes:
@@ -226,6 +254,8 @@ Note: The following table is an illustration of the traffic configurations.
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface
 
+针对 Massive Communication (IoT) 的 6GR 评估，除 IMT-2030 L2 PDU 的 32 bytes 消息大小外，也可评估更高业务负载，例如采用 320 bytes 的较大 L2 PDU 消息大小。
+
 ```text
 For 6GR evaluations related to Massive Communication (IoT),
 In addition to the IMT-2030 L2 PDU message size of [32] bytes, evaluation of higher traffic loads can be used, e.g., evaluation with a larger L2 PDU message size of [320] bytes.
@@ -235,6 +265,8 @@ Final summary in R1-2601416.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.1-a011`
 
 ### [6G/Rel-20 RAN1#124] `conclusion` 10.1 Evaluation assumptions for 6GR air interface
+
+TR38.914 中已涵盖但 RAN1 尚未讨论的场景，也属于 RAN1 进行 6GR 评估的候选场景。
 
 ```text
 The scenarios captured in TR38.914 but are not discussed in RAN1 are also candidate scenarios for RAN1 evaluations for 6GR.

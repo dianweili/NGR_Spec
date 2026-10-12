@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, json, logging, re
+import hashlib, json, logging, os, re
 from collections import defaultdict
 from dataclasses import dataclass, asdict, field, replace
 from pathlib import Path
@@ -265,6 +265,9 @@ def write_state(events: list[dict], path: Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = sorted(events, key=lambda e: e["id"])
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True),
-                    encoding="utf-8")
+    # 崩溃时不能把 events.json 留成半份 JSON；replace 在同一目录内原子替换。
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True),
+                         encoding="utf-8")
+    temporary.replace(path)
     return path

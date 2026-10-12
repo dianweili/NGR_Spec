@@ -1,12 +1,23 @@
 # 6GR 非地面网络
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+6GR NTN 已形成若干研究基线：链路预算模板以既定模板和场景为基础，研究 GNSS-based、degraded 与 GNSS-less/free 操作，并支持大调度偏移及卫星辅助的上行同步。RAN1 正在推进 HARQ、随机接入、波束覆盖、多卫星干扰管理等物理层议题；RAN2 则研究跨 TN/NTN 与 NTN/NTN 的移动性、测量和 GNSS-independent RTT 机制。部分评估参数和机制已有共识，但多项方案仍处于研究或待定状态，跨工作组依赖也尚未解决。
+
+**未决问题**
+
+- 链路预算模板的部分行值、场景和参数仍待确定，包括 APC 损耗、天线配置及更大天线参数。
+- GNSS-degraded/free 操作所需的位置获取、位置 fix 频率及 PRACH 差分时间与频率误差场景仍待明确。
+- 大 RTT 下 HARQ 方案的最终选择、适用条件及其与 TN 设计的协调尚未确定。
+- 大调度偏移的完整设计仍待细化，包括是否支持 UE-specific k_offset，以及与 K1/K2 等调度设计的关系。
+- 多卫星干扰管理、层级波束结构及 beam footprint 覆盖比例的具体参数和适用性仍待研究。
+- 移动性、测量触发、GNSS-independent RTT 与相关计时器机制仍在研究，部分议题依赖 RAN1、RANP 或后续讨论。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.6 NTN
+
+针对 GNSS-free，研究非 UE-location-based mobility（包括 HO、cell selection/reselection 和 measurements）；对于 GNSS-degraded operation，等待 RAN1 进展。NTN 预计会有类似 5G 的 L2 timer 影响，待 RAN1 进一步进展后讨论，并涉及 multi-orbit operation。
 
 ```text
 For GNSS free, study non UE-location-based mobility (including HO, cell selection/reselection, measurements).    Wait for RAN1 and RAN plenary progress for location-based mobility solutions where the UE location can be determined without relying on non-3GPP systems like GNSS.
@@ -19,6 +30,8 @@ R2-2603509	Discussion on 6G NTN	OPPO	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.6 NTN
 
+对于 GNSS-free，优先采用 non UE-location-based solutions，因为这符合 6G 的 TN/NTN harmonization 目标。
+
 ```text
 For GNSS-free, non UE-location-based solutions are preferable, since they follow the 6G objective of TN/NTN harmonization.
 ```
@@ -26,12 +39,16 @@ For GNSS-free, non UE-location-based solutions are preferable, since they follow
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.6 NTN
 
+在 NR-NTN 中，RACH 和 C-DRX 的关键 MAC timers 高度依赖基于 GNSS 的 RTT calculations。
+
 ```text
 In NR-NTN, critical MAC timers for RACH and C-DRX are heavily dependent on GNSS-based RTT calculations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-o002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+在 RAN plenary 就 NTN 中支持 RAT-dependent positioning 取得进一步进展前，RAN2 假设不具备 GNSS capability 的 UE 无法在 NTN 中获取其位置。
 
 ```text
 For GNSS-free operation, RAN2 assumes that UE without GNSS capability cannot acquire its location in NTN, before RAN plenary makes further progress on the support of RAT-dependent positioning in NTN.
@@ -44,6 +61,8 @@ R2-2603425	Discussion on 6G NTN	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
 
+RAN2 等待 RAN1 关于 GNSS-degraded operation 的进展。
+
 ```text
 RAN2 to wait for RAN1 progress regarding GNSS-degraded operation.
 Noted
@@ -52,6 +71,8 @@ R2-2603739	Discussion on NTN mobility and GNSS-Free for 6G	THALES, Novamint, Gat
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+RAN2 研究 non-location-based mobility，以及 UE location 可在不依赖 GNSS 等 non-3GPP systems 的情况下确定的 location-based mobility solutions。
 
 ```text
 RAN2 to study non-location-based mobility, as well as location-based mobility solutions where the UE location can be determined without relying on non-3GPP systems like GNSS.
@@ -65,6 +86,8 @@ R2-2603155	Discussion on 6GR NTN Scenarios	Sharp	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
 
+对于 GNSS-less/degraded operations，6GR NTN 支持 time-based mobility 和 beam-level RSRP-based mobility 作为替代触发条件。
+
 ```text
 For GNSS-less/degraded operations, 6GR NTN supports time-based mobility and beam-level RSRP-based mobility as alternative triggering conditions.
 Noted
@@ -73,6 +96,8 @@ R2-2604189	Discussion on the 6G NTN	Google, AUMOVIO	discussion	Rel-20	FS_6G_Radi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p004`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+RAN2 将研究支持 6G NTN GNSS-independent RTT estimation 的机制；估计的 RTT 至少用于延后 RA 相关定时器的启动，并延长 C-DRX 相关定时器。讨论中提出计时器可纳入 work item 阶段，也提及可基于 DL 启动计时器；该议题记为 Noted。
 
 ```text
 RAN2 to study mechanisms enabling GNSS-independent RTT estimation for 6G NTN, where the estimated RTT is at least used for delaying the start of RA related timers (e.g., ra-ResponseWindow and ra-ContentionResolutionTimer) and for extending the C-DRX related timers (e.g., drx-HARQ-RTT-TimerDL and drx-HARQ-RTT-TimerUL).
@@ -86,6 +111,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
 
+针对 multiorbit mobility 和 NTNTN mobility，将研究 QoS-based cell reselection，使 RRC IDLE mode UE 可优先驻留 GEO cell，并在 MT 或 MO data arrival 触发时根据 service requirements 选择接入小区。该议题记为 Noted。
+
 ```text
 For multiorbit mobility and NTNTN mobility, study QoSbased cell reselection to enable RRC IDLE mode UEs to preferentially camp on GEO cell and, when triggered by MT or MO data arrival, select an appropriate cell for access based on service requirements.
 -	Qualcomm asks what is mean by QoS.   Oppo explains that is a service.
@@ -95,6 +122,8 @@ R2-2603539	Discussion on 6GR NTN related designs	Huawei, HiSilicon	discussion	Re
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p006`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+多轨道议题达成一致：在 TN session 继续讨论 multi-carrier idle mode，并将 multi-orbit 纳入讨论场景；至少研究 inter-frequency 场景下的 service-based reselection。还将结合 TN session 后续讨论，了解相较于 Option 1 的收益，以及特定 NTN 问题或顾虑。
 
 ```text
 RAN2 to study multi-orbit operation assuming same operator:
@@ -139,6 +168,8 @@ R2-2602962	Further Considerations on  6GR NTN	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
 
+针对 intra-RAT 6G TN-NTN cell reselection，将至少考虑以下测量启动机制：TN 到 NTN 时，以 RRM-based S-measure 作为基线；NTN 到 TN 时，可考虑 UE 与 reference location 的距离或 serving NTN cell 的 serving time。
+
 ```text
 For intra-RAT 6G TN-NTN cell reselection, at least consider the following mechanism:
 In case of TN to NTN mobility, RRM based S-measure for measurement initiation should be considered as baseline;
@@ -148,6 +179,8 @@ In case of NTN to TN mobility, the distance between UE and the reference locatio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p008`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+针对 TN/NTN 与 NTN/NTN mobility，将研究 idle/inactive 和 connected 状态下 NTN 特定的 measurement relaxation/initiation trigger conditions，例如 S-measure、reference location 和 time。原文列出了 TN 到 NTN 与 NTN 到 TN 的 measurement report 条件。
 
 ```text
 For intra-RAT 6GR TN-NTN mobility, at least consider the following measurement report conditions:
@@ -165,6 +198,8 @@ R2-2603509	Discussion on 6G NTN	OPPO	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
 
+6G NTN 的 SMTC 和 measurement gap 设计将复用 5G NTN 的 multiple SMTC/MG、RRC IDLE UE-based SMTC adjustment，以及 RRC CONNECTED UE 的 PDD report。另将研究 beam-based SMTC configuration，以减少 signalling overhead 和 GNSS dependency。
+
 ```text
 For SMTC and measurement gap design in 6G NTN:
 a)	Reuse the following mechanisms from 5G NTN: multiple SMTC/MG, UE based SMTC adjustment for RRC IDLE mode UEs, PDD report for RRC CONNECTED mode UEs.
@@ -174,6 +209,8 @@ R2-2604129	Solutions for 6G NTN	Ericsson, Novamint, Iridium, ESA	discussion	Rel-
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.6 NTN
+
+将研究基于 serving cell reference location 的方案，以在 6G NTN 测量定时中考虑不同卫星之间的 UE-aNB propagation delay difference。
 
 ```text
 Study solutions, based on a reference location of the serving cell, to account for the UE-aNB propagation delay difference between different satellites in the measurement timing in 6G NTN.
@@ -209,6 +246,8 @@ R2-2604095	Discussion on 6G NTN mobility	CSCN	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.6-p011`
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.2.2 TN/NTN integration
+
+6G NTN 可采用 5G NTN 的部署场景（LEO、MEO、GSO）和 payload type 假设；是否研究 GNSS 取决于 RANP 及其他工作组的讨论。RAN2 将研究与 TN 设计共同处理的功能和 NTN 特定功能，包括 HARQ、mobility、initial access、uplink time and frequency pre-compensation、TA reporting、satellite switch with re-sync、beam hopping 和 discontinuous coverage；MBS、dual connection、Carrier Aggregation 和 VLEO 可在 RANP 讨论。
 
 ```text
 1	The basic assumption with 5G NTN deployment scenarios (LEO, MEO, GSO) and payload type can be adopted in 6G NTN.   FFS whether we will study with and/or without GNSS, depending on RANP and other WG discussion first.
@@ -278,6 +317,8 @@ moved from 10.4
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
 
+研究 6G radio interface adaptations，以支持涵盖 VLEO、LEO、MEO、GSO 各轨道的实际 NTN 部署场景，并评估 NTN 特性对 initial access timers、HARQ、mobility management 和 paging 等的影响。讨论中 Thales 表示可先从 LEO、MEO 开始，再考虑 VLEO。
+
 ```text
 Study 6G radio interface adaptations to support practical NTN deployment scenarios across all orbits (VLEO, LEO, MEO, GSO), and evaluate the impact of NTN characteristics (e.g., initial access timers, HARQ, mobility management, paging).
 -	Mediatek asks if VLEO will be a common case or whether it should be discussed in RANP.  Thales indicates that we can start with LEO, MEO and later consider VLEO
@@ -285,6 +326,8 @@ Study 6G radio interface adaptations to support practical NTN deployment scenari
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p001`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+6G radio access 从 Day-1 起应研究适用于 NTN 和 TN 的统一 grant-free initial access mechanism，以及支持 network energy savings 并应对 NTN 特定约束的 control plane signaling。讨论涉及高负载时是否采用 RACH-less，以及 network contention 的需要。
 
 ```text
 The 6G radio access shall study from Day-1:
@@ -296,12 +339,16 @@ The 6G radio access shall study from Day-1:
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
 
+6G radio access 从 Day-1 起应允许根据 service 类型和 operating point，在 user plane 层动态激活或停用 retransmission mechanisms（例如 HARQ）。
+
 ```text
 The 6G radio access shall from Day-1 allow to dynamically activate/deactivate the retransmission mechanisms (e.g., HARQ) at user plane level depending on the type of services and operating point
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p003`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+研究支持 UE 在 Idle 和 Connected modes 下从 TN 移动到 NTN、以及从 NTN 移动到 TN 的 6G procedures。讨论说明该研究是一般性的，也可考虑 NTN 到 NTN 的 5G 到 6G 移动。
 
 ```text
 Study a design for 6G procedures that support mobility from TN to NTN and from NTN to TN for UEs in both Idle and Connected modes.
@@ -310,6 +357,8 @@ Study a design for 6G procedures that support mobility from TN to NTN and from N
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p004`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+研究支持 6G satellite networks 中 Idle 和 Connected modes 的 NTN-to-NTN mobility mechanisms。研究应涵盖 inter-beam、inter-cell 和 inter-satellite mobility。
 
 ```text
 Study mobility mechanisms for 6G satellite networks (NTN to NTN), for both idle and connected modes. The study should address:
@@ -321,6 +370,8 @@ Study mobility mechanisms for 6G satellite networks (NTN to NTN), for both idle 
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
 
+RAN2 在 6GR study 中按优先级考虑 mobility mechanisms：Time-based 和 Location-based Conditional Handover（CHO）、RACH-less handover、由 MAC 触发的 cell switch mechanism（例如 LTM），以及 group handover。
+
 ```text
 RAN2 to consider the following mobility mechanisms in 6GR study, in order of priority:
 •	Time-based and Location-based Conditional Handover (CHO)
@@ -331,6 +382,8 @@ RAN2 to consider the following mobility mechanisms in 6GR study, in order of pri
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.2-p006`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.2 TN/NTN integration
+
+讨论了 6G NTN 的基本假设和功能分类，包括 common essential features、NTN specific essential features 与 NTN specific optional features。建议 common essential features 从 Day 1 起采用 TN 和 NTN 的 harmonized design，NTN specific essential features 可讨论是否从 Day 1 支持，NTN specific optional features 可留待后续 release；具体功能范围仍有不同意见。
 
 ```text
 Study the following essential NTN capabilities for supporting NTN services in 6G:
@@ -381,6 +434,8 @@ Noted
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
 
+针对 6GR NTN 的 GNSS-less/free/degraded PRACH，研究以 TR 38.742 记录的差分时间和频率误差为目标，并增加 S-band LEO-300 与 Ka-band LEO-300 场景。场景细节（包括差分时间/频率误差）仍待确定（FFS）。
+
 ```text
 For 6GR NTN GNSS-less/free/degraded PRACH, the differential time and frequency errors documented in TR 38.742 are taken as targets for the study with the addition of at least the following scenarios:
 S-band LEO-300
@@ -390,6 +445,8 @@ FFS: details of these scenarios, including differential time/frequency errors
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
+
+修正了 RAN1#125 关于 6GR NTN SSB 的 LLS 假设：SSB 覆盖评估的 periodicity 待报告，性能指标为 PSS/SSS 的 1% missed detection、0.1% false alarm rate，以及 PBCH 的 1% BLER；UE 不假设知道 SS/PBCH block index。公司需报告合并的 SSB 分量及数量（如有）、single-shot 检测，以及其他参数；CFO 和 timing drift 必须报告。
 
 ```text
 The RAN1#125 agreement on LLS assumptions for SSB in 6GR NTN is corrected as follows:
@@ -405,6 +462,8 @@ NOTE: Structure of NR signals / channels and other functionalities/features can 
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
 
+在 6GR NTN link budget template 的 Ka/Ku band PDSCH 和 PUSCH link level evaluations 中，PT-RS configuration 为可选项；若公司将其纳入评估，需报告。
+
 ```text
 For the 6GR NTN link budget template, for Ka/Ku band PDSCH and PUSCH link level evaluations, the PT-RS configuration is optional, and reported by companies if considered.
 R1-2606420	Feature lead summary#3 on NTN specific requirements and design	Moderator (Qualcomm Incorporated)
@@ -413,6 +472,8 @@ R1-2606420	Feature lead summary#3 on NTN specific requirements and design	Modera
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
 
+对于 6GR NTN link budget template 的 Ka/Ku band link level evaluations，BPSK/QPSK 可选用 TR38.803 第 6.1.11.2 条的 UE 和 SAN phase noise model，并在使用时由公司报告。若评估更高阶调制，则使用该模型；此约定仅适用于 6GR NTN link budget template。
+
 ```text
 For the 6GR NTN link budget template, for Ka/Ku band link level evaluations, the UE and SAN phase noise model in clause 6.1.11.2 of TR38.803 can be optionally used for BPSK/QPSK (and in that case is reported by companies) and is used for higher order modulation (if evaluated for the link budget template)
 NOTE: This agreement only applies to the 6GR NTN link budget template.
@@ -420,6 +481,8 @@ NOTE: This agreement only applies to the 6GR NTN link budget template.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-a004`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
+
+6G NTN link budget template 至少评估表列的 S-band、Ka band 和 Ku band 场景，包括指定的 LEO、MEO、GEO 高度、仰角、beam edge 及 Outdoor 条件；部分 S-band LEO 场景还列有可选 APC。上述场景不假设 wide beam operation；公司可在相应主题提供 wide-beam 链路预算，也可提交表列以外场景的结果。
 
 ```text
 For the link budget template of 6G NTN, at least the following scenarios are evaluated
@@ -437,6 +500,8 @@ R1-2606422	Feature lead summary#5 on NTN specific requirements and design	Modera
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.7.1 NTN specific requirements and design
 
+6GR NTN 的多卫星物理层研究中，将研究与星间干扰管理相关的同频干扰，并考虑 NTN 信道特性（如轨道动态导致的大且时变的 Doppler / timing offsets）。至少研究 LEO 同轨情形；其他参数（如 elevation angle）待定，并假设 UE 同一时刻仅连接一颗卫星。
+
 ```text
 In 6GR NTN, under the label of “physical layer aspects of multi-satellite operation”, the following sub-aspects are studied under “physical layer aspects related to inter-satellite interference management”
 Co-channel interference, taking into account characteristics of NTN channels (e.g. large and time-varying Doppler / timing offsets due to orbital dynamics)
@@ -447,6 +512,8 @@ NOTE: It is assumed that the UE is only connected to one satellite at a time.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-a006`
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.7.1 NTN specific requirements and design
+
+6GR NTN GNSS-less/free/degraded PRACH 研究将在 common agenda item 中开展，并考虑 NTN specific agenda item（AI 10.7.1.）制定的 NTN requirements。若 common agenda item 的设计不满足 NTN requirements，可在 NTN specific agenda item 下制定 NTN specific adjustments。
 
 ```text
 For the 6GR NTN GNSS-less/free/degraded PRACH study:
@@ -459,6 +526,8 @@ R1-2606419	Feature lead summary#2 on NTN specific requirements and design	Modera
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-c001`
 
 ### [6G/Rel-20 RAN1#126] `observation` 10.7.1 NTN specific requirements and design
+
+RAN1 认为 Solution 1（HARQ feedback disabling）和 Solution 3（aNB 在收到前次 HARQ-ACK 前复用同一 HARQ process）均可行；Solution 1 已在 NR Rel-17 规定，Solution 3 受 UE out-of-order rules 限制，且现行 RAN2 规范在某些情形下可能阻止该行为。各方对两种方案的信令开销、UE 功耗、重传恢复和链路自适应影响存在不同意见；两者被认为可行不决定最终是否规定及采用哪种方案。
 
 ```text
 On the issue of HARQ stalling, the following observations are drawn:
@@ -476,6 +545,8 @@ R1-2606421	Feature lead summary#4 on NTN specific requirements and design	Modera
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-o001`
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.7.1 NTN specific requirements and design
+
+6GR NTN Ka/Ku-band link budget template 采用列明的 atmospheric loss 和 scintillation loss 数值，并设 shadow fading margin 为 0、polarization loss 为 0 dB、receiver implementation margin 为 1 dB、penetration margin 与 other losses 为 0 dB。扫描损耗按 elevation angle 和天线单元方向图增益计算；相关损耗不含雨衰，且研究特定场景不代表将研究或规定如何弥补可能的覆盖缺口。
 
 ```text
 On the link budget template for 6GR NTN, the following values are used for Ka and Ku-band:
@@ -506,6 +577,8 @@ NOTE: The study of a particular scenario for the link budget template does not i
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-w001`
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.7.1 NTN specific requirements and design
+
+6GR NTN MEO-7000 S-band 下行和上行采用表列参数，包括每波束最大带宽 5 MHz、参考波束大小 160 km、2774 个波束覆盖区及 48 个同时激活波束（1.73%）。天线参数采用 fully connected TXRU mapping，并列出相控阵或反射面天线配置、circular 极化建模及 41.08 dB 的整体天线增益。
 
 ```text
 For 6GR NTN MEO-7000 S-band, the following parameters are adopted:
@@ -547,6 +620,8 @@ Antenna parameters:
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.7.1 NTN specific requirements and design
 
+6GR NTN LEO-1200 Ku-band 采用 G/T = 6 dB/K、每波束 EIRP density = 13 dBW/MHz。天线参数采用 fully connected TXRU mapping，并列出 1296 个天线单元的反射面配置、circular 极化建模及 33.126 dB 的整体天线增益。
+
 ```text
 For  6GR NTN LEO-1200 Ku-band, the following parameters are adopted
 G/T = 6dB/K
@@ -564,6 +639,8 @@ Antenna parameters:
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.7.1 NTN specific requirements and design
 
+6GR NTN Ka/Ku-band UE 天线采用 12 cm 配置，TXRU mapping 为 fully connected；表中分别列出 Ka-band 256 个、Ku-band 81 个天线单元的反射面配置。两种配置均采用 circular 极化建模，整体天线增益分别为 26.08 dB 和 21.08 dB；更大天线的额外参数将在后续会议讨论。
+
 ```text
 For 6GR NTN Ka and Ku-band UE antenna assumptions, the following parameters are adopted:
 NOTE: An additional set of parameters for a Ka and Ku band UEs with a larger antenna will be also adopted, details to be discussed in the next meeting.
@@ -577,6 +654,8 @@ NOTE: An additional set of parameters for a Ka and Ku band UEs with a larger ant
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.7.1-w004`
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.7.1 NTN specific requirements and design
+
+6GR NTN S-band link budget template 采用 atmospheric loss、shadow fading margin、scintillation loss 和 polarization loss 的列明数值，接收机实现余量为 1 dB，penetration margin 为 0 dB；扫描损耗按 elevation angle 和天线单元方向图增益计算。APC 的 other losses 设为 6–15 dB，具体值将在下次会议根据公司输入决定，且 APC 仅评估下行广播信道/信号。
 
 ```text
 On the link budget template for 6GR NTN, the following values are used for S-band:
@@ -608,6 +687,8 @@ NOTE: The study of a particular scenario for the link budget template does not i
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+针对NTN中大RTT导致的HARQ stalling，研究HARQ feedback disabling、跨多个slot的PDSCH/PUSCH传输、aNB在收到前次HARQ-ACK前复用同一HARQ process，以及增加HARQ processes等方案及其适用性。上述方案可组合，是否与TN协调仍待确定。
+
 ```text
 For the issue of HARQ stalling due to large RTT in NTN, study the following solutions (which may or may not have specification impact), including their applicability:
 Solution 1: HARQ feedback disabling.
@@ -623,6 +704,8 @@ From Tuesday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+6GR NTN采用R1-2603091所附的link budget template；“Candidate 2”不纳入NTN考虑。
+
 ```text
 For 6GR NTN, the link budget template attached to R1-2603091 is endorsed.
 Note: “Candidate 2” is not considered for NTN.
@@ -630,6 +713,8 @@ Note: “Candidate 2” is not considered for NTN.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.7.1-a002`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+针对NTN卫星beam footprints多于同时激活beams的问题，研究default SSB periodicity的取值及hierarchical beam structure（例如采用不同尺寸的beams），并评估可实现的卫星覆盖比例和适用性。
 
 ```text
 In 6GR NTN, for the issue of satellite having more beam footprints than simultaneously active beams, study the following solutions, including their achievable coverage ratio of satellite and applicability:
@@ -642,6 +727,8 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+6GR NTN study至少考虑FD-FDD和UE侧HD-FDD两种duplex types。主会另列出Semi-static TDD、gNB semi-static SBFD和Dynamic TDD等6GR duplexing study类型。
+
 ```text
 For 6GR NTN study, RAN1 considers at least the following duplex types:
 FD-FDD.
@@ -652,6 +739,8 @@ HD-FDD on UE side.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.7.1-a004`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+6GR NTN的“physical layer aspects of multi-satellite operation”至少研究与mobility及inter-satellite interference management相关的物理层方面及其适用性，干扰管理技术细节待定。上述两方面假设UE一次只连接一颗卫星，并预期mobility主题与RAN2协调。
 
 ```text
 In 6GR NTN, under the label of “physical layer aspects of multi-satellite operation”, at least the following aspects are studied, including its applicability:
@@ -670,6 +759,8 @@ From Thursday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+6GR NTN评估中，S-band至少为link budget计算增加MEO-7000轨道。
+
 ```text
 For 6GR NTN evaluations, consider the following additional orbit for S-band, at least for link budget calculation purposes:
 MEO-7000
@@ -677,6 +768,8 @@ MEO-7000
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.7.1-a006`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+为实现较大的scheduling offsets，6GR NTN原则上支持以NR的k_offset概念为基线并允许潜在修改，且至少支持广播k_offset。是否支持UE-specific k_offset仍待确定；若6GR不定义K1/K2等概念或其调度设计已覆盖NTN RTT范围，该协议可能修订。
 
 ```text
 For 6GR NTN, for realizing large scheduling offsets, the following is supported in principle:
@@ -692,12 +785,16 @@ From Friday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+RAN1将研究TA report对6GR NTN是否有益。
+
 ```text
 For 6GR NTN, RAN1 to study whether TA report is beneficial.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.7.1-a008`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+针对 6GR NTN 的 GNSS-based operation，研究 UL time-frequency pre-compensation 所需的 satellite assistance info 参数，并以 NR NTN 的 SIB19 参数为起点。
 
 ```text
 For 6GR NTN, at least for GNSS-based operation, study which parameters are needed for satellite assistance info for UL time-frequency pre-compensation, considering NR NTN parameters in SIB19 as starting point.
@@ -706,6 +803,8 @@ R1-2603364	Final feature lead summary on NTN specific requirements and design fo
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.7.1-a009`
 
 ### [6G/Rel-20 RAN1#124b] `conclusion` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+6GR NTN link budget template 针对 reflector antenna、phased arrays 和 UT omni antennas 给出了 antenna virtualization mode 的示例设置，涵盖 antenna gain element、scanning loss、loss to beam edge 及元素数与模拟数的关系。上述设置适用于 template 的 Transmitter 部分，Receiver 部分使用相同的 antenna virtualization mode。
 
 ```text
 For the 6GR NTN link budget template, for the purpose of illustration the following figure and text describe how the assumed antenna virtualization mode can be used for different antenna types:
@@ -730,6 +829,8 @@ NOTE: The above is for the “Transmitter” part of the 6GR NTN link budget tem
 
 ### [6G/Rel-20 RAN1#124b] `working_assumption` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+针对 S-band（2 GHz）LEO-600 和 LEO-300，采用 SAN antenna model 假设：phased antenna array 使用 fully connected TXRU mapping，卫星天线配置可为 phased antenna array 或 reflector antenna。两种轨道的天线元素数分别为 1296 和 400，整体天线增益分别为 33.126 dB 和 28.02 dB；link budget template 中需计入 50% efficiency。
+
 ```text
 For 6GR NTN, for S-band LEO-600 and LEO-300, the following assumption for SAN antenna model is adopted:
 Other separate assumptions may be further considered for e.g. other satellite payload types.
@@ -746,6 +847,8 @@ NOTE: For the link budget template, the 50% efficiency should be accounted for (
 
 ### [6G/Rel-20 RAN1#124b] `working_assumption` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+针对 6GR NTN 的 S-band UE antenna model（all orbits），考虑 Combination0 至 Combination3，分别对应 1、2、4、8 个 antenna elements，并列出各组合的 TXRU 数量及 Alt 1/Alt 2 天线模型候选。具体考虑哪些组合、TXRU 总数、Alt 1/Alt 2 细节及组合是否适用于特定 device types 均为 FFS。
+
 ```text
 For 6GR NTN, for the UE antenna model for S-band (all orbits), consider a subset of the following combinations:
 FFS: Which of the combinations are considered, Total Number of TXRU, and details of Alt 1/ Alt 2 for the antenna model.
@@ -761,12 +864,16 @@ FFS: Whether some of the combinations only apply for some device types.
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+NTN link budget template 以 TN link budget template 为基线。具体行和值（包括新增行）仍需进一步讨论。
+
 ```text
 For NTN link budget template, RAN1 to take the TN link budget template as baseline with specific rows / values (including adding new rows) to be further discussed.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.7.1-a001`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+RAN1 将为指定的卫星轨道与频段组合定义 evaluation parameters：S-band 涵盖 LEO 300、LEO 600 和 GEO；Ka band 涵盖 LEO 600、GEO，以及方括号标注的 LEO 300、LEO 1200；Ku band 涵盖 LEO 1200 和 GEO。S-band 评估预计与 L-band 类似，且这些组合仅用于评估。
 
 ```text
 RAN1 will define evaluation parameters for at least the following combinations of satellite orbit and bands:
@@ -783,6 +890,8 @@ NOTE 2: This is only for the purpose of evaluations.
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+讨论至少用于物理层操作的 GNSS availability 时，RAN1 使用 GNSS-based、GNSS-degraded 和 GNSS-free/GNSS-less 术语，分别描述依赖具备 GNSS 接收机且满足位置精度要求、有过符合精度要求的位置 fix 但当前可能不满足，以及不依赖 GNSS 接收机或当前无可用于物理层操作的位置 fix 的网络操作模式。位置 fix 所需频率，以及能否用精度相当的非 GNSS 方式获得位置等事项仍待确定。
+
 ```text
 RAN1 to use the following terminology when discussing GNSS availability at least for physical layer operation.
 GNSS-based: Refers to the network mode of operation which relies on devices being equipped with a GNSS receiver and the devices can obtain a position fix within a given accuracy (e.g. 50m)
@@ -798,12 +907,16 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+6GR NTN 的目标是支持 GNSS-based、GNSS-degraded 和 GNSS-less/GNSS-free operation。
+
 ```text
 6GR NTN targets to support GNSS-based operation, GNSS-degraded operation and GNSS-less/GNSS-free operation.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.7.1-a004`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+6GR NTN uplink time-frequency synchronization 以 NR NTN 为基线，遵循相同原则，并引入 “uplink synchronization reference point” 概念及 satellite assistance information。至少在 GNSS-based operation 下，支持 UE 使用自身位置信息与 satellite assistance information 进行时频预补偿。
 
 ```text
 6GR NTN uplink time-frequency synchronization follows the same principle as NR NTN as baseline:
@@ -815,6 +928,8 @@ At least for GNSS-based operation, it is supported that UE uses its own location
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+6GR 支持 large scheduling offsets，以适应 satellite channel 引入的 RTT。进一步讨论两种实现选项：以 NR 的 k_offset 概念为基线并可能修改，或将较大的 RTT scheduling delays 纳入 scheduling offsets（例如类似 NR 的 K1/K2），其可对 TN 和 NTN 通用或不通用。
+
 ```text
 6GR supports large scheduling offsets to accommodate the RTT introduced by the satellite channel. Further discuss how to realize these scheduling offsets:
 Option 1: Reuse the k_offset concept from NR as a baseline with potential modifications.
@@ -824,6 +939,8 @@ Option 2: The large scheduling delays to accommodate the RTT are incorporated in
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.7.1-a006`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+研究 6GR NTN 在 GNSS based operation 下的 NTN specific issues/requirements，至少涵盖 uplink time-frequency synchronization、HARQ、large RTT timing relationships、coverage target、multi-satellite operation、multiple beams per satellite，以及卫星 beam footprints 多于同时激活 beams 的情况。其他方面也未被排除。
 
 ```text
 Study NTN specific issues/requirements at least for the following aspects for 6GR NTN under this agenda:
@@ -841,6 +958,8 @@ R1-2601681	Final Feature lead summary on NTN specific requirements and design fo
 
 ### [6G/Rel-20 RAN1#124] `conclusion` 10.7.1 NTN specific requirements and design for GNSS based operation
 
+6GR NTN 研究的一般原则是识别 NTN specific issues/requirements，并可在 NTN 议题下研究潜在解决方案；若可采用 common design，研究结果可在其他议题讨论，解决方案也可能扩展 TN design。若 common/extended design 无法满足 NTN requirements，可引入 NTN specific solutions；采用 common design 时优先考虑 TN performance。
+
 ```text
 As a general principle for 6GR NTN study:
 Under NTN agenda item, we will identify issues / requirements specific to NTN.
@@ -856,6 +975,8 @@ From Thursday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.7.1-c001`
 
 ### [6G/Rel-20 RAN1#124] `conclusion` 10.7.1 NTN specific requirements and design for GNSS based operation
+
+提交 RAN1#124b 的 link budget template 和 evaluation assumptions 输入时，鼓励公司将其放入贡献文档所附的 xls，并遵循 R1-2601471 所附 xls 的格式。
 
 ```text
 When reporting inputs for the link budget template and evaluation assumptions to RAN1#124b, companies are encouraged to provide them in an xls attached to their contribution following the format of the xls attached to R1-2601471.

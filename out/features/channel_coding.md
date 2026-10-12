@@ -1,12 +1,23 @@
 # 6GR 信道编码与调制
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+6GR 已明确以 NR 等概率均匀 QAM 为至少支持基础，并进一步限定了 DL、UL 及 DFT-s-OFDM 的调制范围。超出 NR 范围的 LDPC 扩展已收窄部分码块、基图和矩阵结构选项，但若干参数及设计仍待确定；大载荷 Polar 码与小载荷 UCI 编码也在评估中。PS/GS 的性能、复杂度和存储权衡已有评估要求与部分结果，但是否支持 constellation shaping 尚无共识。FWA 场景的 DL 4K QAM 和 UL 1K QAM 获得了 SLS 评估，结果因场景与条件而异；RAN1 建议 UL 1K QAM，对 DL 4K QAM 尚未达成共识。
+
+**未决问题**
+
+- LDPC 扩展的最终 BG 结构、lifting size 及若干矩阵参数仍待选择或确定。
+- 是否需要超出 NR 范围的 UCI 载荷，以及大载荷 Polar segmentation 设计仍待确认。
+- 3~11 bits 小载荷 UCI 的编码方案尚待比较，5G RM code 的适用性存在不同意见。
+- 是否支持 constellation shaping，以及若支持时选择 PS 还是 GS，尚无共识；计划在 Q3 决定。
+- DL 4K QAM 是否采用尚无共识；UL 1K QAM 的 SLS 收益受场景、EVM、MPR、负载和 rank 等因素影响。
+- PS/GS 的复杂度、存储、时延与性能权衡，以及规范和功能链影响仍需进一步评估。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.3.1 Channel coding
+
+BG3 的子矩阵 E 支持选项 E2：下三角矩阵中，度数大于 1 的列数少于 I。I 的取值仍为 FFS，且 E 不能是单位矩阵（选项 E1）。
 
 ```text
 For the sub-matrix E of BG3, support the following option
@@ -19,6 +30,8 @@ R1-2606774	FL summary#4 for 6G channel coding	Moderator (ZTE)
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.3.1 Channel coding
 
+除 UE 在其支持的任何频段中最大 UL channel bandwidth 不超过 20MHz 外，支持 BG3 in UL 对 UE 为强制要求，并需进行 capability signaling。对上述 UE，BG3 in UL 为可选；是否需要其他例外由 RAN plenary 决定。
+
 ```text
 With respect to the decision for capability of BG3 in UL tasked by RANP, the following is supported:
 supporting BG3 in UL is mandatory with capability signaling for UEs except for UEs with up to 20MHz maximum UL channel bandwidth in any band supported by UE, i.e., BG3 in UL is optional for UEs with up to 20MHz maximum UL channel bandwidth in any band supported by UE.
@@ -28,6 +41,8 @@ R1-2606775	FL summary#5 for 6G channel coding	Moderator (ZTE)
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.3.1-a002`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.3.1 Channel coding
+
+针对 payload size 为 3~11 bits 的 small UCI 编码候选评估，采用 AWGN channel，并报告目标 BLER 下的 SNR、BER，以及收发机复杂度和时延影响。候选包括 5G RM code、Enhanced RM code、Enhanced PC-Polar code、Golay-based code、Vertical and horizontal code、CRC polynomial code；公司可选择一个或多个候选并与 5G RM code 比较。
 
 ```text
 For the evaluation of coding based candidates for small UCI with payload size of 3~11 bits, refer to the evaluation assumptions in PUCCH/PUSCH, with the following update
@@ -55,6 +70,8 @@ Final post-meeting summary for this agenda item.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.3.1-a003`
 
 ### [6G/Rel-20 RAN1#126] `observation` 10.3.1 Channel coding
+
+公司贡献指出，5G RM code 在高码率下可能出现 rank deficiency、error floor 或性能下降；同时有意见认为 small UCI 通常采用低码率，且 5G RM code 可复用。贡献还提出 Enhanced RM code、Enhanced PC-Polar code、Vertical and horizontal code、CRC polynomial code、Golay-based code 等提升候选。
 
 ```text
 For the study of 5G RM code for small UCI with 3~11 bits, the following are observed based on companies’ contributions:
@@ -98,6 +115,8 @@ R1-2606773	FL summary#3 for 6G channel coding	Moderator (ZTE)
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.3.1-o001`
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.3.2 Modulation, Joint channel coding and modulation
+
+RAN1 将继续研究 GS（1D-NUC）及 PS（ESS-based PS、ECC-based PS），并在 Q3 决定是否支持 constellation shaping；如支持，将在 PS（含 1-bit 或 2-bits）与 GS 之间选择。DL 与 UL 不支持采用不同的 constellation shaping scheme；若 Q3/26 未达成共识，相关研究将停止。
 
 ```text
 RAN1 to continue the study on GS (i.e. 1D-NUC) and PS (ESS based PS and ECC based PS in Q3/26
@@ -172,12 +191,16 @@ R1-2606732	FL summary #4 on AI 10.3.2 modulation, joint channel coding and modul
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.3.2 Modulation, Joint channel coding and modulation
 
+该条目指出 RANP 要求 RAN1 就 constellation shaping 的支持作出结论，未包含进一步的结论内容。
+
 ```text
 With respect to RANP task to RAN1 (copied below) to conclude the support for constellation shaping in RAN1:
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.3.2-c002`
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.3.2 Modulation, Joint channel coding and modulation
+
+RAN1 对 DL 或 UL 支持任何 constellation shaping scheme 均未达成共识。部分方案的支持者表示愿意撤回相应方案。
 
 ```text
 RAN1 to continue the study on GS (i.e. 1D-NUC) and PS (ESS based PS and ECC based PS in Q3/26
@@ -192,6 +215,8 @@ Some proponents of some constellation shaping schemes stated that they would agr
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.3.2-c003`
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.3.2 Modulation, Joint channel coding and modulation
+
+若在 6GR 中支持 DL 4K QAM 和 UL 1K QAM，其适用范围限于 FWA use case，不适用于 eMBB，且该限制须在规范中落实。RAN1 建议采用 UL 1K QAM；对 DL 4K QAM 是否采用未达成共识。
 
 ```text
 With respect to RANP guidance to RAN1 (copied below) for support of higher order modulation:
@@ -210,12 +235,16 @@ No consensus in RAN1 to recommend adopting 4K QAM for DL
 
 ### [6G/Rel-20 RAN1#126] `observation` 10.3.2 Modulation, Joint channel coding and modulation
 
+原文仅引出相对于 RAN#112 结论的观察，未提供具体观察或决定。
+
 ```text
 With respect to the conclusion from RAN#112 (copied below), the following observations are made:
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.3.2-o001`
 
 ### [6G/Rel-20 RAN1#126] `observation` 10.3.2 Modulation, Joint channel coding and modulation
+
+提供了 UL 1K QAM 的 SLS 评估结果，其中部分结果符合 RAN4 推荐的 EVM/MPR，部分不符合。结果显示不同场景和配置下的 UPT 增益不一；多项评估指出，在户外 CPE 等情形可见增益，而 MPR、EVM、负载及 rank 会影响收益。
 
 ```text
 For UL 1K QAM SLS performance summary, the following evaluation results are provided:
@@ -247,6 +276,8 @@ Evaluations not comply with RAN4 recommended EVM/MPR
 
 ### [6G/Rel-20 RAN1#126] `observation` 10.3.2 Modulation, Joint channel coding and modulation
 
+提供了 DL 4K QAM 的 SLS 评估结果，分别报告符合和不符合 RAN4 推荐 EVM 的评估。结果显示增益依场景、负载、rank 和 impairment model 而异；多项评估报告平均增益很小或为负，也有评估在 FWA 户外 CPE 或特定条件下报告正增益。
+
 ```text
 For DL 4K QAM SLS performance summary, the following evaluation results are provided:
 Evaluations comply with RAN4 recommended EVM (R4-2607375: txEVM + rxEVM for DL 4096QAM = 1.5% + 1.5% or 1.8% + 1.8% for 4 GHz; 1.5% + 1.5%, 1.8% + 1.8% or 2% + 2% for 7 GHz)
@@ -277,6 +308,8 @@ R1-2606883	FL summary #5 on AI 10.3.2 modulation, joint channel coding and modul
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.1 Channel coding
 
+对于超出 NR 范围的 LDPC extension 研究，假设最大 code block size 为 8448，并进一步研究两种方案：BG 中 44 个 information columns、maximum lifting size 为 192，或 22 个 information columns、maximum lifting size 为 384。原文提出在本周内决定两者之一。
+
 ```text
 For the study of LDPC extension beyond NR range, the maximum code block size of 8448 is assumed for further study with the following two options:
 Option 1: 44 information columns in BG and a maximum lifting size of 192
@@ -287,6 +320,8 @@ Note: Aim to decide between option 1 and option 2 during this week.
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.1 Channel coding
 
+对于超出 NR 范围的 LDPC extension 研究，进一步研究时假设母码率约为 2/3。该约定仅适用于 new BG 研究。
+
 ```text
 For the study of LDPC extension beyond NR range, the mother code rate of approximately 2/3 is assumed for further study.
 The above agreement is only applicable for study of the new BG.
@@ -294,6 +329,8 @@ The above agreement is only applicable for study of the new BG.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.3.1-a002`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.1 Channel coding
+
+对于最大信息块大小为 8448 bits 的 LDPC extension 研究，new BG 的 lifted parity check matrix 在母码率下的 1 总数不超过 N；N 由 BG1 在码率 X 下的 lifted parity check matrix 的 1 总数确定。X 不低于 1/2，具体值仍待确定。
 
 ```text
 For the study of LDPC extension beyond NR range, for the maximum information block size of 8448 bits, the total number of ones in the lifted parity check matrix under mother code rate is no larger than N, where N is determined by the total number of ones in the lifted parity check matrix of BG1 under the code rate of X.
@@ -307,6 +344,8 @@ From Wednesday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.3.1-a003`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.1 Channel coding
+
+对于 new BG 研究，进一步假设 encoder 的 parity check matrix 由五个子矩阵 A、B、C、D、E 组成，并列出各子矩阵结构要求。sub-matrix B 的 B1、B2 方案及 sub-matrix E 的 identity matrix、lower triangular matrix 方案将继续研究，并力争在 RAN1#125 下选。
 
 ```text
 For the study of LDPC extension beyond NR range, for the study of new BG, assume the parity check matrix for encoder consists of five sub-matrices (A, B, C, D, E) for further study, wherein
@@ -328,6 +367,8 @@ From Thursday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.3.1-a004`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.1 Channel coding
+
+对于 new BG，进一步研究采用 44 个 information columns、maximum lifting size 为 192 的 single edge BG，并列出 row splitting、转换为 22 个 information columns 与 maximum lifting size 为 384 的 BG，以及 quasi-row orthogonality 等方案。上述方案可组合，且其他 single edge BG 方案未被排除；目标是在 RAN1#125 下选。
 
 ```text
 For the study of LDPC extension beyond NR range, for study of the new BG, consider a single edge BG with 44 information columns and a maximum lifting size of 192, with the following options identified for further study, and strive for down-selection among the options in RAN1#125
@@ -351,6 +392,8 @@ Final summary in R1-2603412.
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
 
+6G 至少支持 5G NR equal probability uniform QAM constellation：CP-OFDM 数据信道的 DL 支持 QPSK 至 1024QAM，UL 支持 QPSK 至 256QAM；DFT-s-OFDM 数据信道的 UL 支持 pi/2 BPSK 及 QPSK 至 256QAM。其他调制方案或阶数可另行讨论并在有依据时增加支持，低 PAPR 增强和 waveform 相关影响仍待讨论或决定。
+
 ```text
 At least support 5G NR equal probability uniform QAM constellation for 6G:
 For 6GR DL, 5G NR equal probability uniform QPSK, 16QAM, 64QAM, 256QAM and 1024QAM are supported for CP-OFDM for data channel
@@ -369,6 +412,8 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
 
+对于 fading channel 下 PS/GS 方案的评估，优先鼓励公司提供指定场景的结果，包括 SIMO 1x4、多种 CDL/TDL 信道，至少 200 Hz Doppler 的高移动速度 UE open-loop MIMO，以及 rank 4 closed-loop precoding。还列出了 MIMO 4x4 和 32x4 在 CDL-A、CDL-B、CDL-C 下的评估场景及 delay spread。
+
 ```text
 For the evaluation of PS/GS schemes under fading channel, prioritize companies are encouraged to provide evaluation results for the following
 SIMO 1x4: CDL-A 100ns, CDL-B 30ns, CDL-C 300ns, TDL-C 100ns
@@ -382,6 +427,8 @@ From Thursday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.3.2-a002`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
+
+针对 FWA 场景 CPE 的 DL 4K uniform QAM 和 UL 1K uniform QAM SLS 研究，确定 Dense Urban 与 Urban Macro 的参数子集，包括布局、频段、天线模型、功率、流量、UE 分布与速度、天线面板、UE 功率等级、带宽、最大 rank、信道估计和 MU-MIMO 假设。结果报告还需包含按室内、室外 LOS 和室外 non-LOS 分类及联合统计的 rank 分布与 MCS 分布，并单独报告选择 DL 4KQAM 和 UL 1KQAM 时的 rank 分布；EVM 和 MPR 假设需 RAN4 输入。
 
 ```text
 For SLS study for DL 4K uniform QAM without shaping and UL 1K uniform QAM without shaping for CPE in FWA scenario, focus on the following subset of parameters for Dense Urban and Urban Macro:
@@ -417,6 +464,8 @@ MPR assumption
 
 ### [6G/Rel-20 RAN1#124b] `observation` 10.3.2 Modulation, Joint channel coding and modulation
 
+观察到，使用 MMSE receiver 时，1D-NUC 的 demodulation/demapper complexity 相对 uniform QAM 为 1 至 1.6 倍（量化位宽为每 I/Q 6 至 10 bit），另有 14 bit 情形为 6.45 倍；2D-NUC（QAM-CS 除外）为 20 至 947 倍，NP-NUC 使用与 uniform QAM 相同的 demodulation/demapper。需为 RAN plenary checkpoint 补充 GS 与 uniform QAM 的复杂度、存储需求比较，以及性能增益/损失与复杂度/存储的关联观察。
+
 ```text
 For GS schemes, at least the following are observed:
 For 1D-NUC, if MMSE receiver is used, the demodulation/demapper complexity is [1 to 1.6] times that of uniform QAM assuming [6 to 10] quantization bit-width per I/Q for 1D-NUC.
@@ -434,6 +483,8 @@ Further observations of linkage between performance gain/loss under agreed fadin
 
 ### [6G/Rel-20 RAN1#124b] `observation` 10.3.2 Modulation, Joint channel coding and modulation
 
+对于 ESS based PS，存储需求随 DM block length 增长约呈二次增加，随每个 I/Q symbol 的 shaped bits 数量增长呈指数增加，processing delay 随 DM block length 线性增加；对于 CCDM based PS，processing delay 随 DM block length 线性增加。需为 RAN plenary checkpoint 补充不同 DM 算法/参数相对 uniform QAM 的复杂度与存储需求比较，以及性能增益/损失与复杂度/存储的关联观察。
+
 ```text
 For PS schemes, at least the following are observed:
 For ESS based PS, the storage requirement increases approximately quadratically with increasing DM block length, the storage requirement increases exponentially with increasing number of shaped bits per I/Q symbol, and processing delay increases linearly with increasing DM block length
@@ -445,6 +496,8 @@ Further observations of linkage between performance gain/loss under agreed fadin
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
 
+针对超出 NR 范围的 LDPC extension，RAN1#124 确定 maximum code block size 的两个进一步研究选项：8448 和 8448*2。
+
 ```text
 For the study of LDPC extension beyond NR range, the following options of the maximum code block size are identified in RAN1#124 for further study
 Option 1: 8448
@@ -453,6 +506,8 @@ Option 2: 8448*2
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.1-a001`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
+
+针对超出 NR 范围的 LDPC extension，RAN1#124 确定 BG 中 information columns 数量的三个进一步研究选项：22、44 和 33。
 
 ```text
 For the study of LDPC extension beyond NR range, the following options of the number of information columns in BG are identified in RAN1#124 for further study
@@ -466,6 +521,8 @@ From Tuesday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
 
+针对 LDPC extension beyond NR range，确定进一步研究 rate matching 前 puncturing 的三种选项：不 puncture、puncture 1 column、puncture 2 columns。
+
 ```text
 For the study of LDPC extension beyond NR range, the following options of puncturing before rate matching are identified in RAN1#124 for further study
 Option 1: no puncturing
@@ -475,6 +532,8 @@ Option 3: puncture 2 columns
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.1-a003`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
+
+为评估 payload size 超过 NR 范围且大于 1706 bits 的 L1 uplink control information 的 Polar code segmentation enhancement，列出了评估假设，包括 AWGN、QPSK、多个 code rate、CRC-aided SCL decoding 和 BLER 目标。每段使用 11 bits CRC，rate matching、channel interleaver 和 code-block concatenation 沿用 NR；其他评估取值由公司报告。
 
 ```text
 For performance evaluation purposes, the corresponding evaluation assumptions for study the Polar code segmentation enhancement used for L1 uplink control information with payload size beyond NR range and larger than 1706 bits, following evaluation assumptions are considered.
@@ -493,6 +552,8 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
 
+LDPC extension beyond NR range 的 maximum lifting size 不大于 384；其确切取值仍待研究。
+
 ```text
 For the study of LDPC extension beyond NR range, the maximum lifting size is not larger than 384
 FFS: the exact value of the maximum lifting size
@@ -502,6 +563,8 @@ From Thursday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.1-a005`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
+
+LDPC extension beyond NR range 进一步研究采用 quasi-cyclic LDPC codes，其 parity check matrix 由 circularly shifted matrices 或 zero matrices 组成，且循环移位矩阵的 row weight 不超过 2。mb、nb、z 的取值以及循环移位矩阵的 row weight 配置仍待研究。
 
 ```text
 For the base graph of LDPC extension beyond NR range, the following is identified in RAN1#124 for further study
@@ -513,6 +576,8 @@ FFS: Whether row weight of all circularly shifted matrices is 1, or the row weig
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.1-a006`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.1 Channel coding
+
+LDPC extension beyond NR range 的 BG1 与公司提出的 BG(s)/PCM(s) 性能比较，至少考虑在相同 BLER 下的 computational complexity 差异，以及相同计算复杂度下的 SNR 性能差异。BG1 的 reference maximum number of iterations 为 5、7、10、15，公司也可报告其他值及平均迭代次数差异。
 
 ```text
 For study of LDPC extension beyond NR range, at least the following metrics are considered for the performance comparison among BG1 and BG(s)/PCM(s) proposed by companies
@@ -526,6 +591,8 @@ Final summary in R1-2601667.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.1-a007`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
+
+列出了影响 PS 与 GS 复杂度、存储、时延、BLER 和 throughput 权衡的参数，并要求提交评估所用参数及性能结果。鼓励公司评估不同参数组合，以研究不同权衡并提供可行性评估。
 
 ```text
 Parameters affect the PS complexity/storage/latency and BLER and throughput performance trade-off are at least:
@@ -551,6 +618,8 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
 
+DL 4K uniform QAM 和 UL 1K uniform QAM 的研究聚焦 FWA 室外及室内部署场景，in-door hot-spot 仍待研究。相关 CPE SLS 假设采用 Dense Urban 和 UMA layout，其他 SLS 参数仍待研究。
+
 ```text
 For the study of introducing DL 4K uniform QAM and UL 1K uniform QAM, focus on the following use cases:
 FWA deployed outdoor
@@ -568,12 +637,16 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
 
+决定向 RAN4 发 LS，请其提供不带 shaping 的 DL 4K uniform QAM 和 UL 1K uniform QAM 的 EVM 与 MPR 数值。
+
 ```text
 Send LS to RAN4 to kindly provide the EVM and MPR values for DL 4K uniform QAM without shaping and UL 1K uniform QAM without shaping.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.2-a003`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
+
+针对 PS，列出了 TX/RX chain functionality blocks 的潜在影响，包括新增 DM 功能，以及 TBS calculation、CB segmentation、interleaving、scrambling 和 modulation 等功能的修改；RX 侧还涉及 DDM、demodulation 和 CB concatenation。鼓励公司提供相关功能修改的设计细节，并说明未受影响功能块的原因。
 
 ```text
 For PS, potential impact to the TX/RX chain functionality blocks are identified as follows:
@@ -607,12 +680,16 @@ R1-2601663	Draft LS to RAN4 for 4K QAM and 1K QAM EVM and MPR	Qualcomm
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
 
+R1-2601663 中的 draft LS 获得认可，最终 LS 在 R1-2601664 中获批。
+
 ```text
 The draft LS in R1-2601663 is endorsed. The final LS is approved in R1-2601664.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.3.2-a005`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.3.2 Modulation, Joint channel coding and modulation
+
+已识别 GS 相比 NR 对 TX/RX chain 功能块的潜在影响，包括映射、调制符号生成、接收符号解调和解映射。鼓励公司在同时支持 NUC 和 uniform QAM 时说明影响、所需设计修改及未受影响功能块的原因。
 
 ```text
 For GS, potential impact to the TX/RX chain functionality blocks compared to NR are identified as follows:
@@ -700,6 +777,8 @@ R1-2509582	FL summary#6 for 6G channel coding	Moderator (ZTE, Apple)
 
 ### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
 
+对 PS/GS 固定 MCS 的性能报告，采用以 10% BLER 为目标的表格格式作为仿真结果报告起点；NR 参考需提供 modulation order 与 coding rate，而不只提供 MCS index。表格包含各 SE 点参数、均匀 QAM 基线 SNR、相对 NR baseline 的增益或损失及方案假设；其他指标（至少 complexity）可在细节达成一致后并入。
+
 ```text
 For PS/GS fixed MCS performance reporting for 10% BLER (other target x% BLER can also be reported), adopt the following format for simulation as a starting point for result reporting.
 | NR reference | Scheme A (e.g, PS, 1D-NUC, 2D-NUC etc) |  |  |  |
@@ -719,6 +798,8 @@ Note: For AMC study, if possible, we can use the same table format
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a001`
 
 ### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+为比较 PS/GS 与 uniform QAM，规定复杂度、存储、处理时延及并行性/串行性的报告项目；复杂度按 information bits 归一化，并以比较、加减、乘除运算数表示。复杂度和存储按其是否依赖 SE 点分别加入既有性能报告表的列或行，规范影响另行评估。
 
 ```text
 On how to evaluate complexity, storage requirement, delay and parallelism/serialism for PS and GS compared with uniform QAM.
@@ -764,6 +845,8 @@ Note: For high order uniform QAM for DL 4K QAM and UL 1K QAM, to provide the UPT
 
 ### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
 
+对 PS/GS 固定 MCS 的性能报告，采用以 10% BLER 为目标的表格格式作为仿真结果报告起点；NR 参考需提供 modulation order 与 coding rate，而不只提供 MCS index。表格包含各 SE 点参数、均匀 QAM 基线 SNR、相对 NR baseline 的增益或损失及方案假设；其他指标（至少 complexity）可在细节达成一致后并入。
+
 ```text
 For PS/GS fixed MCS performance reporting for 10% BLER (other target x% BLER can also be reported), adopt the following format for simulation as a starting point for result reporting.
 | NR reference | Scheme A (e.g, PS, 1D-NUC, 2D-NUC etc) |  |  |  |
@@ -783,6 +866,8 @@ Note: For AMC study, if possible, we can use the same table format
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a003`
 
 ### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+研究允许一个 spectrum efficiency point 对应多个 MCS entries 的方案，并要求报告 MCS table 设计与预期大小、不同映射方式下的性能，以及不同信道和 rank 假设下的收益。性能基线包括最高至 256 QAM 的 legacy MCS table；另需说明同一 SE 对应多个 MCS 时的选择机制及可能需要的 UE feedback。
 
 ```text
 To evaluate the proposal to allow a single spectrum efficiency point to be supported by multiple MCS entries (with different modulation order and coding rate combinations with uniform QAM or with different shaping parameters, coding rate, and constellation size combinations for PS and different coding rate and constellation combinations for GS).
@@ -805,6 +890,8 @@ To propose how to align shaping parameters or how to align coding rate for facil
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_123/) · `RAN1-123-modulation-joint-channel-coding-and-modu-ff7518f4-a004`
 
 ### [6G/Rel-20 RAN1#123] `agreement` modulation-joint-channel-coding-and-modu-ff7518f4 Modulation, joint channel coding and modulation
+
+针对 DFT-s-OFDM，进一步研究 PS/GS 是否以及如何能够相较 uniform QAM 实现 Net Gain。
 
 ```text
 For DFT-s-OFDM, further study how/whether Net Gain over uniform QAM can be achieved by PS/GS.

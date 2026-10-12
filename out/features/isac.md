@@ -1,12 +1,26 @@
 # ISAC 通感一体
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+6GR 已明确多类被动目标检测和跟踪及通信辅助为评估重点，并形成覆盖、场景、指标和结果收集等评估基线。RAN1 已推进感知参考信号、波形、测量及报告的研究框架，同时保留多种设计选项供后续评估。RAN2 正围绕感知实体、UE 能力、配置与测量报告、实体选择及服务连续性研究协议和流程，并已记录部分研究顺序与工作假设。整体已有明确的研究范围和若干基线，但关键技术选项及跨工作组职责仍在讨论。
+
+**未决问题**
+
+- 部分 UAV、Human 和 AGV 基线场景中是否纳入或移除特定 UE，尚无共识。
+- 感知 RS 的复用、增强或专用方案，以及序列、资源和波形的评估选择仍待讨论。
+- 测量指标与定义、AF/CAF 形式及报告机制和信令方式尚未定稿。
+- SF 与 RAN/aNB 的功能划分、部署位置、感知实体选择及数据处理职责仍待协调。
+- UE 参与模式、移动场景下的实体重选与服务连续性，以及低功耗 RRC 状态下启用 ISAC 的方式仍待研究。
+
+## 5G-A 源头
+
+Rel-18/19 将 ISAC channel model 纳入 TR 38.901，建立由含目标散射的 target channel 与 background channel 组成的框架，确定 \(RCS=A*B1*B2\)、多类目标的 RCS/XPR 参数、信道生成与参考模型、部分空间一致性范围，以及 UAV、automotive 等场景的校准和评估基线；Rel-19 还确定了检测、虚警、定位和速度等指标与评估目标值，并明确了部分测量报告选项、assistance information 和 payload size 估算方法。单散射点目标的几何参数、间接路径链路拼接及部分 RCS 和 polarization 建模也取得进展，UAV sensing 评估显示多 TRP 通常比 single TRP 更常达到性能目标。与此同时，车辆 bistatic RCS 的 angular discontinuity、精确 micro-Doppler 公式、功率归一化、复杂路径耦合与剪枝、多散射点、遮挡、环境对象及部分场景参数等仍未充分收敛或标为 FFS；空间一致性只适用于部分链路，payload 与 quantization 对 sensing performance 的影响及不同测量选项的性能影响也未充分评估。材料还记载，delay/range、Doppler/radial velocity、angle、position 和 3D velocity 的 ambiguity handling 及 SF 到 RAN 的 assistance information 不在 Rel-20 NR ISAC 继续讨论，部分事项留待未来评估或研究；这些未决建模和验证工作说明议题仍有后续研究空间，但 agreement 并未规定它们必然延续或在 6G 解决。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.5 ISAC
+
+从 RAN2 角度，研究所有 modes 下由 UEs 和 TRPs 作为 TX 和/或 RX sensing entities（SEs）运行，并进一步研究由 SF/aNB 执行的 radio aspects/configuration/report 和 control aspects。还需研究 SE selection 的 criteria、参与节点及所需信息、aNB 与 SF 的协调，以及 moving target mobility 下的 sensing entity selection/re-selection 和 UE sensing entity 移动时的 service continuity；RRC states 视时间允许情况研究。
 
 ```text
 1	From RAN2 perspective, study both UEs and TRPs operating as TX and/or RX Ses across all modes
@@ -20,6 +34,8 @@ R2-2603273	On ISAC procedures, protocols, etc.	Apple Inc.	discussion	Rel-20	FS_6
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+已记录支持 UEs 和 TRPs 作为 Tx 和/或 Rx SEs 运行。
+
 ```text
 Support both UEs and TRPs operating as Tx and/or Rx SEs.
 Noted
@@ -28,6 +44,8 @@ R2-2602961	Discussion on RAN2 ISAC in 6G	vivo, CAICT	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+按 sensing mode，UE 可作为 sensing signal transmitter 和/或 sensing signal receiver；sensing procedures 的研究分为 UE as sensing signal transmitter 与 UE as sensing signal receiver。
 
 ```text
 From the perspective of UE roles, a UE can be a sensing signal transmitter and/or sensing signal receiver according to the sensing mode.  The study of sensing procedures can be categorized into the following:
@@ -40,6 +58,8 @@ R2-2604084	Discussion on ISAC Aspects from RAN2 Perspective	CEWiT	discussion	Rel
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+提出 RAN2 按优先级研究 UE-involved sensing：先研究 UE as sensing Rx 的 DL sensing reference signals 测量，再研究 UE as sensing Tx 的 UL sensing reference signals 发送，随后研究 UE-to-UE sensing。另有意见认为初期不应优先区分 bi-static 与 mono-static sensing。
 
 ```text
 RAN2 should structure the study of UE-involved sensing in the following order of priority:
@@ -59,6 +79,8 @@ R2-2603117	Initial views on 6G ISAC study	Samsung	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+提出 sensing protocol design 应服务于 sensing procedure，并研究 RAN 与 Sensing Function (SF) 各自所需功能及 SF 位于 CN 还是 RAN。另有提案认为 Sensing Function 是位于 Core Network 的 Network Function。
+
 ```text
 Sensing protocol design should serve the sensing procedure, and consider at least the following issues which may need inputs from RAN3 and SA2:
 What function(s) is needed in RAN and Sensing Function (SF) respectively to support the sensing procedure;
@@ -73,6 +95,8 @@ R2-2603259	Protocols and procedures for sensing	MediaTek Inc.	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+提出 Sensing Function 控制 sensing service procedures，包括 Rx SE 的 reception/measurement configuration；serving aNB 控制 Tx UE SE 的 radio resource allocation。
+
 ```text
 The sensing function controls the sensing service procedures (including reception/measurement configuration for an Rx SE), and the serving aNB controls the radio resource allocation to a Tx UE SE.
 Noted
@@ -81,6 +105,8 @@ R2-2603190	Procedures and Protocol Aspects for Sensing	Qualcomm Incorporated	dis
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p005`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+提出参与 sensing session 的 Rx 和 Tx Sensing Entities（UE 和/或 TRP）由 Sensing Function (SF) 选择和控制。讨论意见涉及 SF 与 aNB 的功能划分、实体选择和 sensing data processing 等，但未形成明确结论。
 
 ```text
 The Rx and Tx Sensing Entities (i.e., UEs and/or TRPs) participating in a sensing session are selected and controlled by the Sensing Function (SF).
@@ -107,6 +133,8 @@ R2-2603900	Discussion on procedures and protocol aspects for ISAC	Spreadtrum, UN
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+提出讨论 UE ISAC capability reporting 是否可复用 unified 6G UE capability framework。原文仅列出讨论议题，未给出结论。
+
 ```text
 Discuss whether the UE ISAC capability reporting can reuse the unified 6G UE capability framework
 R2-2603986	Discussion on ISAC	HONOR	discussion	Rel-20	FS_6G_Radio
@@ -115,6 +143,8 @@ R2-2603986	Discussion on ISAC	HONOR	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+提出 RAN2 可先基于 5G-Advanced 的成果识别基本 ISAC UE capabilities，例如 sensing modes 和 reporting levels，再结合正在进行的 6G 讨论进一步扩展。
+
 ```text
 RAN2 may first identify the basic ISAC UE capabilities (e.g., sensing modes, reporting levels, etc.) based on the outcomes of 5G-Advanced, and further extend the UE capabilities in line with the ongoing 6G discussions
 R2-2604059	Views on 6G ISAC	NTT DOCOMO INC.	discussion
@@ -122,6 +152,8 @@ R2-2604059	Views on 6G ISAC	NTT DOCOMO INC.	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p008`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+提出 RAN2 研究 UE sensing capability reporting procedures，使网络能够判断 UE 是否可参与 sensing-related procedures，同时避免将能力报告直接绑定到特定 sensing modes 或 service models。
 
 ```text
 RAN2 to study UE sensing capability reporting procedures to enable the network to determine whether a UE can participate in sensing-related procedures, while avoiding binding UE capability reporting directly to specific sensing modes or service models.
@@ -132,6 +164,8 @@ R2-2602971	Considerations for 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Rad
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+提出 UE capability reporting 时应向 SF 报告 higher-layer sensing capabilities（如 supported sensing modes、calculation capabilities）和 AS-layer sensing capabilities（如 RS-related capabilities）；并将 AS-layer sensing capabilities 作为 UE AS capability 的一部分报告给 RAN。
+
 ```text
 For the UE capability reporting procedure, the UE shall report both higher-layer sensing capabilities (e.g., supported sensing modes, calculation capabilities) and AS-layer sensing capabilities (e.g., RS-related capabilities) to the SF. The UE shall also report AS-layer sensing capabilities to the RAN as part of the UE AS capability.
 R2-2603929	Discussion on 6G ISAC	ZTE Corporation, Beijing Digital Nebula, Sanechips	discussion	Rel-20	FS_6G_Radio
@@ -139,6 +173,8 @@ R2-2603929	Discussion on 6G ISAC	ZTE Corporation, Beijing Digital Nebula, Sanech
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+提出 UE 经 Uu interface 向 serving aNB 发送 sensing capability；如有需要，SF 可经 aNB 或 AMF 获取 UE sensing capability。
 
 ```text
 UE sends the sensing capability to serving aNB using Uu interface. SF can retrieve UE sensing capability via the aNB or AMF, if needed.
@@ -149,12 +185,16 @@ R2-2603273	On ISAC procedures, protocols, etc.	Apple Inc.	discussion	Rel-20	FS_6
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+RAN2 将研究 UE-SF 之间通过类似 LPP 的协议进行交互，以支持例如 sensing configuration signalling。
+
 ```text
 RAN2 to study UE-SF interactions with LPP-like protocol to allow e.g. sensing configuration signalling.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p012`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+RAN2 将研究 UE-gNB 之间通过 RRC signalling 进行交互，以支持 RAN 根据动态无线条件动态调整 sensing configurations。该条目标注为 Noted。
 
 ```text
 RAN2 to study UE-gNB interactions with RRC signalling to allow e.g. RAN to dynamically adapt sensing configurations to the dynamic radio conditions.
@@ -165,6 +205,8 @@ R2-2603187	Discussion on 6G ISAC	NEC	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+RAN2 将研究通过 RRC signaling 或 higher-layer application protocols 配置、激活、修改、停用或释放 sensing configurations。该条目标注为 Noted。
+
 ```text
 RAN2 to study how sensing configurations are configured/activated, modified, or deactivated/released through RRC signaling or higher-layer application protocols.
 Noted
@@ -173,6 +215,8 @@ R2-2603563	Discussion for ISAC in 6G	Lenovo	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p014`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+条目提出 sensing configuration 可由 SenF/RAN node 通过请求或非请求方式发送给 sensing UE，并可采用 broadcast signalling 或专用信令；该条目标注为 Noted。讨论涉及 sensing data 的消费者、协议及终止点，以及广播和专用传输等问题。
 
 ```text
 The sensing configuration is transmitted from SenF/RAN node to sensing UE by a request or unsolicited way, and can be transmitted by broadcast signalling or dedicated to the sensing UE.
@@ -195,6 +239,8 @@ R2-2603654	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Re
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+条目提出 sensing configuration 由 aNB 提供，包括 sensing resources、sensing signals 的配置，以及 measurement data report 的内容和触发条件等配置。内容还列有 Measurement and reporting。
+
 ```text
 Sensing configuration is provided by the aNB, including:
 Configuration of sensing resources, sensing signals, etc.
@@ -206,6 +252,8 @@ R2-2603563	Discussion for ISAC in 6G	Lenovo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+RAN2 将讨论 sensing measurement 使用 6G RRC measurement framework，还是设计类似 LPP 的 sensing measurement framework。
+
 ```text
 RAN2 to discuss whether to use 6G RRC measurement framework for sensing measurement, or to design LPP-like sensing measurement framework.
 R2-2603098	Sensing functionalities and procedures	CATT	discussion	Rel-20	FS_6G_Radio
@@ -213,6 +261,8 @@ R2-2603098	Sensing functionalities and procedures	CATT	discussion	Rel-20	FS_6G_R
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p017`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+UE 将 sensing measurement data 发送至 aNB，且数据在 aNB 可见。aNB 如何处理这些数据，以及是否或如何将其转发至 SF，属于 RAN3 范围。
 
 ```text
 The UE transmits the sensing measurement data to aNB and it is visible at aNB. How the sensing measurement data are processed at aNB and whether/how the sensing measurement data are forwarded to SF are in RAN3 scope.
@@ -222,6 +272,8 @@ R2-2603654	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Re
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+关于 UE 向 RAN 报告 sensing measurement data 的方式，RAN2 应等待 RAN1 对 measurement data 内容的讨论。
+
 ```text
 Regarding how to report sensing measurement data from UE to RAN, RAN2 should wait for the discussion in RAN1 on the measurement data content.
 Sensing data transfer
@@ -230,6 +282,8 @@ R2-2602971	Considerations for 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Rad
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p019`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+条目指出 sensing data 的大小取决于 sensing version 和报告的数据，latency 要求较宽松，终止点为 SF，数据消费者为 sensing service consumer（AF、UE 和 NF）。sensing report 通过 CP、UP 或 data plane（若定义）传输，取决于数据大小和 latency 要求。
 
 ```text
 For sensing data characteristics and termination point:
@@ -245,6 +299,8 @@ R2-2603117	Initial views on 6G ISAC study	Samsung	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+关于 service continuity，RAN2 将研究移动目标的 sensing continuity，以及移动 sensing UE 的 sensing continuity，并考虑 connected 和 idle/inactive UE。该条目标注为 Noted。
+
 ```text
 For service continuity, RAN2 to study sensing continuity for a moving target and sensing continuity of a mobile sensing UE (consider both connected and idle/inactive UE).
 Noted
@@ -253,6 +309,8 @@ R2-2603486	Discussion on Sensing Entity (Re)Selection	LG Electronics Inc.	discus
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p021`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+支持通过 UE capability reporting procedures（包括 reactive response 和 proactive unsolicited procedures）进行 Sensing Entity (re)selection，以确保 Sensing Entities 或 sensing objects 移动期间的服务连续性。
 
 ```text
 Sensing Entity (re)selection is supported by UE capability reporting procedures, including reactive response and proactive unsolicited procedures, to ensure service continuity during the movement of Sensing Entities or sensing objects.
@@ -271,6 +329,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
 
+RAN2 研究如何在 RRC_IDLE/INACTIVE（或其 6G 等效状态）中启用 ISAC procedures，且不预设最终的 6G RRC state model。
+
 ```text
 RAN2 to study how ISAC procedures can be enabled in RRC_IDLE/INACTIVE (or their 6G equivalents), without prejudice to the final 6G RRC state model
 R2-2603251	On 6G ISAC aspects	Nokia 	discussion	Rel-20
@@ -278,6 +338,8 @@ R2-2603251	On 6G ISAC aspects	Nokia 	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.5-p023`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.5 ISAC
+
+RAN2 假设参与 sensing procedures 的 UE 处于 RRC_CONNECTED；待其他 UE (sub)states 的定义及 sensing procedures 取得足够进展后，再研究这些状态。
 
 ```text
 RAN2 assumes UEs involved in sensing procedures to be in RRC_CONNECTED state. Other UE (sub)states may be studied when sufficient progress is made on their definition as well as sensing procedures
@@ -306,6 +368,8 @@ R2-2604147	Discussions on 6G ISAC	ROBERT BOSCH GmbH	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.5 ISAC
 
+RAN2 可假设存在 sensing function，并研究支持 sensing functionalities/procedures 所需内容；sensing function 的位置由其他 WGs 决定，研究可考虑相关功能和程序的逻辑位置。至少研究 UE capability reporting、sensing configuration/reporting、data/control signaling transport，以及 Sensing Entity Selection（含 re-selection）等方面；该条目记为 Not treated。
+
 ```text
 1	RAN2 can study what is required to support sensing functionalities/procedures assuming there will be a sensing function.  Where the sensing function is located is up to other WGs (e.g. SA2/RAN3).    Study can consider where the functionalities/procedures would need to be logically located.
 2	Study at least the following RAN2 aspects:
@@ -332,6 +396,8 @@ R2-2602318	Sensing protocol(s) and procedures	MediaTek Inc.	discussion	Rel-20	FS
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.5 ISAC
 
+已同意 6GR 的 ISAC 至少支持被动对象的 detection 和/或 tracking 用例，至少包括 UAVs、human、vehicles 和 AGVs，并支持 communication assistance。
+
 ```text
 RAN has agreed that 6GR on ISAC at least supports use cases of detection and/or tracking of passive objects (at least including UAVs, human, vehicles and AGVs), and communication assistance.
 ```
@@ -339,12 +405,16 @@ RAN has agreed that 6GR on ISAC at least supports use cases of detection and/or 
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.5 ISAC
 
+不同 sensing modes 和 interaction assumptions 对 RAN2 的影响不同，尤其是在引入 UE involvement 后。
+
 ```text
 Different sensing modes and interaction assumptions create different RAN2 impacts, especially once UE involvement is introduced.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-o002`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.5 ISAC
+
+aNB monostatic 和 aNB-aNB bistatic sensing modes 对 RAN2 没有影响；相关研究交由其他工作组。UE-UE bistatic 和 UE monostatic sensing modes 的研究待其他工作组进展后确定。
 
 ```text
 The aNB monostatic and aNB-aNB bistatic sensing modes have no RAN2 impact.
@@ -356,6 +426,8 @@ R2-2601615	On 6G ISAC	Nokia	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 的 ISAC 研究旨在制定通用的 procedure 和 protocol design，以适配所有受支持的 sensing modes 并满足受支持用例的需求。讨论指出，并非所有模式都会影响 UE，但其他场景也可能采用相同设计。
+
 ```text
 RAN2 study on ISAC aims at a generic procedure and protocol design that can accommodate all the supported sensing modes and meet the requirements of the supported use cases.
 -	CMCC indicates that not all modes have UE impacts.   Docomo agrees.
@@ -366,6 +438,8 @@ R2-2601527	Discussion on 6G ISAC higher layer procedures and protocols	T-Mobile 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p001`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+RAN2 的 sensing protocols and procedures 应支持广泛的 6G sensing use cases，以 TR 22.870 为起点，并考虑 outdoor 和 indoor deployments。讨论提议优先研究 UE-TRP、TRP-UE bistatic modes，再研究 UE to UE bistatic 和 UE monostatic sensing modes。
 
 ```text
 RAN2 sensing technology protocols and procedures should enable a wide range of 6G sensing use cases, using TR 22.870 as a starting point. RAN2 should consider both outdoor and indoor deployments to address a wide range of potential use cases.
@@ -381,6 +455,8 @@ R2-2602170	RAN2 Scope and Considerations for 6G ISAC	Rakuten Mobile, Inc	discuss
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 将识别第一阶段中会带来不同 RAN2 影响的 sensing modes 和 interaction assumptions，并将其作为工作的起点优先处理。
+
 ```text
 RAN2 identifies the first-phase sensing modes and interaction assumptions that introduce distinct RAN2 impacts, and prioritizes those as the starting point for the work.
 Noted
@@ -390,6 +466,8 @@ R2-2601699	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Re
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+初始 6G ISAC 研究优先考虑以 mono-static aNB sensing 为基线，并扩展到 bi-static aNB sensing。涉及 UEs 的 sensing modes 不被排除。
+
 ```text
 For an initial 6G ISAC study, RAN2 prioritizes a baseline involving mono-static aNB sensing and an extension to bi-static aNB sensing. Sensing modes involving UEs are not precluded.
 Noted
@@ -398,6 +476,8 @@ R2-2602236	Procedures and protocol aspects for ISAC	InterDigital	discussion	Rel-
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p004`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+UE-involved sensing work 的研究顺序定为：UE 测量 DL sensing reference signals；UE 发送 UL sensing reference signals；UE 为 UE to UE 场景收发 sensing signals。讨论认为第三项的重点可包括 resource allocation，且应在理解前两项后开展。
 
 ```text
 The study should address the UE-involved sensing work in the following order:
@@ -412,12 +492,16 @@ R2-2601824	On UE-centric sensing	Apple Inc., MediaTek Inc., ASUSTek, OPPO, Googl
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+UE-centric sensing 定义为 UE 发起 sensing session、作为唯一 Rx sensing entity、唯一处理 sensing data 并生成 sensing results 的实体，以及结果的唯一最终消费者。UE 和/或其他 sensing entities 可以发送 sensing signals。
+
 ```text
 Define UE-centric sensing as a mode where the UE acts as the initiator of the sensing session, the sole Rx sensing entity, the sole processor of the sensing data to produce sensing results, and the sole final consumer of the sensing results. The UE and/or other sensing entities may transmit sensing signals.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p006`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+提议研究适用于 UE monostatic、network-to-UE bistatic/multi-static 和 UE-to-UE bistatic/multi-static modes 的 UE-centric sensing operation mode。讨论聚焦于先研究共通 procedures，包括 UE selection、capabilities、configurations 和 measurements，并指出部分事项依赖其他工作组；意见对其范围及研究顺序存在分歧。
 
 ```text
 Study UE-centric sensing operation mode, as applicable to UE monostatic, network-to-UE bistatic/multi-static and UE-to-UE bistatic/multi-static modes.
@@ -443,6 +527,8 @@ R2-2601459	Discussion on RAN2 Scope and Cross-WG Dependencies for 6G ISAC	vivo	d
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 可假设核心网中有负责 sensing management 和 sensing data processing 的 SF，以便后续讨论。SF 是否也可部署在 RAN node 等其他节点，可留给其他工作组讨论。
+
 ```text
 As to the sensing architecture, RAN2 can assume that there is an SF (sensing function) in the core network responsible for sensing management and sensing data processing to facilitate the subsequent discussion. Whether the SF can be deployed in other nodes, e.g., RAN node, can be left to other WGs (e.g., RAN3).
 Noted
@@ -452,6 +538,8 @@ R2-2601699	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Re
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+建议先由 SA2 和 RAN3 讨论 sensing architecture。
+
 ```text
 The sensing architecture should be discussed in SA2 and RAN3 first.
 Noted
@@ -460,6 +548,8 @@ R2-2601823	Procedures and Protocol Aspects for Sensing	Qualcomm Incorporated	dis
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+建议 RAN2 研究独立于底层传输层的端到端（SF–UE）Sensing Protocol。讨论中提出，SF 可视为逻辑上位于 CN，且基站负责向 UE sensing entity 分配无线资源；SF 的部署位置及数据特征也被提出讨论。
 
 ```text
 RAN2 should study an end‑to‑end (SF–UE) Sensing Protocol that is independent of the underlying transport layers.
@@ -478,6 +568,8 @@ R2-2602364	Initial views on 6G ISAC study	Samsung	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+Sensing procedure 至少包括 UE capability reporting、sensing assistance information transfer、sensing measurement and reporting configuration，以及 sensing measurement reporting（即 sensing data transfer）。讨论指出，最终不一定需要所有这些 procedure；UE assistance 可能包括发射端和接收端的 reference signal configuration resources 请求。
+
 ```text
 Sensing procedure includes at least:
 UE capability reporting,
@@ -493,6 +585,8 @@ R2-2602456	Views on 6G ISAC	NTT DOCOMO	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 初始 ISAC/Sensing 研究范围应包括 UE sensing capability signalling、sensing configuration and activation procedures，以及 UE-to-network sensing data reporting。
+
 ```text
 RAN2 should define the initial ISAC/Sensing study scope to include UE sensing capability signalling, sensing configuration and activation procedures, and UE-to-network sensing data reporting.
 R2-2602369	Sensing modes, Interaction models, and RAN2 Impact for 6G ISAC	AT&T	discussion	FS_6G_Radio
@@ -500,6 +594,8 @@ R2-2602369	Sensing modes, Interaction models, and RAN2 Impact for 6G ISAC	AT&T	d
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p012`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+RAN2 讨论现有 RRC signaling procedures 是否足以支持 sensing framework，涉及 connection control、configuration management、resource management、UE capability signaling 和 UE authorization。
 
 ```text
 RAN2 discusses whether existing RRC signaling procedures are sufficient to support sensing framework in terms of connection control, configuration management, resource management, UE capability signaling, and UE authorization
@@ -510,6 +606,8 @@ R2-2601699	Discussion on RAN2 aspects of sensing	Huawei, HiSilicon	discussion	Re
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p013`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+建议由 aNB 提供 sensing configuration，包括 sensing resources、sensing signals，以及 measurement data report 的 content、format 和 triggering conditions。
 
 ```text
 Sensing configuration is provided by aNB, including
@@ -523,6 +621,8 @@ R2-2602089	Discussion on RAN2 considerations for ISAC in 6G	Tejas Network Limite
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 应内部讨论并与 SA2、RAN3 协调，以定义通用的 sensing entity selection framework。
+
 ```text
 RAN2 shall discuss internally and co-ordinate with SA2 and RAN3 for defining a generalized framework for sensing entity selection.
 R2-2601515	Insight on 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Radio
@@ -530,6 +630,8 @@ R2-2601515	Insight on 6G ISAC in RAN2	Xiaomi	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p015`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+RAN2 确认了两种 sensing service request 假设并将进一步研究 RAN2 影响：针对 UE 的请求（选择特定 UE 作为 sensing entity），以及针对 Area 的请求（根据 sensing area 选择 sensing entity）。
 
 ```text
 RAN2 confirms the below two assumptions of sensing service request and further study RAN2 impact:
@@ -543,6 +645,8 @@ R2-2602333	Discussion on ISAC in 6G	Sharp Laboratories of America	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 将研究现有 configuration 和 measurement reporting mechanisms 是否足以支持 ISAC，具体细节待进一步研究。
+
 ```text
 RAN2 to study whether existing mechanisms for configuration and measurement reporting are sufficient to support ISAC. Details FFS.
 R2-2601727	Discussion on 6G ISAC	NEC	discussion	Rel-20	FS_6G_Radio
@@ -550,6 +654,8 @@ R2-2601727	Discussion on 6G ISAC	NEC	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p017`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+研究复用 communication measurement framework，以支持 ISAC-related measurements。
 
 ```text
 Study reusing communication measurement framework to accommodate ISAC-related measurements
@@ -559,6 +665,8 @@ R2-2602081	Discussion on ISAC	HONOR	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+RAN2 可基于 RAN1 simulation results and assumptions 研究 sensing data 的 traffic characteristics，并评估其对 scheduling mechanisms 的影响。该研究还需与 RAN1 正在进行的 6G ISAC study 对齐。
+
 ```text
 RAN2 could study the traffic characteristics of sensing data based on RAN1 simulation results and assumptions, evaluate the impact on scheduling mechanisms, and align with the ongoing 6G ISAC study in RAN1.
 Service continuity
@@ -567,6 +675,8 @@ R2-2602434	Discussion on ISAC for 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p019`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
+
+讨论认为 Service Continuity 应考虑 sensing entity 和/或 sensing target 的移动，并涉及 sensing entity selection 以及 Uu interface 和 aNB interface。对于是否需要考虑移动、能否假设 stationary 或 single cell mobility，以及使用 “service continuity” 一词，各方意见不一；结论为 Noted。
 
 ```text
 For Service Continuity, both movement of sensing entity or/and sensing target should be considered.
@@ -581,6 +691,8 @@ R2-2601869	Initial RAN2 considerations for ISAC	Ofinno	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.5 ISAC
 
+讨论 ISAC operation 适用的 RRC states；6G 至少应支持 RRC_CONNECTED 下的 UE，并研究在低功耗状态（RRC IDLE、INACTIVE）启用 ISAC 的可行性，以优化 UE energy efficiency。结论为 Noted。
+
 ```text
 To discuss the RRC states applicable for ISAC operation. 6G should at least support UEs in RRC_CONNECTED and study the feasibility of enabling ISAC in low power (sub)states (RRC IDLE, INACTIVE) to optimize UE energy efficiency.
 Noted
@@ -588,6 +700,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.5-p021`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
+
+Rel-20 6G ISAC 性能评估为 baseline cases/configurations 采用表列的最小 UE-UE（2D）距离假设：Sensing UAV、Sensing Human 和 Sensing AGV 对应场景为 1 m。Sensing Vehicle 的 Urban Grid 和 Highway 场景距离由已同意的 UE distribution 确定。
 
 ```text
 For Rel-20 6G ISAC performance evaluation, adopt the following minimum UE-UE (2D) distance evaluation assumption for baseline cases/configurations.
@@ -605,6 +719,8 @@ For Rel-20 6G ISAC performance evaluation, adopt the following minimum UE-UE (2D
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
 
+Rel-20 6G ISAC 性能评估中，Sensing AGV 在 Indoor Factory (SH) 的 baseline cases/combinations 采用 clutter density 20%、clutter height 2 m 和 clutter size 10 m。
+
 ```text
 For Rel-20 6G ISAC performance evaluation, for baseline cases/combinations of sensing AGV in Indoor Factory (SH), the following parameters are assumed for clutters.
 | Clutter density: | 20% |
@@ -615,6 +731,8 @@ For Rel-20 6G ISAC performance evaluation, for baseline cases/combinations of se
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-a002`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
+
+Rel-20 6G ISAC object detection/tracking 的 MDP 和 FAP Type 2 按漏检目标数、真实目标数、未关联检测对象数、检测对象总数及相应 drop 数量计算。另要求评估与 5GA ISAC study 相同的 MDP 和 FAP Type-2 定义（FFS）。
 
 ```text
 For Rel-20 6G ISAC performance evaluation, for object detection and/or tracking, the MDP (missed detection probability) and the FAP type 2 (false alarm probability type 2) are calculated as follows:
@@ -635,6 +753,8 @@ FFS: same FAP type-2 definition as 5GA ISAC study should also be evaluated
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
 
+应用多个 sensing nodes/pairs 的 data fusion 时，使用融合得到的 jointly determined object(s) 与 true target(s) 做关联，并计算 MDP、FAP Type 2 和 positioning/velocity accuracy。公司需报告从多个节点/配对的检测对象得到融合对象的方法或算法。
+
 ```text
 For Rel-20 6G ISAC performance evaluation, for object detection and/or tracking, when data fusion from multiple sensing nodes/pairs is applied:
 Instead of using detected objects per sensing node/pair, the jointly determined object(s) fused from detected objects of multiple sensing nodes/pairs will be used for association between detected object(s) and true target(s), calculating MDP, FAP Type 2 and positioning/velocity accuracy.
@@ -644,6 +764,8 @@ R1-2605743	Moderator summary #2 on ISAC evaluations	Moderator (CATT)
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-a004`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
+
+SAC 评估鼓励公司至少评估并报告 Scope 1（感知测量/结果性能）或 Scope 2（有无感知辅助时的通信性能）；辅助信息可为 ideal、non-ideal 或仿真所得 real sensing measurement/result，并需说明仿真采用类型及非理想因素建模方式。Scope 2 还鼓励采用 AI 10.8.2 通信场景和通信议程中的指标及基线，报告位置/速度信息需求、感知带来的时频资源成本和比较基准等细节。
 
 ```text
 For Rel-20 6G ISAC evaluation on SAC (sensing assisted communication), companies are encouraged to evaluate and report at least one of the following:
@@ -667,6 +789,8 @@ Note: How to draw conclusion/observation is a separate discussion.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-a005`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
+
+SAC Scope 1 考虑 ISAC channel 的 delay/Doppler/angle/power/phase 信息，以及感知重建大表面或墙面的结果；对应指标包括路径参数 RMSE 和重建平面与 specular reflection point 的平均绝对垂直距离。公司需报告路径选择、多个路径的 RMSE 推导及其辅助通信方式；EO type-2 应纳入该环境重建情形的仿真。
 
 ```text
 For Rel-20 6G ISAC evaluation on SAC, for Scope 1, the following sensing measurement/results and corresponding performance metrics are considered:
@@ -694,6 +818,8 @@ Note 2: How to draw conclusion/observation is a separate discussion.
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
 
+SAC 评估假设以 object detection/tracking baseline cases/combinations 为起点，并可调整是否投放 sensing target；评估由 EO type-2 建模的大表面或墙面重建时，可额外投放 sensing capable UEs。报告仿真结果时需说明采用的调整及必要细节。
+
 ```text
 For Rel-20 6G ISAC evaluation on SAC, for evaluation assumptions, the evaluation assumptions of baseline cases/combinations of object detection and/or tracking are reused as starting point. In addition, one or more of the following adjustment may be considered:
 Dropping of sensing target is optional
@@ -704,6 +830,8 @@ Companies should report the adjustments (if any) with necessary details when rep
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-a007`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.1 Evaluations
+
+采用 R1-2606863 的 Excel templates 收集 AI 10.8.1 object detection/tracking 评估结果，并使用额外 tdoc 文件收集详细输入。详情可包括 sensing RS/resource、检测/跟踪算法、干扰建模、STx-SRx pair 选择、融合对象算法及 sensing capable UE 投放等。
 
 ```text
 Templates (excel files) in R1-2606863 are adopted to collect evaluation results of object detection and/or tracking in AI 10.8.1.
@@ -724,12 +852,16 @@ R1-2605745	Moderator summary #4 on ISAC evaluations	Moderator (CATT)
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.1 Evaluations
 
+对于 Rel-20 sensing UAV 的 baseline case/combination，是否将 UAV-UE 纳入 sensing capable UE 尚无共识。
+
 ```text
 No consensus to introduce UAV-UE as sensing capable UE in the baseline case/combination of sensing UAV in Rel-20.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-c001`
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.1 Evaluations
+
+对于 Rel-20 sensing Human 的 Indoor Hotspot（Indoor-office）baseline case/combination，是否移除 CPE UE 尚无共识。
 
 ```text
 No consensus to remove CPE UE in Indoor-office (Indoor Hotspot) for the baseline case/combination of sensing Human in Rel-20.
@@ -738,12 +870,16 @@ No consensus to remove CPE UE in Indoor-office (Indoor Hotspot) for the baseline
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.1 Evaluations
 
+明确在 Indoor Hotspot（Indoor office）和 Indoor Factory 评估假设中，‘convex hull’ 指 ‘convex hull of the TRP deployment’。
+
 ```text
 For Rel-20 6G ISAC performance evaluation, for baseline cases/combinations, it is clarified that ‘convex hull’ refers to ‘convex hull of the TRP deployment’ in Indoor Hotspot (Indoor office) and Indoor Factory evaluation assumptions.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-c003`
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.1 Evaluations
+
+明确用于 sensing Human 的 Indoor Hotspot（Indoor-office）场景是 TR 38.901 定义的 ‘open office’，不是 ‘mixed office’。
 
 ```text
 For Rel-20 6G ISAC performance evaluation of object detection and/or tracking, for baseline cases/combinations, it is clarified that the scenario Indoor Hotspot (Indoor-office) for sensing Human is ‘open office’, but not ‘mixed office’, as defined in TR 38.901.
@@ -752,6 +888,8 @@ For Rel-20 6G ISAC performance evaluation of object detection and/or tracking, f
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.1 Evaluations
 
+Rel-20 中，针对 sensing AGV 的基线场景/组合，是否移除 Indoor Factory 中的 CPE UE 尚无共识。
+
 ```text
 No consensus to remove CPE UE in Indoor Factory for the baseline case/combination of sensing AGV in Rel-20.
 ```
@@ -759,12 +897,16 @@ No consensus to remove CPE UE in Indoor Factory for the baseline case/combinatio
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.1 Evaluations
 
+Rel-20 中，针对 sensing AGV 的基线场景/组合，是否引入作为 sensing capable UE 的 AGV-UE 尚无共识。
+
 ```text
 No consensus to introduce AGV-UE as sensing capable UE in the baseline case/combination of sensing AGV in Rel-20.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.1-c006`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.2 Aspects of integration with communication
+
+除理论特性分析外，鼓励公司至少采用一种方式评估 sensing RS 的 RE pattern：包括带或不带 cooperative sensing 的 Full SLS、non-cooperative sensing SLS，或 single STX 和 single SRX 的 Simplified SLS。相关 SLS 中每条 STX-target-SRX 链路均假设为 LOS，详细建模由公司报告决定。
 
 ```text
 In addition to theoretical characteristics analysis, companies are encouraged to do at least one of followings to evaluate RE pattern of sensing RS in 10.8.2
@@ -778,6 +920,8 @@ Note: detailed modelling is up to company report
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.2-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.2 Aspects of integration with communication
+
+将研究由一个或多个 component RS 构成的 sensing RS resource，以及 component RS 复用通信 RS、从复用通信 RS 起点增强，或专用于 sensing 的选项。公司将在后续 RAN1 会议提供必要性、理论分析、性能评估和规范影响；其 RE pattern 为所有 component RS 的 RE 并集。
 
 ```text
 Study on a sensing RS resource consisting of one or multiple component RS.
@@ -794,6 +938,8 @@ FFS: details of component RS
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.2 Aspects of integration with communication
 
+将研究两种 sensing RS resource 生成选项：单天线端口或多天线端口，均可 precoded 或 non-precoded。公司将在后续 RAN1 会议提供必要性、理论分析、性能评估和规范影响；对测量报告和辅助信息的影响尚待研究。
+
 ```text
 Study the following two options to generate a sensing RS resource
 Option 1: A sensing RS resource has single antenna port, which can be precoded or non-precoded
@@ -805,6 +951,8 @@ R1-2605587	Summary #3 on integration with communication for ISAC	Moderator (Xiao
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.2-a003`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.2 Aspects of integration with communication
+
+6G ISAC 将研究 per-path 指标，包括 delay、Doppler、angle、RSRP/SINR/amplitude/phase，以及 quality/uncertainty/confidence；delay 的定义选项包括相对参考路径、参考时间或 transmission time。还将进一步讨论 Micro-Doppler、RCS、路径间关联等指标，其必要性、适用 sensing modes、性能和报告方面可另行讨论。
 
 ```text
 The following metrics for a path are to be studied in 6G ISAC
@@ -836,6 +984,8 @@ Note: the necessity, applicable sensing modes, achievable sensing performance, r
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.2 Aspects of integration with communication
 
+RAN1 将研究 6G ISAC 中 scattering point 或 object 的指标，包括 2D/3D location、2D/3D velocity、uncertainty/confidence，以及测量关联；位置可为绝对或相对位置，速度可为真实速度或径向速度标量。还将进一步讨论 power related information（如 RCS）和 Micro-Doppler 等指标。
+
 ```text
 The following metrics of a scattering point or an object are to be studied in 6G ISAC from RAN1 perspective
 3D or 2D location
@@ -860,6 +1010,8 @@ R1-2605588	Summary #4 on integration with communication for ISAC	Moderator (Xiao
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.2 Aspects of integration with communication
 
+6G ISAC 将研究 delay/Doppler/angle profiles 中连续 samples 的指标，以及是否或如何对这些连续 samples 应用 window(s)。相关指标的必要性、适用 sensing modes、性能和报告方面可另行讨论。
+
 ```text
 The metrics of consecutive samples in delay/Doppler/angle profiles are to be studied in 6G ISAC
 FFS: whether/how to apply window(s) of consecutive samples in delay/Doppler/angle profile
@@ -871,12 +1023,16 @@ Final post-meeting summary for this agenda item.
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.8.2 Aspects of integration with communication
 
+Rel-20 的 6G ISAC 研究不考虑 NR ISAC 的 UE-side measurement report Measurement Level A。
+
 ```text
 On UE-side measurement report, measurement Level A from NR ISAC is not considered for 6G ISAC study in Rel-20.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.2-c001`
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.8.2 Aspects of integration with communication
+
+Rel-20 ISAC 选定 sensing assisted beam management 和 sensing assisted CSI acquisition and reporting 作为 sensing assisted communication 的代表性用例进行研究。公司也可研究其他用例；AI10.8 中的 physical layer design 讨论限于 sensing 相关方面。
 
 ```text
 The following representative use cases for sensing assisted communication is/are selected for study in Rel-20 ISAC
@@ -889,6 +1045,8 @@ R1-2605586	Summary #2 on integration with communication for ISAC	Moderator (Xiao
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.2-w001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.3 Waveform and frame structure
+
+继续研究基于 CP-OFDM 的 ZC sequence sensing RS 增强方案，包括 ZC sequence optimization、frequency domain quadratic-phase RS sequence，以及时间域生成和跨 OFDM symbols 扩展选项。增强方案需与 NR Gold sequence（TRP transmission）和 NR ZC sequence（UE transmission）比较利弊，并说明对 TRP-transmission based 和 UE-transmission based sensing 的适用性或必要性。
 
 ```text
 The following options are further studied for RS sequence enhancement for sensing based on ZC sequence based on CP-OFDM.
@@ -909,6 +1067,8 @@ Discussion on the other solutions will continue.
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.3 Waveform and frame structure
 
+继续研究基于 CP-OFDM 的 Gold sequence sensing RS 增强方案，包括序列优化、与 transform precoding 配合的 pi/2 BPSK 调制、CP-OFDM 下的 pi/2 BPSK 调制，以及跨 OFDM symbols 扩展。增强方案需以 NR Gold sequence（TRP transmission）和 NR ZC sequence（UE transmission）为基准比较利弊，并说明对相关 sensing 的适用性或必要性。
+
 ```text
 The following options are further studied for RS enhancement for sensing based on Gold sequence based on CP-OFDM.
 Gold sequence optimization (e.g., initialization)
@@ -923,6 +1083,8 @@ Other solutions are not precluded.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.3-a002`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.3 Waveform and frame structure
+
+针对 sensing 的有效 CP length extension，进一步研究其必要性，包括 implementation based solution 是否能解决问题，并研究连续承载 sensing RS 的 N 个 OFDM symbols、频域 comb pattern，以及 OFDM symbol 前后或内部的 time gap 等候选方案。相关细节、参数、影响、适用 sensing mode 和 scenario、支持的 excess delay 均待进一步研究，其他方案不排除。
 
 ```text
 For effective CP length extension for sensing, further study the necessity (including whether implementation based solution can solve the issue or not) and the following candidate solutions.
@@ -944,6 +1106,8 @@ R1-2606565	Summary #3 on waveform and frame structure for 6G ISAC	Moderator (LGE
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.3-a003`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.8.3 Waveform and frame structure
+
+给出了基于 AF 定义 Peak-to-Sidelobe Ratio (PSLR)、Integrated Sidelobe Ratio (ISLR) 和 Main lobe width 的框架：功率可在 delay-Doppler domain 或 delay domain（含零或非零 Doppler cut）定义，主瓣宽度采用峰值主瓣功率下降一半（-3 dB）处的宽度。Main lobe region 定义为主瓣的首个 null-to-null 区域，Side lobe region 为其余区域。
 
 ```text
 Peak-to-Sidelobe Ratio (PSLR), Integrated Sidelobe Ratio (ISLR), and Main lobe width are defined based on AF as follows.
@@ -967,6 +1131,8 @@ Final post-meeting summary for this agenda item.
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.8.3 Waveform and frame structure
 
+列出了 Linear Ambiguity Function (AF) 和 Circular Ambiguity Function (AF) 的候选定义形式，涵盖 delay-Doppler domain 及单符号 delay domain 等选项。Linear/Circular AF 的下选及评估选项将另行讨论；公司应报告 receiver processing 和 observation window 的假设。
+
 ```text
 Linear Ambiguity Function (AF) is defined as:
 Opt 1.  in delay-Doppler domain
@@ -988,6 +1154,8 @@ Note: companies should report assumption about receiver processing and observati
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.8.3-w001`
 
 ### [6G/Rel-20 RAN1#126] `working_assumption` 10.8.3 Waveform and frame structure
+
+列出了 Linear Cross Ambiguity Function (CAF) 和 Circular Cross Ambiguity Function (CAF) 的候选定义形式，涵盖 delay-Doppler domain 及单符号 delay domain 等选项。Linear/Circular CAF 的下选及评估选项将另行讨论；公司应报告 receiver processing 和 observation window 的假设。
 
 ```text
 Linear Cross Ambiguity Function(CAF) is defined as:
@@ -1011,6 +1179,8 @@ Note: companies should report assumption about receiver processing and observati
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.1 Evaluations
 
+Rel-20 6G sensing performance evaluation 将 UAV、human、vehicle 和 AGV 的 object detection and/or tracking 场景与载频列为 baseline cases/combinations。各行适用的 sensing mode(s) 将继续讨论，也可评估、报告和收集其他场景或载频；该约定不意在降低其他场景或载频的优先级。
+
 ```text
 For Rel-20 6G sensing performance evaluation of object detection and/or tracking, the following cases/combinations are considered as baseline cases/combinations.
 | Sensing target | Indoor or outdoor | Scenario | Carrier frequency |
@@ -1028,6 +1198,8 @@ Note: In this agreement, no intention to de-prioritize other scenarios or carrie
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.1 Evaluations
 
+鼓励公司在下次会议提交关于 communication assistance evaluation 的输入，包括评估必要性、感知目标及通信辅助方式、sensing 和 communication metrics、performance target/KPI、必要的 channel model extension，以及相对于 5G NR sensing evaluation methodology 的方法更新。
+
 ```text
 Companies are encouraged to bring input to the evaluation on communication assistance in next meeting, including but not limited to:
 Necessity of evaluation on communication assistance
@@ -1041,6 +1213,8 @@ Necessary update of evaluation methodology on top of 5G NR sensing evaluation me
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.8.1-a002`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.1 Evaluations
+
+鼓励公司以下表为起点，在下次会议继续讨论 sensing mode 相关评估假设；表中提供 TRP mono-static、UE mono-static、TRP-TRP、UE-UE、TRP-UE 和 UE-TRP bi-static 的示例参数与取值选项。该表不旨在涵盖所有 sensing modes，也不表示任一 mode 适用于任一场景或 use case，其他参数和值也可讨论。
 
 ```text
 Companies are encouraged to bring input to the sensing mode related evaluation assumptions in next meeting, using the following table as starting point. The values in current table are example values based on the input and discussion in RAN1#125.
@@ -1079,6 +1253,8 @@ Final summary in R1-2602522.
 
 ### [6G/Rel-20 RAN1#124b] `conclusion` 10.8.1 Evaluations
 
+Rel-20 6G ISAC performance evaluation 中，不同 UE 的属性（如 antenna pattern、mobility）用于评估讨论；无意研究或规定多样化 device type。
+
 ```text
 For Rel-20 6G ISAC evaluation, the attributes (e.g. antenna pattern, mobility, etc.) of different UEs are for the purpose of evaluation discussion. No intention to study or specify diverse device type.
 R1-2602519	FL summary #2 on ISAC evaluations	Moderator (CATT)
@@ -1090,6 +1266,8 @@ From Thursday session
 
 ### [6G/Rel-20 RAN1#124b] `working_assumption` 10.8.1 Evaluations
 
+Rel-20 6G ISAC performance evaluation 将评估 UAV、human、vehicle 和 AGV 的 object detection and/or tracking，并进一步讨论 communication assistance evaluation。
+
 ```text
 For Rel-20 6G ISAC performance evaluation,
 evaluate object detection and/or tracking for the following sensing targets/objects: UAV, human, vehicle, AGV;
@@ -1098,6 +1276,8 @@ discuss further on evaluation on communication assistance.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.8.1-w001`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.2 Aspects of integration with communication
+
+针对 ISAC 的 RS，研究时至少考虑 sensing performance、resource overhead 和对 communication 的影响，并比较复用通信 RS、以复用通信 RS 为起点的 enhanced RS，以及 dedicated RS for sensing。关于 enhanced RS 是否用于 communication purpose，本议程不作最终决定。
 
 ```text
 On RS for ISAC, study at least the following aspects, considering sensing performance, resource overhead and impact to communication
@@ -1110,6 +1290,8 @@ Dedicated RS for sensing
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.2 Aspects of integration with communication
 
+研究 sensing 的 RS RE patterns，考虑 sensing performance、resource overhead 及对 communication 的影响。RS sequence 的增强如有讨论，将在议程 10.8.3 讨论。
+
 ```text
 Study RE patterns of RS for sensing, considering sensing performance, resource overhead and impact to communication.
 Note: enhancements on RS sequence if any will be discussed in agenda 10.8.3.
@@ -1119,6 +1301,8 @@ From Thursday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.8.2-a002`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.2 Aspects of integration with communication
+
+研究 ISAC 测量的定义和级别，包括以 NR ISAC 已研究的 measurement Levels 为起点的 TRP-side measurement，以及 UE-side measurement。还研究非理想因素对测量的影响；其他方面也可纳入，且讨论可能不涉及规范影响。
 
 ```text
 On measurement for ISAC, study at least the following aspects.
@@ -1131,6 +1315,8 @@ Note: this discussion may or may not mean there is specification impact
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.8.2-a003`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.2 Aspects of integration with communication
+
+从 RAN1 角度研究 ISAC measurement report 的机制及适用场景：UE 测量和/或辅助信息可由 UE 直接发送给 aNB 或发送给 SF；aNB 测量和/或辅助信息可由 aNB 直接发送给 UE 或发送给 SF。允许组合多个选项，且各选项中的测量可能不同；研究可能需要 cross-WG coordination。
 
 ```text
 On measurement report for ISAC, study at least the following aspects and applicable scenarios (e.g., sensing modes, targets, etc.) from RAN1 perspective.
@@ -1148,6 +1334,8 @@ Note: measurements in each option may be different
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.2 Aspects of integration with communication
 
+从 RAN1 角度研究 ISAC measurement report 的机制影响，包括以 Periodic、semi-persistent、aperiodic、event-triggered report 为起点的报告方式，以及 L1、L2、higher layer 等报告信令。研究可能需要 cross-WG coordination。
+
 ```text
 On measurement report for ISAC, study impacts from at least the following aspects from RAN1 perspective
 Measurement reporting mechanism
@@ -1161,6 +1349,8 @@ Final summary in R1-2602592.
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.3 Waveform and frame structure
 
+6G ISAC waveform 研究以 6GR 定义的 CP-OFDM waveform 为起点；不排除研究对 CP-OFDM 的增强或其他 waveforms。
+
 ```text
 CP-OFDM waveform as defined for 6GR is the starting point for 6G ISAC waveform study.
 Study on enhancements on CP-OFDM or other waveforms is not precluded.
@@ -1168,6 +1358,8 @@ Study on enhancements on CP-OFDM or other waveforms is not precluded.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.8.3-a001`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.3 Waveform and frame structure
+
+6G ISAC frame structure 研究以 6GR communication frame structure 为起点，至少涉及 frame/sub-frame/slot/symbol structure、CP length 和 SCS。也不排除对 frame structure 及上述方面进行增强。
 
 ```text
 6GR communication frame structure is the starting point for 6G ISAC frame structure study, in at least the following aspects.
@@ -1180,12 +1372,16 @@ Enhancements on frame structure/above aspects are not precluded.
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.3 Waveform and frame structure
 
+鼓励各公司在 RAN1#125 meeting 提供对 LLS 和/或 SLS 必要性的看法及其 pros/cons/metrics，并提供 theoretical waveform characteristics analysis 的 pros/cons/metrics，用于评估 ISAC waveform 和/或与 communication 的集成。
+
 ```text
 Companies are encouraged to provide views on necessity/pros/cons/metrics of LLS and/or SLS and pros/cons/metrics of theoretical waveform characteristics analysis, for evaluation of ISAC waveform and/or integration with communication, to RAN1#125 meeting.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.8.3-a003`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.8.3 Waveform and frame structure
+
+采用 CP-OFDM 作为评估 sensing waveforms 优势的 benchmark。
 
 ```text
 CP-OFDM is used as the benchmark for evaluating the benefits of sensing waveforms.
@@ -1197,12 +1393,16 @@ Final summary in R1-2602985.
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.8.1 Evaluations
 
+Rel-20 study 将采用 R1-2600466 所附 Moderator’s evaluation summary 中更新后的 TP，并纳入 TR38.769。
+
 ```text
 For Rel-20 study, adopt the updated TP in Moderator’s evaluation summary attached in R1-2600466 into TR38.769.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.8.1-a001`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.8.1 Evaluations
+
+Rel-20 study 进一步提供了各公司的 energy harvesting/storage assumptions，包括 energy source、storage capacity、reported data rate 及其他条件。条目列出了 NEC、FUTUREWEI、CATT、Samsung 和 Ericsson 对 Device 2b 与 Device C 的相关假设和数据。
 
 ```text
 In addition to energy harvesting/storage assumptions used to obtain the reported data rates from companies are provided and agreed in RAN1#123, the followings (highlighted in red) are further provided during the Rel-20 study,
@@ -1220,6 +1420,8 @@ From Tuesday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.8.1 Evaluations
 
+Rel-20 study 将所列 TP 纳入 TR38.769 第 7.3 节，汇总 Device 2b 和 Device C 在 R2D 与 D2R coverage 下的评估结果。结果按 cell edge data rate、UMa NLOS pathloss model、penetration margin、Tx power 和 BLER 等条件给出 achievable maximum distance。
+
 ```text
 For Rel-20 study, adopt the following TPs into section 7.3 of TR38.769.
 | ------ Start of TP------ RAN1 has evaluated the coverage for Device 2b and Device C respectively. Evaluation results from companies in terms of different achievable cell edge data rate and achievable maximum distance under different scenarios, penetration margins and Tx power have been observed for R2D and D2R in the tables of following sub-sections. For R2D coverage, based on evaluation results, the achievable cell edge data rate and achievable maximum distance are observed at least for the following scenarios For cell edge data rate around 1 kbps, For UMa NLOS pathloss model, penetration margin 0 dB Device 2b: the achievable maximum distance is at least 500 meters at BLER 10% when BS Tx power is from 33dBm to 43dBm and at BLER 1% when BS Tx power is from 38dBm to 43dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 1% (about 370~1800 meters) when BS Tx power is 33dBm Device C: the achievable maximum distance is at least 500 meters at BLER 10% and 1% when BS Tx power is from 33dBm to 43dBm For UMa NLOS pathloss model, penetration margin 20 dB Device 2b: the achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 190~1340 meters) and at BLER 1% (about 110~1000 meters) when BS Tx power is from 33dBm to 43dBm Device C: the achievable maximum distance is at least 500 meters at BLER 10% and 1% when BS Tx power is from 33dBm to 43dBm For cell edge data rate around 5~7 kbps, For UMa NLOS pathloss model, penetration margin 0 dB Device 2b: the achievable maximum distance is at least 500 meters at BLER 10% when BS Tx power is from 38dBm to 43dBm and at BLER 1% when BS Tx power is 43dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 480~2300 meters) when BS Tx power is 33dBm and at BLER 1% (about 210~1700 meters) when BS Tx power is from 33dBm to 38dBm Device C: the achievable maximum distance is at least 500 meters at BLER 10% when BS Tx power is from 33dBm to 43dBm and at BLER 1% when BS Tx power is from 38dBm to 43dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 1% (about 430~1500 meters) when BS Tx power is 33dBm For UMa NLOS pathloss model, penetration margin 20 dB Device 2b: the achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 150~1280 meters) and at BLER 1% (about 70~710 meters) when BS Tx power is from 33dBm to 43dBm Device C: the achievable maximum distance is at least 500 meters at BLER 10% when BS Tx power is 43dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 280~1070 meters) when BS Tx power is from 33dBm to 38dBm and at BLER 1% (about 130~810 meters) when BS Tx power is from 33dBm to 43dBm For D2R coverage, based on evaluation results, the achievable cell edge data rate and achievable maximum distance are observed at least for the following scenarios For cell edge data rate around 0.1 kbps, For UMa NLOS pathloss model, penetration margin 0 dB Device 2b: the achievable maximum distance is smaller than 500 meters at BLER 10% (about 80~370 meters) and BLER 1% (about 40~300 meters) when device Tx power is -20dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 150~660 meters) and at BLER 1% (about 80~540 meters) when device Tx power is -10dBm Device C: the achievable maximum distance is at least 500 meters at BLER 10% and 1% when device Tx power is from -3dBm to 5dBm For UMa NLOS pathloss model, penetration margin 20 dB Device 2b: the achievable maximum distance is smaller than 500 meters at BLER 10% (about 20~200 meters) and at BLER 1% (10~160 meters) when device Tx power is from -20dBm to -10dBm Device C: the achievable maximum distance is at least 500 meters at BLER 10% when device Tx power is 5dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 320~680 meters) when device Tx power is from -3dBm to 0dBm and at BLER 1% (about 260~730 meters) when device Tx power is from -3dBm to 5dBm For cell edge data rate around 1 kbps, For UMa NLOS pathloss model, penetration margin 0 dB Device 2b: the achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 110~810 meters) and at BLER 1% (about 50~600 meters) when device Tx power is -10dBm. The achievable maximum distance is smaller than 500 meters at BLER 10% (about 60~450 meters) and BLER 1% (about 30~230 meters) when device Tx power is -20dBm. Device C: the achievable maximum distance is at least 500 meters at BLER 10% when device Tx power is from 0dBm to 5dBm and at BLER 1% when device Tx power is 5dBm. The achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 460~1230 meters) when device Tx power is -3dBm and at BLER 1% (about 310~1090 meters) when device Tx power is from -3dBm to 0dBm For UMa NLOS pathloss model, penetration margin 20 dB Device 2b: the achievable maximum distance is smaller than 500 meters at BLER 10% (about 20~250 meters) and at BLER 1% (about 10~180 meters) when device Tx power is from -20dBm to -10dBm Device C: the achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 230~600 meters) when device Tx power is 5dBm. The achievable maximum distance is smaller than 500 meters at BLER 10% (about 140~450 meters) when device Tx power is from -3dBm to 0dBm and at BLER 1% (about 100~450 meters) when device Tx power is from -3dBm to 5dBm. For cell edge data rate around 5~7 kbps, For UMa NLOS pathloss model, penetration margin 0 dB Device 2b: the achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 100~680 meters) when device Tx power is -10dBm. The achievable maximum distance is smaller than 500 meters at BLER 10% (about 60~270 meters) when device Tx power is -20dBm and at BLER 1% (about 40~390 meters) when device Tx power is from -20dBm to -10dBm Device C: the achievable maximum distance can be smaller or larger than 500 meters at BLER 10% (about 300~1220 meters) and at BLER 1% (about 240~960 meters) when device Tx power is from -3dBm to 5dBm For UMa NLOS pathloss model, penetration margin 20 dB Device 2b: the achievable maximum distance is smaller than 500 meters at BLER 10% (about 20~150 meters) and at BLER 1% (10~120 meters) when device Tx power is from -20dBm to -10dBm Device C: the achievable maximum distance is smaller than 500 meters at BLER 10% (about 90~380 meters) and at BLER 1% (70~300 meters) when device Tx power is from -3dBm to 5dBm ------ End of TP ------ |
@@ -1228,6 +1430,8 @@ For Rel-20 study, adopt the following TPs into section 7.3 of TR38.769.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.8.1-a003`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.8.1 Evaluations
+
+RAN1 识别到 Device C 在 R2D 和 D2R 的 coverage 均优于 Device 2b。Device 2b 适用于 50–200m 的短距离户外场景，Device C 适用于 50–500m 的短距离及较远距离户外场景；两者在 coverage 以外方面的必要性由 RAN 决定。
 
 ```text
 For Rel-20 study, RAN1 has identified the followings
@@ -1241,6 +1445,8 @@ From Wednesday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.8.1-a004`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.8.1 Evaluations
+
+RAN1 观察到 Device C 在户外场景实现 maximum coverage 的 maximum transmit power 为 5 dBm；-3 dBm 至 5 dBm 之间的值可实现不同 coverage。此观察不排除 RAN 将该范围内任一值选为 Device C 的 maximum transmit power。
 
 ```text
 RAN1 observes 5 dBm as the maximum transmit power for Device C to achieve maximum coverage in outdoor scenarios.

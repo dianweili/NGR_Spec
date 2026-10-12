@@ -1,12 +1,22 @@
 # 6GR 唤醒信号与运行机制
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+6GR WUS 已从总体可行性研究推进到具体设计与评估：DL WUS 已建立覆盖基线、链路级评估假设和 UE 节能结果模板，并研究 basic 与 extended coverage。研究范围涵盖不同 RRC 状态下的唤醒、PDCCH 监测、RRM/RLM 测量、同步、时频复用及附加信息与功能。UL WUS 仍在评估不同 standalone 和 multi-cell/carrier 场景中的必要性、配置获取、同步与发射功率等问题，所列场景仅用于研究，不代表 6GR 支持。已有若干评估假设和研究方向，但关键设计选择及部分参数仍待讨论，因此尚未定稿。
+
+**未决问题**
+
+- DL WUS 序列族尚待选择，Zadoff-Chu 与 Gold sequence 的选择计划最迟于 RAN1#127 前作出。
+- FR2-1 中同步信号与数据信道采用不同 SCS 时，DL WUS 的 SCS 仍待讨论；部分链路级评估参数也仍为 FFS 或待公司报告。
+- DL WUS 的候选序列数量、扩展覆盖方案、监测时机与 QCL 细节，以及 connected 和 idle/inactive 状态下的唤醒行为和附加功能仍需研究。
+- UL WUS 的必要性与适用场景、配置所需信息及载荷仍待评估；部分场景的同步获取、功率确定、干扰缓解和定时可维持时长等问题尚未解决。
+- 基于 EE processing 的 serving/neighboring cell 测量及 serving cell RLM 的可行性、精度、复杂度和规范影响仍待研究。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
+
+研究基于 OFDM sequence 的 DL WUS，覆盖 basic coverage 和 extended coverage。
 
 ```text
 Study DL WUS for both basic coverage and extended coverage.
@@ -14,6 +24,8 @@ Study DL WUS for both basic coverage and extended coverage.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.1-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
+
+DL WUS 在 FR1 和约 7 GHz 的评估中，假设检测前最大 timing error 为 1 µs、frequency error 为 2 ppm，至少适用于与 SSB 同载波的情况；必要时还考虑处理 2 µs timing error 和 5 ppm frequency error 的方案。链路级仿真中，Te 和 Fe 分别按区间 [-Temax, Temax] µs 和 [-Femax, Femax] ppm 的均匀分布建模。
 
 ```text
 For DL WUS evaluations in FR1 and ~7 GHz, RAN1 assumes 1 µs and 2 ppm for maximum timing and frequency errors, Temax and Femax, respectively, prior to detecting DL WUS, at least within the same carrier as SSB.
@@ -24,6 +36,8 @@ The actual timing and frequency errors, Te and Fe, respectively, are modelled as
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.1-a002`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
+
+研究每个 DL WUS sequence resource 可传输的最大 sequence candidates 数量，以及面向 UE 的最大候选数量。研究时考虑检测性能、UE 复杂度与能耗、开销、基站复杂度、邻区干扰韧性、RRC 状态、DL WUS 提供的信息及覆盖范围。
 
 ```text
 Study maximum number of transmittable sequence candidates and maximum number of sequence candidates targeting a UE per DL WUS sequence resource, considering, e.g.,
@@ -40,6 +54,8 @@ Note: A DL WUS sequence resource is the time and frequency resource of a single 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.1-a003`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
+
+DL WUS 设计的起点假设为 reference PDCCH 在 -8.1 dB SNR 下达到 1% BLER，并进一步讨论 extended coverage。
 
 ```text
 1% BLER of the reference PDCCH at -8.1 dB SNR is assumed as the starting point of DL WUS design.
@@ -93,12 +109,16 @@ R1-2606688	Discussion on design of DL-WUS with OFDM based sequence	TCL
 
 ### [6G/Rel-20 RAN1#126] `conclusion` 10.6.1.1 Design of WUS with OFDM based sequence
 
+RAN1 将在最迟 RAN1#127 前，为 DL WUS 在 Zadoff-Chu sequence family 与 Gold sequence family 之间作出选择。
+
 ```text
 RAN1 to down select between Zadoff-Chu sequence family and Gold sequence family for DL WUS at latest by RAN1#127.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.1-c001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.2 WUS operation in RRC states
+
+至少针对 RRC idle，研究 6GR DL WUS，并考虑至少使用 SSB 作为 QCL source、SSB 与 DL WUS monitoring occasions 的关联，以及 QCL type。
 
 ```text
 At least in RRC idle, study for 6GR DL WUS by considering
@@ -107,6 +127,8 @@ At least SSB is used as QCL source, the association between SSB and DL WUS monit
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.2-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.2 WUS operation in RRC states
+
+针对 RRC connected，研究通过 EE processing 执行 serving cell RLM measurement 的可行性与必要性。考虑 UE 节能收益、覆盖与准确度、测量指标、EE processing 复杂度影响、所用信号以及是否影响规范。
 
 ```text
 For RRC connected, study feasibility and necessity of serving cell RLM measurement by EE processing, considering at least:
@@ -122,6 +144,8 @@ Whether there is spec impact or not
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.2 WUS operation in RRC states
 
+研究 6GR DL WUS monitoring occasions 的三种时频复用情形，涉及与至少一个 PO 关联的一组或多组 occasions 采用 TDMed、FDMed 或二者结合；三种情形下，UE 在给定时刻均无需监测多于一个 MO。评估至少考虑 UE 能耗、UE 复杂度及网络节能收益。
+
 ```text
 Study the following cases for 6GR DL WUS monitoring occasions:
 Case 1: A set of WUS monitoring occasions associated with at least one PO for a UE are TDMed, multiple sets of WUS monitoring occasions are TDMed.
@@ -136,6 +160,8 @@ Network energy gains if any
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.2-a003`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.2 WUS operation in RRC states
+
+为收集 RRC connected 下 6GR DL WUS 的 UE 节能收益结果，规定了无邻区 RRM measurement 和有邻区 RRM measurement 两组评估案例，比较 C-DRX、DCP、DL WUS 触发 PDCCH monitoring 及 serving cell/neighboring cell 测量采用 EE 或 non-EE processing 的组合。邻区测量至少包括同频测量；异频测量及若干流量、睡眠状态和评估设置由公司报告。
 
 ```text
 For collection of UE energy saving gain results for 6GR DL WUS in RRC connected, at least the following cases are considered:
@@ -171,6 +197,8 @@ Note 8: when comparing different cases, companies are encouraged to at least con
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.1.2-a004`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.2 WUS operation in RRC states
+
+通过 R1-2606878 中的模板收集 6GR DL WUS 的 UE energy saving results，并认可该模板。
 
 ```text
 For collecting UE energy saving results for 6GR DL WUS:
@@ -223,6 +251,8 @@ R1-2606696	Discussion on DL-WUS operation in RRC states	TCL
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.2 Uplink WUS and operation
 
+针对 DS#1b 可行性研究，进一步研究 UE 获取 UL WUS configuration 的五种机制：预配置或规范预定义、同步信号、含 PBCH DMRS 的 PBCH、广播 PDSCH 及 common PDCCH；可考虑组合使用。评估至少考虑网络配置灵活性、网络与 UE 能耗、UE 复杂度、信令开销及以 NR OD-SIB1 的 SIB26 为参考的必要载荷。
+
 ```text
 For feasibility study of DS#1b, further study the following mechanisms for UE to acquire UL WUS configuration.
 Option 1: Pre-configuration and/or pre-defined in specification
@@ -241,6 +271,8 @@ Necessary payload by taking SIB26 for NR OD-SIB1 as the reference
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.2-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.2 Uplink WUS and operation
+
+研究 UL WUS 必要性时，至少考虑 idle、inactive 和 connected mode UE 的候选用途，包括按需或自适应信号/信道、UL 数据指示、PUSCH 资源或参数选择、基于测量的 UL WUS，以及 BFR 新波束指示。研究需评估覆盖、检测性能、能耗、时延、复杂度、资源开销、UE-triggered 与 NW-triggered 机制、适用 DS、干扰、节点间协调及功能重叠等方面。
 
 ```text
 For study of necessity for UL WUS, at least followings are considered as candidates of use cases.
@@ -278,6 +310,8 @@ Overlapping with existing or other 6GR mechanisms that could play the same funct
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.2 Uplink WUS and operation
 
+针对 DS#2a，研究记录了非共址 cell/carrier 场景下 UL WUS 发射功率、干扰缓解、检测性能影响、路径损耗估计和发射波束等事项，其中多项仍需进一步研究。同步且 UE 可维持定时，或 cell/carrier #1 为 #2 提供 underlay coverage 时，UE 可使用 #1 的 SSB 作为 UL WUS 定时参考；非同步场景下能否使用以及可维持该定时和配置的时长仍需研究，并可按需与 RAN4 协调。
+
 ```text
 For study of feasibility for UL WUS, followings are observed for DS#2a in addition to previous RAN1 agreement.
 If UE transmits UL WUS to cell/carrier #2, and if cell/carrier #1 and cell/carrier #2 are non-co-located,
@@ -297,6 +331,8 @@ It is required to further study the duration of the certain period of time with 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.2-a003`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.2 Uplink WUS and operation
+
+RAN1 将研究 UL WUS configuration 所需信息及 payload size，至少考虑时频资源大小和位置、6GR synchronization signal 与 UL WUS occasion 的映射、发射功率和序列/格式参数、UE 对响应的监测参数及小区接入信息。NR OD-SIB1 的 SIB26 作为参考；部分必要信息也可隐式确定，无需显式 payload。
 
 ```text
 RAN1 to study necessary information and required payload size for UL WUS configuration, considering at least the following information and its necessity
@@ -351,6 +387,8 @@ R1-2606697	Discussion on uplink WUS design and operation	TCL
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.3 WUS operation with other functionalities
 
+评估 DL-WUS 携带的信息时，RAN1 至少采用 UE EE 处理复杂度及网络影响、覆盖影响、资源开销、UE 与网络节能收益和时延、与现有机制的重叠，以及 DL-WUS 相对其他机制的收益作为共同评估标准。DL WUS 已约定的 FAR/FDR/MDR 将作为附加非唤醒信息及相关功能的 FAR/FDR/MDR 门限。
+
 ```text
 For the study of any information carried in DL-WUS with or, if supported, without the wake-up indication, RAN1 to at least use the following common assessment criteria:
 Complexity of the UE EE processing and NW’s impact (if any);
@@ -364,6 +402,8 @@ The agreed FAR/FDR/MDR for DL WUS are used as the threshold for FAR/FDR/MDR of t
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.6.3-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.3 WUS operation with other functionalities
+
+对于 RRC_IDLE / RRC_INACTIVE UE，RAN1 将研究 DL-WUS 的候选附加功能：承载 SI-modification 和/或 ETWS-CMAS notification；触发或指示按需或附加 RS 及公共信号/信道（如支持）；指示可用的 PF/PO 资源或 RACH occasions；以及在 inactive state 触发 DL SDT（如支持）。
 
 ```text
 For UEs in RRC_IDLE / RRC_INACTIVE state, RAN1 to study at least the following candidate additional functions for DL-WUS:
@@ -404,6 +444,8 @@ R1-2606698	Discussion on WUS operation with other functionalities	TCL
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.1 Design of WUS with OFDM-based sequence
 
+对 OFDM-based WUS sequence，进一步研究 time domain（例如 DFT preprocessing）与 frequency domain（不使用 DFT preprocessing）定义。研究方面包括 link-level performance、BS 和 UE 检测复杂度、接收处理、PAPR，以及与其他信号和信道的 multiplexing 与 coexistence。
+
 ```text
 For OFDM-based WUS sequence, further study time domain (e.g., DFT preprocessing) definition and frequency domain (w/o DFT preprocessing) definition with respect to the following aspects:
 Link-level performance
@@ -419,12 +461,16 @@ From Thursday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.1 Design of WUS with OFDM-based sequence
 
+在 FR2-1 中，若同步信号和数据信道使用相同 SCS，则假设 DL WUS 与同频段 6GR Sync signals 使用相同 SCS。
+
 ```text
 In FR2-1, the same SCS is assumed for DL WUS as for the 6GR Sync signals in the same band if sync signals and data channels use the same SCS.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.6.1.1-a002`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.1 Design of WUS with OFDM-based sequence
+
+确定用于评估 DL WUS detection 的 EE processing link-level coverage baseline reference configuration：参考 NR common PDCCH，采用 aggregation level 8、4 个 PDCCH 接收天线、TR38.830 中定义的 CORESET、40-bit（不含 CRC）PDCCH payload，以及 2 个 WUS+PDCCH 发射天线。
 
 ```text
 The baseline reference configuration for link level coverage assessment of EE processing for DL WUS detection includes the following parameters referred to NR common PDCCH.
@@ -441,12 +487,16 @@ From Friday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.1 Design of WUS with OFDM-based sequence
 
+至少研究用于 DL WUS reception 的 UE sync 所需的 6GR sync signals。进一步研究额外同步方法的必要性、适用性和影响，例如额外同步信号或具有同步功能的 DL WUS，条件是 6GR sync signals 被认为不足。
+
 ```text
 Study at least the 6GR sync signals for UE sync for DL WUS reception. Further study necessity (e.g., if 6GR sync signals are found to be insufficient for DL WUS) applicability and impact of additional synchronization method for DL WUS reception (e.g., additional sync signals or DL WUS with sync functionality).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.6.1.1-a004`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.1 Design of WUS with OFDM-based sequence
+
+规定 DL WUS link-level EE mode 评估至少采用的假设，包括 700 MHz、3.5 GHz 和 7 GHz 载波频率，以及对应的 WUS SCS 为 15、30 和 30 kHz；还列出信道模型、UE 速度、MDR/FAR、带宽、误差建模、信息比特数和接收天线数等评估参数。部分参数仍为 FFS 或由公司报告。
 
 ```text
 At least the following assumptions are made of EE mode for DL WUS link level evaluations:
@@ -466,6 +516,8 @@ R1-2603446	Final Summary of 6GR DL WUS sequence design	Moderator (Ericsson)
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.2 WUS operation in RRC states
 
+针对 RRC connected state，研究通过 EE processing 进行 serving cell RRM measurement 的可行性和必要性。考虑 UE 节能收益、覆盖与精度、测量指标、对 EE processing 复杂度的影响，并研究基于 6GR sync signal 或其他信号的测量及是否影响规范。
+
 ```text
 For RRC connected state, study feasibility and necessity of serving cell RRM measurement by EE processing, considering at least:
 UE energy saving gain
@@ -480,6 +532,8 @@ Whether there is spec impact or not
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.6.1.2-a001`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.2 WUS operation in RRC states
+
+针对 RRC connected state，研究通过 EE processing 进行 neighbouring cell RRM measurement 的可行性和必要性。考虑测量类型与小区识别、测量和评估、邻区数量限制、干扰、覆盖与精度、功耗和复杂度，并研究基于 6GR sync signal 或其他信号的测量及是否影响规范。
 
 ```text
 For RRC connected state, study feasibility and necessity of neighbouring cell RRM measurement by EE processing, considering at least:
@@ -503,6 +557,8 @@ From Friday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.2 WUS operation in RRC states
 
+研究基于 6GR OFDM sequence 的 DL WUS，用于在 RRC idle state 至少唤醒 UE 以接收 paging。研究范围包括节能、时延、网络开销与复杂度、PO/PF 配置及其与 WUS monitoring occasion 的关联、唤醒后的 UE 行为、指示粒度与信息比特数、监测周期和时机、多波束 QCL、误检与漏检后果，以及 DL WUS 与 paging 是否使用相同载波等事项。
+
 ```text
 Study 6GR OFDM sequence based DL WUS for waking up UE for at least paging purpose in RRC idle state, considering at least:
 UE energy saving gain
@@ -525,6 +581,8 @@ Same or different carriers for DL WUS and paging
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.1.2 WUS operation in RRC states
 
+RAN1 对 RRC CONNECTED state 下 DL WUS 触发 PDCCH monitoring（包括有和无 C-DRX）的研究，需涵盖周期性监测、检测后经 time offset 开始监测 PDCCH 的时长，以及 WUS 在该时段内是否继续监测。还需研究停止 PDCCH 与 WUS 监测的方式、触发范围（per cell 或 cell group）、DL WUS 配置数量及其他细节。
+
 ```text
 For the RAN1 study on DL WUS triggering PDCCH monitoring with and without C-DRX in RRC CONNECTED state, include:
 DL WUS is monitored periodically based on network configuration
@@ -542,6 +600,8 @@ R1-2603452	Final summary on 6GR DL WUS operation in RRC states	Moderator (vivo)
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.2 Uplink WUS and operation
 
+DS#1b下，若standalone cell在UL WUS前发送带PBCH的always-on 6GR synchronization signals，UE可据此获取UL WUS传输所需的DL timing/frequency synchronization。两种情形下，UE可依据always-on信号及可用的功率确定信息决定UL WUS transmission power；功率信息的提供方式及UL WUS所需最小信息仍需进一步研究。
+
 ```text
 For study of feasibility for UL WUS, at least followings are observed for DS#1b.
 For the case where prior to UL WUS, always-on 6GR synchronization signals with PBCH on the standalone cell are transmitted,
@@ -556,6 +616,8 @@ It is required to further study the minimum information size/content necessary a
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.6.2-a001`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.6.2 Uplink WUS and operation
+
+DS#2b下，UE向cell/carrier #1发送UL WUS时，可通过该载波的always-on 6GR synchronization signals和PBCH获取DL timing/frequency synchronization，并依据可用信息确定传输功率。向cell/carrier #2发送时，带PBCH情形下可研究通过#2或#1获取同步的可行性与适用性；无PBCH情形下，同步获取方式仍需进一步研究。
 
 ```text
 For study of feasibility for UL WUS, at least followings are observed for DS#2b.
@@ -574,6 +636,8 @@ Final summary in R1-2603343.
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
 
+以同频段 6G PDCCH 的相同覆盖为目标，研究 DL WUS coverage，并至少考虑 missed detection rate、false alarm rate、RRC state differences、不同用例及 PDCCH reference configuration。
+
 ```text
 Targeting for same coverage as 6G PDCCH in the same band, Study DL WUS coverage by considering at least the following aspects.
 Missed detection rate
@@ -588,6 +652,8 @@ From Thursday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
 
+若同频段的 sync signals 与 data channels 使用相同 SCS，则假设 DL WUS 使用与 6GR Sync signals 相同的 SCS。若 FR2-1 中两者使用不同 SCS，则 DL WUS 的 SCS 尚待讨论（FFS）。
+
 ```text
 The same SCS is assumed for DL WUS as for the 6GR Sync signals in the same band if sync signals and data channels use the same SCS.
 FFS SCS of DL WUS if sync signals and data channels use different SCS in FR2-1.
@@ -597,6 +663,8 @@ From Friday session
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.6.1.1-a002`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence
+
+研究 DL WUS 设计时，需考虑时域或频域序列定义、时频资源分配，以及与其他信号和信道的复用与共存。还需考虑 PAPR、BS/UE 处理复杂度、网络开销与网络及 UE 能效；其他方面也可纳入研究。
 
 ```text
 Study the following aspects of DL WUS design:
@@ -612,6 +680,8 @@ R1-2601725	Final summary of 6GR DL WUS sequence design	Moderator (Ericsson)
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.1.2 WUS operation in RRC states
 
+研究 6GR DL WUS 在 RRC connected state 下触发 PDCCH monitoring，涵盖有无 C-DRX 两种情况。评估需考虑 UE 节能收益、UPT（如适用）、时延、QoS/时延预算满足率、网络开销与复杂度，以及网络能耗。
+
 ```text
 Study 6GR DL WUS triggering PDCCH monitoring with and without C-DRX in RRC connected state, considering at least:
 UE energy saving gain
@@ -625,6 +695,8 @@ Other impacts, if any
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.6.1.2-a001`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.1.2 WUS operation in RRC states
+
+研究 RRC idle state 下，基于 6GR measurement signal（例如 6GR sync signal）并采用 EE processing 的 serving cell 与 neighboring cell RRM measurement。评估需涵盖 UE 节能收益、覆盖与准确度、EE processing 复杂度，以及与 DL-WUS monitoring 同时进行时和采用 non-EE processing 时的比较；邻区测量还需考虑小区识别、评估、数量限制和 inter-cell interference。
 
 ```text
 For RRC idle state, study serving cell RRM measurement based on 6GR measurement signal (e.g., at least 6GR sync signal) by EE processing, considering at least:
@@ -648,6 +720,8 @@ R1-2601723	Final summary on 6GR DL WUS operation in RRC states	Moderator (vivo)
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.2 Uplink WUS and operation
 
+进一步研究 standalone cell 场景下 UL WUS 的必要性与可行性，包括发送前无信号、仅有常开同步信号（可带 PBCH）但无 SIB1，以及有 PBCH 和周期性 SIB1 三种情形。RAN1 至少考虑 UL WUS 覆盖目标、UE 如何获取同步和决定发射功率，以及适用的 RRC states；这些场景仅用于研究，不表示 6GR 支持。
+
 ```text
 Study further necessity and feasibility of UL WUS under the following deployment scenario (DS):
 DS#1: Standalone cell where UE obtains UL WUS configuration e.g., from standalone cell and/or pre-defined in the specifications
@@ -666,6 +740,8 @@ Note: The above scenarios are for study purposes only and do not imply 6GR suppo
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.6.2-a001`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.6.2 Uplink WUS and operation
+
+进一步研究 UE 从 cell/carrier #1 获取 UL WUS 配置的 multi-cell/carrier 场景下，UL WUS 的必要性与可行性；cell/carrier #2 在发送前可无信号、仅有常开同步信号，或有 PBCH 和周期性 SIB1。RAN1 至少考虑覆盖目标、同步获取、发射功率、频段与共址情况、RRC states，以及是否适用于 multi-TRP；这些场景仅用于研究，不表示 6GR 支持。
 
 ```text
 Study further necessity and feasibility of UL WUS under the following deployment scenario (DS):

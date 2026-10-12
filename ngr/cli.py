@@ -26,7 +26,10 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run"); run.add_argument("--no-llm", action="store_true"); run.add_argument("--wg", action="append"); run.add_argument("--force", action="store_true")
     backfill = sub.add_parser("backfill"); backfill.add_argument("--wg", required=True); backfill.add_argument("--from", dest="frm", type=int, required=True); backfill.add_argument("--to", type=int, required=True); backfill.add_argument("--no-llm", action="store_true")
-    sub.add_parser("remap"); sub.add_parser("lineage-report"); sub.add_parser("enrich")
+    sub.add_parser("remap"); sub.add_parser("lineage-report")
+    enrich = sub.add_parser("enrich")
+    enrich.add_argument("--max-calls", type=lambda value: _positive_int(value, "--max-calls"))
+    enrich.add_argument("--batch-size", type=lambda value: _positive_int(value, "--batch-size"))
     doctor = sub.add_parser("doctor"); doctor.add_argument("--network", action="store_true", help="额外探测 3GPP 连通性")
     docs = sub.add_parser("fetch-docs", help="按需下载指定议程项的 TDoc 正文"); docs.add_argument("--wg", required=True); docs.add_argument("--meeting", type=int, required=True); docs.add_argument("--agenda", required=True)
     args = parser.parse_args(argv)
@@ -34,7 +37,9 @@ def main(argv=None):
         if args.command == "run": result = run_pipeline(wgs=args.wg, use_llm=not args.no_llm, force=args.force)
         elif args.command == "backfill": result = run_pipeline(wgs=[args.wg], use_llm=not args.no_llm, meetings=(args.frm, args.to))
         elif args.command == "remap": result = run_remap()
-        elif args.command == "enrich": result = run_enrich()
+        elif args.command == "enrich":
+            overrides = {"max_calls": args.max_calls, "batch_size": args.batch_size}
+            result = run_enrich(**overrides) if any(value is not None for value in overrides.values()) else run_enrich()
         elif args.command == "lineage-report": print(build_lineage_report()); return EXIT_OK
         elif args.command == "fetch-docs": return EXIT_OK if run_fetch_docs(wg=args.wg, meeting=args.meeting, agenda=args.agenda) >= 0 else 1
         else: return run_doctor(probe_network=args.network)
@@ -42,3 +47,10 @@ def main(argv=None):
         logging.error("解析断言失败: %s", exc); return EXIT_PARSE
     for alert in result.alerts: logging.warning("%s", alert)
     return result.exit_code
+
+
+def _positive_int(value: str, option: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError(f"{option} 必须为正整数")
+    return parsed

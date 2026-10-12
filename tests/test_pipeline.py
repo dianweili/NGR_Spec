@@ -2,8 +2,23 @@ import json
 import time
 
 from ngr import pipeline
+from ngr.config import ExtractConfig
+from ngr.extract.runner import ExtractStats
 from ngr.models import Feature, LineageSegment
 from ngr.paths import Paths
+
+
+def test_enrich_timeout_skips_feature_digest(monkeypatch):
+    cfg = ExtractConfig(backend="codex", max_calls_per_run=1, batch_size=1,
+                        model_bulk="gpt-6-astra", model_digest="gpt-6-astra")
+    monkeypatch.setattr(pipeline, "extract_all", lambda *args, **kwargs: ExtractStats(timed_out=True))
+    monkeypatch.setattr(pipeline, "digest_features",
+                        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("must not digest")))
+
+    result = pipeline.PipelineResult()
+    assert pipeline._enrich([], [], {}, cfg, result) == {}
+    assert result.exit_code == pipeline.EXIT_LLM
+    assert "调用超时" in result.alerts[0]
 
 
 def test_first_successful_run_is_visible_to_heartbeat(monkeypatch, tmp_path):

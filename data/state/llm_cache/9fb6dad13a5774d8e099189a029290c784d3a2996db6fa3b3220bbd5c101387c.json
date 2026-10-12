@@ -1,9 +1,0 @@
-{
-  "impact": "medium",
-  "summary_zh": "对于载荷大于 NR 范围（即超过 1706 bits）的 UCI Polar code 设计，至少将 more than 2 segments 作为进一步研究选项。是否需要超出 NR 范围的 UCI 载荷，需由其他议题确认。",
-  "tags": [
-    "Polar code",
-    "UCI",
-    "segments"
-  ]
-}

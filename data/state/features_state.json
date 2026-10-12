@@ -1,1 +1,276 @@
-{}
+{
+  "ai_air_interface": {
+    "legacy_summary": "Rel-18/19 为 AI/ML 空口建立并扩展了评估与研究框架，涵盖 BM-Case1/2 波束预测、CSI compression、CSI prediction 和定位增强；评估确认部分方案在特定假设下可行或有性能收益，RAN1 也细化了若干报告、配对、量化、UCI 映射和处理时序，但这不代表所有机制都已完成规范化。CSI prediction 研究被认为已完成，但复杂度增加且跨 UE 速度、场景和频段的 generalization 不稳定；CSI compression 的 Direction A（3a-1、4-1）和 Direction C 被认为可行，Rel-19 又研究了时域处理、localized models 与协作方案，但部分路径降优先级，性能、互通性、可行性及规范复杂度仍需权衡。跨厂商模型与数据交换、synthetic 与 field data 的分布差异、数据采集和监测、模型识别及 LCM、部署适配和部分配置细节仍未充分定下，不少事项标为 FFS 或交由后续阶段，且部分结果依赖理想测量或特定训练假设。原文没有明确决定这些工作必然延续到 6G；不过这些未闭合问题横跨多种 AI/ML 空口用例，因此可推知它们可能成为 6G 继续研究的议题。",
+    "open_issues": [],
+    "stage": "未启动",
+    "summary": "材料仅给出特性名称“AI/ML 空口”和“6GR 阶段的进展”标题，未提供具体进展信息。现有内容没有记录该特性的讨论、方案收敛或定稿情况。"
+  },
+  "channel_coding": {
+    "open_issues": [
+      "LDPC 扩展的最终 BG 结构、lifting size 及若干矩阵参数仍待选择或确定。",
+      "是否需要超出 NR 范围的 UCI 载荷，以及大载荷 Polar segmentation 设计仍待确认。",
+      "3~11 bits 小载荷 UCI 的编码方案尚待比较，5G RM code 的适用性存在不同意见。",
+      "是否支持 constellation shaping，以及若支持时选择 PS 还是 GS，尚无共识；计划在 Q3 决定。",
+      "DL 4K QAM 是否采用尚无共识；UL 1K QAM 的 SLS 收益受场景、EVM、MPR、负载和 rank 等因素影响。",
+      "PS/GS 的复杂度、存储、时延与性能权衡，以及规范和功能链影响仍需进一步评估。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR 已明确以 NR 等概率均匀 QAM 为至少支持基础，并进一步限定了 DL、UL 及 DFT-s-OFDM 的调制范围。超出 NR 范围的 LDPC 扩展已收窄部分码块、基图和矩阵结构选项，但若干参数及设计仍待确定；大载荷 Polar 码与小载荷 UCI 编码也在评估中。PS/GS 的性能、复杂度和存储权衡已有评估要求与部分结果，但是否支持 constellation shaping 尚无共识。FWA 场景的 DL 4K QAM 和 UL 1K QAM 获得了 SLS 评估，结果因场景与条件而异；RAN1 建议 UL 1K QAM，对 DL 4K QAM 尚未达成共识。"
+  },
+  "energy_efficiency": {
+    "open_issues": [
+      "基站休眠转换是否需按较多 TXRU 引入 delta value，以及 CAT 2.1 Set 4 相关细节。",
+      "UE 功耗模型仍有待定项，包括 8Rx scaling、部分带宽配置与 SMaxBW 评估选项、light sleep 是否采用 micro-sleep scaling，以及部分 EE processing 数值和缩放。",
+      "多载波与 CA 功耗缩放仍有未决情形，包括不同 CC 带宽下的 multiple-RF-chain 参数，以及尚待研究的载波切换、快速启停和资源分配机制。",
+      "C-DRX 与 DL-WUS 的周期、监测计时器及动态定时器调整仍待研究；DL-WUS without C-DRX 的研究优先级较低，是否支持仍未确定。",
+      "Cell DTX/DRX 与 UE DRX 的对齐和联合控制、网络休眠期间 UE 所需信息及信令方式仍未形成完整机制；还需研究 QoS、时延敏感业务和不同 UE 状态下的行为。",
+      "idle mode 多载波初始接入及 connected mode 跨载波操作的适用用例、部署条件和具体机制仍在研究。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR 能效已在 RAN1 形成多项评估基线，涵盖基线网络配置、基站休眠状态与转换参数，以及 UE 的带宽、天线、载波聚合和上行功耗缩放规则；CAT 2.1 也已纳入系统级评估。RAN2 正围绕 UE 与网络休眠机会的协同推进统一非连续监测框架，C-DRX-like 机制作为基线，DL-WUS 作为可选配合功能，Cell DTX/DRX 则采用周期性 Active Duration 与 non-Active Duration 框架。多项机制方向已记录或确定为后续研究事项，但关键参数、适用场景和信令细节尚未定案。"
+  },
+  "evaluation_assumptions": {
+    "open_issues": [
+      "FWA 场景的适用性仍为 FFS。",
+      "约 30 GHz 场景的具体仿真功率由公司报告；低于 30 GHz 的 EIRP limit 也可进一步考虑。",
+      "室内与室外 CPE 的预选标准或机制可在评估阶段讨论。",
+      "其他 UE 天线配置及 FTP3 Alt2 相关取值仍可由公司报告或在评估阶段决定。",
+      "TR38.914 中 RAN1 尚未讨论的场景仍属于候选评估场景。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN1#124 已为 6GR 评估规定多类载频下的 UE、CPE 与 BS 天线配置及辐射假设，并更新了功率、UE 分布和速度等系统级仿真条件。FTP3 extension 和 Massive Communication (IoT) 的业务负载假设也已给出，包括多包大小模型及可选的较大 L2 PDU。整体评估框架已较为具体，但若干配置仍需公司报告或在评估阶段进一步确定。"
+  },
+  "isac": {
+    "legacy_summary": "Rel-18/19 将 ISAC channel model 纳入 TR 38.901，建立由含目标散射的 target channel 与 background channel 组成的框架，确定 \\(RCS=A*B1*B2\\)、多类目标的 RCS/XPR 参数、信道生成与参考模型、部分空间一致性范围，以及 UAV、automotive 等场景的校准和评估基线；Rel-19 还确定了检测、虚警、定位和速度等指标与评估目标值，并明确了部分测量报告选项、assistance information 和 payload size 估算方法。单散射点目标的几何参数、间接路径链路拼接及部分 RCS 和 polarization 建模也取得进展，UAV sensing 评估显示多 TRP 通常比 single TRP 更常达到性能目标。与此同时，车辆 bistatic RCS 的 angular discontinuity、精确 micro-Doppler 公式、功率归一化、复杂路径耦合与剪枝、多散射点、遮挡、环境对象及部分场景参数等仍未充分收敛或标为 FFS；空间一致性只适用于部分链路，payload 与 quantization 对 sensing performance 的影响及不同测量选项的性能影响也未充分评估。材料还记载，delay/range、Doppler/radial velocity、angle、position 和 3D velocity 的 ambiguity handling 及 SF 到 RAN 的 assistance information 不在 Rel-20 NR ISAC 继续讨论，部分事项留待未来评估或研究；这些未决建模和验证工作说明议题仍有后续研究空间，但 agreement 并未规定它们必然延续或在 6G 解决。",
+    "open_issues": [
+      "部分 UAV、Human 和 AGV 基线场景中是否纳入或移除特定 UE，尚无共识。",
+      "感知 RS 的复用、增强或专用方案，以及序列、资源和波形的评估选择仍待讨论。",
+      "测量指标与定义、AF/CAF 形式及报告机制和信令方式尚未定稿。",
+      "SF 与 RAN/aNB 的功能划分、部署位置、感知实体选择及数据处理职责仍待协调。",
+      "UE 参与模式、移动场景下的实体重选与服务连续性，以及低功耗 RRC 状态下启用 ISAC 的方式仍待研究。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR 已明确多类被动目标检测和跟踪及通信辅助为评估重点，并形成覆盖、场景、指标和结果收集等评估基线。RAN1 已推进感知参考信号、波形、测量及报告的研究框架，同时保留多种设计选项供后续评估。RAN2 正围绕感知实体、UE 能力、配置与测量报告、实体选择及服务连续性研究协议和流程，并已记录部分研究顺序与工作假设。整体已有明确的研究范围和若干基线，但关键技术选项及跨工作组职责仍在讨论。"
+  },
+  "multi_antenna": {
+    "open_issues": [
+      "CSI-RS最大端口数仍待从128、256或512中决定，且CSI-RS pattern、CDM及共享设计细节未定。",
+      "PDSCH每UE最大层数、codeword-to-layer mapping，以及DMRS端口数和图样等关键设计仍待选择或进一步评估。",
+      "波束管理中的QCL定义、报告量、预测细节及多TRP扩展仍有待讨论。",
+      "CSI报告码本、可配置码本及AI/ML压缩与预测的适用方案、复杂度和泛化评估尚未收敛。",
+      "SRS序列、跳频、稀疏图样、端口复用及动态参数适配仍有多项候选方案待评估。",
+      "多TRP传输方案及UE透明性、以及部分跨载波/跨小区波束和CSI协作方式仍待明确。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN1#124至#126已为6GR多天线相关研究建立多项评估基线，并就部分框架和参数达成一致。研究覆盖波束管理、CSI获取与反馈、SRS、PDSCH/PUSCH多天线传输、DMRS及多TRP等方面；例如已确定部分PDCCH资源关系、SRS序列研究起点和若干信道测量基线。多项设计仍处于候选方案比较和仿真评估阶段，部分参数明确标为待研究或FFS。整体已有阶段性收敛，但材料未显示该特性已定稿。"
+  },
+  "ntn": {
+    "open_issues": [
+      "链路预算模板的部分行值、场景和参数仍待确定，包括 APC 损耗、天线配置及更大天线参数。",
+      "GNSS-degraded/free 操作所需的位置获取、位置 fix 频率及 PRACH 差分时间与频率误差场景仍待明确。",
+      "大 RTT 下 HARQ 方案的最终选择、适用条件及其与 TN 设计的协调尚未确定。",
+      "大调度偏移的完整设计仍待细化，包括是否支持 UE-specific k_offset，以及与 K1/K2 等调度设计的关系。",
+      "多卫星干扰管理、层级波束结构及 beam footprint 覆盖比例的具体参数和适用性仍待研究。",
+      "移动性、测量触发、GNSS-independent RTT 与相关计时器机制仍在研究，部分议题依赖 RAN1、RANP 或后续讨论。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR NTN 已形成若干研究基线：链路预算模板以既定模板和场景为基础，研究 GNSS-based、degraded 与 GNSS-less/free 操作，并支持大调度偏移及卫星辅助的上行同步。RAN1 正在推进 HARQ、随机接入、波束覆盖、多卫星干扰管理等物理层议题；RAN2 则研究跨 TN/NTN 与 NTN/NTN 的移动性、测量和 GNSS-independent RTT 机制。部分评估参数和机制已有共识，但多项方案仍处于研究或待定状态，跨工作组依赖也尚未解决。"
+  },
+  "ran2_ai_ml": {
+    "open_issues": [
+      "是否支持 model-based LCM，以及 LCM 决策由网络发起、UE 发起还是由 UE 自主作出。",
+      "UE-side model transfer 的 network controllability 机制及其功能，以及基于 UP 的其他传输方案。",
+      "UL traffic prediction 的评估流量模型、预测粒度，以及 BSR/LCP 之外的 L2 用途仍待确定；DL prediction 的执行位置、性能评估和功耗模型也待研究。",
+      "RRM measurement prediction 和 mobility event prediction 的研究需等待 6G measurement 与 mobility framework 更明确；部分用例还涉及预测精度、仿真范围和评估责任划分。",
+      "AI/ML-assisted LTM 的 TA prediction 结论仍为 FFS；其他预测用例的仿真与规范影响也待研究。",
+      "低时延双向 fallback、performance monitoring 方案及 applicability reporting 的具体机制仍需研究。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已将多类 AI/ML 用例纳入 6G 研究，包括 RRM 与波束预测、LTM、UL/DL traffic prediction、RLF/MOF/BFD 及 TA prediction，并对部分 5G-A 已验证用例同意无需重复仿真。研究方向逐渐明确：AI/ML 机制需适配 6G mobility framework，网络需能评估功能表现并及时停用表现不佳的功能，functionality-based LCM 已作为基线。UE-side model transfer 的共识是网络应能识别经 3GPP 传输的模型流量，但无需获知模型内容；transparent/OTT approach 是基线，具体控制机制仍在研究。整体仍处于方案收敛阶段，多个用例的评估方法、规范影响和 LCM 细节尚未确定。"
+  },
+  "ran2_common_protocol_other": {
+    "open_issues": [
+      "哪些系统信息需要安全保护，以及应采用何种保护机制，待 SA3 讨论和威胁分析。",
+      "如何满足 TS 22.268 的 PWS 要求并避免因 UE 缺少安全密钥或经由其他运营商基站不可达而降低 PWS 可达性。",
+      "系统信息安全保护对 SIB 开销的影响，以及需要保护与无需保护的系统信息如何区分。",
+      "UE 智能调整网络参数的适用场景、网络监督方式、性能指标及报告需求尚待研究。",
+      "网络控制下 UE 可调整参数或配置的范围，以及具体特性的收益和系统性能影响尚待后续分析。"
+    ],
+    "stage": "讨论中",
+    "summary": "RAN2 正在研究 UE 在网络监督或有限网络控制范围内，依据环境、应用和无线条件动态调整 RRC 参数及协议行为，以改善性能，并探讨相关 KPI、场景和报告需求。与此同时，RAN2 已启动承载 mobility 相关数据的系统信息安全保护研究，目标是防范伪基站等攻击。对于系统信息安全机制及威胁范围，讨论倾向结合 SA3 的威胁分析后再考虑具体方案。相关研究仍需兼顾 PWS 可达性及系统信息开销等影响。"
+  },
+  "ran2_control_plane_other": {
+    "open_issues": [
+      "Cross-CC initial access 是否使用与驻留相同的载波仍为 FFS，后续研究依赖 RAN1 进展。",
+      "cell 与物理载波的映射、RRC_CONNECTED 中 cell 的用途，以及 primary/secondary serving cell 的定义和术语仍待确定。",
+      "非共址聚合的集中式或分布式调度、HARQ 与 PDCP/RLC 影响、节点间接口需求，以及最高 10 ms 回传带来的用户面时延是否可接受，仍需评估。",
+      "NR-DC framework 能否支持目标非共址部署，以及所需规范影响和对现有 5G DC 设计的简化范围尚未确定。",
+      "统一 carrier-level aggregation 方案纳入哪些增强仍待研究；cross-carrier HARQ 属于 RAN1 讨论范围。",
+      "SCell 支持更多功能及 PCell failure recovery、RLF 韧性工具和相关测量方法仍处于研究或提案讨论中。"
+    ],
+    "stage": "讨论中",
+    "summary": "RAN2 已确认 6G 多载波部署中聚合 always-on common signalling、支持 cross-CC initial access，并以 5G CA 为 CONNECTED 态频谱聚合基线；非连接态 UE 无需在多个载波监听寻呼。研究重点正收敛到 FR1-FR2 同步非共址部署，回传时延上限为 10 ms，并需评估调度架构、协议影响和性能可行性。RAN2 也在梳理 cell、primary/secondary serving cell 的概念与功能，并研究灵活聚合所需的测量、快速切换和故障恢复能力。多项关键选择仍待跨工作组讨论或可行性评估，整体尚处于讨论阶段。"
+  },
+  "ran2_data_model_transfer": {
+    "open_issues": [
+      "标准化 UE 侧数据收集应由 RAN、CN 还是 OAM 终止，以及 RAN 是否可复用和解码数据，仍有不同意见并需与 SA2 等协调。",
+      "数据传输框架及承载方案尚未定案，包括增强 CP、增强 UP、新数据平面和新无线承载；UE-RAN 与 UE-CN 的协议选择也待进一步研究。",
+      "数据消费者、终止点、可见性、可解码性及标准化与厂商特定数据的适用边界仍需明确。",
+      "数据传输框架的用例范围和 QoS 分类仍在讨论；感知数据指标与特征待 RAN1 输入，部分连续学习、Immediate MDT、QoE 和性能监测用例是否纳入也有分歧。",
+      "移动性期间的传输连续性与无损要求虽已被提出为需考虑方面，但早期提议曾标记为未处理，具体机制尚未说明。",
+      "UE 侧模型交付要求、RAN 生成模型向 UE 传输的支持需求，以及网络侧模型交付的职责划分仍待确认或跨工作组协调。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已从 AI/ML、感知、SON/MDT、QoE 等用例着手建立数据类型、端点、数据量、上报间隔和 QoS 的研究基线，并推动面向多类数据的统一框架。讨论逐步聚焦于端点与消费者、可见性和可解码性的区分、避免重复采集，以及按用例配置优先级和 QoS；对 UE-RAN 传输也提出优先研究非 IP、新数据平面和新无线承载等方向。模型传输方面，MNO 的知情与控制需求已被提出，但 UE 侧模型传输范围及网络侧模型传输仍涉及其他工作组协调。若干方案和定义仍处于提议、待协调或未处理状态，尚未形成完整定稿。"
+  },
+  "ran2_early_reporting": {
+    "open_issues": [
+      "预测到达时间与数据量是否同时报告、其含义和报告粒度，以及按 UE、LCG、LCH 或 flow 区分的方式。",
+      "提前报告的触发条件、优先级及其与现有 BSR 的共存方式。",
+      "长期预测信息的具体内容、提供时机，以及预测已建立 service flow 时所用 UL control signaling 的支持方式。",
+      "预测准确性的监测需求与实现方式，以及是否需要 UE capability、confidence、轻量级 LCM 或失败回退机制。",
+      "基于预测提前触发 RRC 状态转换的适用范围，以及由网络还是 UE 决定状态转换。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已确认 6GR 可针对尚未进入 L2、暂不可用于传输的上行数据提供提前调度信息，内容可包括预测到达时间和数据量。短期提前报告正朝采用 MAC CE、并纳入含 BSR 和 DSR 的统一调度信息反馈框架收敛，同时需配置触发条件以控制开销。长期预测信息的研究已聚焦于连接建立与重配置、数据不活跃释放，以及 CA 和 RRC 状态管理等用途；部分控制面流程被认为不属于 RAN2 范围或由 UE 实现决定。报告框架应兼容 AI 与非 AI 预测，但监测、LCM 和预测失败处理仍在讨论。"
+  },
+  "ran2_general_design": {
+    "open_issues": [
+      "是否及何时由 RAN2 研究 tokenized AI traffic，及其与 SA4 研究的衔接方式尚未确定。",
+      "RAN、RAN1、RANP 对 device types、服务需求及具体要求的后续指导尚待明确；部分议题是否必须等待 device types 仍有不同意见。",
+      "RAN 与 CN 等计算资源部署选项，以及数字孪生和垂直服务的支持要求仍需研究。",
+      "MAC CE 与 system information 的安全保护机制、保护范围及适用的安全参数仍需 SA3 指导和跨组评估。",
+      "MAC CE 安全处理的复杂度、开销和时延，以及 SIB 保护的开销、覆盖范围、认证信息大小与更新频率仍未确定。",
+      "潜在攻击后的恢复机制及部分 MAC CE 的时效性和安全需求仍需进一步分析。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已明确 6GR Day 1 优先支持移动宽带与 Voice，并满足 emergency、positioning 和 PWS 的监管要求；IoT、sensing、AI 等其他服务需有明确市场需求和用例支撑。研究范围已涵盖沉浸式通信、ISAC、AI/ML、NTN、数字孪生及多类既有用例，并强调复用 5G 功能、采用共同设计和考虑不同计算资源部署。Tokenized AI 的流量特征、业务支持时机及 RAN2 与 SA4 的研究衔接仍在讨论；设备类型、需求归属和可扩展通用设计也有事项待后续全会指导。RAN2 已就 MAC CE 与系统信息安全形成面向 SA3 的分析和问题清单，但具体保护机制、适用范围、开销及时延影响仍待评估。"
+  },
+  "ran2_mac_scheduling": {
+    "open_issues": [
+      "CB-PUSCH 是用于一般上行目的还是限于 BSR，以及其相对 SR/其他方案在碰撞、时延和资源效率上的表现仍待评估；评估还依赖 UE population、traffic models 和 RAN1 物理层输入。",
+      "统一的 BSR/DSR 或上行状态报告机制仍待明确，包括报告内容与粒度、触发条件、格式，以及是否包含 data importance、anticipated arrival 等信息。",
+      "LCP 与 UL grant 的增强粒度、动态参数调整方式，以及如何权衡 DCI 开销、QoS 适配和多种性能目标仍待研究。",
+      "CG 的配置更新、动态激活与资源回收机制，以及其相对 dynamic grant 的适用性仍待进一步明确。",
+      "2-step/4-step RA 的统一方式、CB-PUSCH 与 RACH 的关系、fallback 条件、RACH partitioning 及动态资源分配细节仍有待解决。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2#132 至 #134 已形成 6GR MAC 与调度的若干基线：支持 dedicated SR、buffer/delay status reporting、基于序列号的 L2 ARQ recovery，并以 legacy per-LCG reporting 和 NR 4-step/2-step RA 等作为起点。工作重点包括评估 CB-PUSCH 对低时延和资源效率的收益、增强 CG 的灵活配置与资源回收，以及改进 scheduling information reporting 和 LCP，以适配突发、时延敏感及具备不同 QoS 的业务。部分方向已有共识或评估假设，例如 4-step 与 2-step RA 均受支持、UE 可配置多个 CG，以及 CB-PUSCH 评估从共享资源传输 BSR 开始。整体仍处于收敛阶段，关键机制的适用范围、细节及与物理层设计的协同尚未全部确定。"
+  },
+  "ran2_mobility": {
+    "open_issues": [
+      "统一移动性框架如何整合 L3 HO、CHO、LTM 及网络触发和 UE 触发流程，仍有信令与程序设计分歧。",
+      "统一测量框架的具体范围、报告机制及 L1/L3、cell/beam 测量支持细节仍待推进。",
+      "候选配置、条件移动性及后续移动性的资源预留效率和具体支持方式仍未解决。",
+      "早期上下行同步、早期下行同步及早期 CSI 的可行性、触发方式和复杂度或功耗权衡仍待研究。",
+      "切换命令处理、目标配置应用、数据转发和 path switch 对整体时延的影响，以及不同切换场景的时延要求仍待协调。",
+      "NTN 的多轨道与 TN–NTN 移动性、GNSS-free 操作及不同网络集成模式下的具体机制仍待研究。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR 移动性已形成以 NR cell reselection 为基线、面向各类切换方案建立统一框架的方向，并明确无预配置移动性为 TN 基线，同时研究可选的候选配置与快速 RRC 处理。RAN2 已推进统一测量框架、按切换场景定义处理时延、缩减切换命令、早期上下行同步及资源共享或动态分配等工作，但多项方案仍在研究或等待 RAN1、RAN4、RAN3 和 SA2 协调。NTN 方面已纳入 TN–NTN 与 NTN–NTN 移动性、多轨道、位置或时间触发及 GNSS-free 操作等研究，并将低中断、低信令开销和减少 GNSS 依赖列为目标。整体方向已有若干基线和研究共识，但方案取舍、适用条件和具体程序尚未定稿。"
+  },
+  "ran2_paging": {
+    "open_issues": [
+      "无 Xn/Xa 时通过 CN 存储或转发 RAN context 的可行性、流程及安全验证方式。",
+      "single paging area、context fetch 与 UE ID 的具体协议和实现，待 SA2、RAN3 协调。",
+      "PF/PO 单一分布公式的需求、局限及具体设计，留待后续会议和 WI 阶段确定。",
+      "支持所有 DRX 周期的 bundling、更多或更密集的 PO/cluster 配置时，信令开销、最低周期与配置延迟如何处理。",
+      "基于 UE paging capabilities 分配 PO 的机制及其与现有基于 UE-ID 的基线关系。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已形成方向性共识：6G 倾向以 CN 触发寻呼统一支持 Idle 与 Inactive UE，共用单一寻呼区域和寻呼 ID，并将 AS context 保存在最后服务的 RAN 节点。UE 在有直接 Xn/Xa 时可从原 RAN 节点获取 context；无直接连接时经 CN 存储或转发的可行性及实现仍交由 SA2、RAN3 研究。寻呼无线设计目标包括以单一 PF/PO 分布公式支持 clustered 与 uniform 分布、从第一天起支持非均匀 PO，并允许网络在时延与能耗间权衡。会议已记录多项设计目标与提案，但公式细节及部分配置和信令问题尚待后续阶段处理。"
+  },
+  "ran2_qos_qoe": {
+    "open_issues": [
+      "动态 QoS 的适配粒度、可变参数、触发条件，以及 UE 自主选择与网络控制之间的职责仍待明确。",
+      "QoS flow、DRB、LCH 与预配置 QoS profiles 的映射和切换方案尚未收敛；1:N DRB 映射及其引发的上层重排序仍有争议。",
+      "UL/DL burst 信息的检测、预测和上报细节仍待研究，包括信息内容及其传递方式。",
+      "多模态流之间是否需要 RAN 参与同步，以及相关协调机制仍未明确。",
+      "AL-FEC 相关信息如何提供给 AS、如何据此差异化处理或丢弃冗余数据，以及所需 HARQ 状态支持仍待研究并需与 SA4 协调。",
+      "tethering 时动态 non-3GPP 时延与可靠性如何纳入 QoS 适配，以及 default DRB HOL blocking 的解决方案仍待研究并需与 SA2 协调。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已确认 6G Day-1 需考虑 immersive communication、mobile AI 和轻量级 AI/AR 眼镜等服务的动态流量与 QoS 需求，并以 5GS QoS Flow 为基线研究更细粒度的 RAN 服务感知和快速适配。研究方向包括按 PDU 或 PDU set 区分处理、基于预配置 QoS profiles 或 L2 参数范围动态调整，以及利用 UE 提供的 burst 信息改善调度；部分方案和研究场景已形成共识。多模态同步、AL-FEC 感知处理、tethering 时延补偿及 HOL blocking 也已纳入研究，并涉及向 SA2、SA4 协调。具体适配机制、职责划分及映射和交付方式仍待进一步研究，尚未定稿。"
+  },
+  "ran2_spectrum_aggregation": {
+    "open_issues": [
+      "PCarrier/PCell 与 SCarrier/SCell 的功能清单及通过专用信令配置功能的具体方式仍在讨论。",
+      "是否研究对 UE 透明的回传时延 X 及其取值尚未确定。",
+      "10 ms 回传下 CA 性能结论仍需结合 FR1-FR1 范围和仿真假设进一步考察。",
+      "PCell failure recovery、基于多小区 RLM 的 RLF 处理，以及快速载波/小区添加、修改、激活和去激活的细节待研究。",
+      "FR1 与 FR2 间增强移动性和快速切换的流程，尤其是多厂商场景下的设计，尚未明确。",
+      "FR1-FR2 聚合的性能边界仍需评估，包括可聚合 FR2 小区数量、非对称速率导致的 TCP 性能影响，以及与仅使用 FR2 的表现比较。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 正在形成 6G 频谱聚合的分场景方案：理想或共址回传下以 5G CA framework 为基线，非理想回传下保留并简化 DC framework，同时研究支持分布式调度器的增强 CA。对于非共址 FR1-FR2 部署，研究范围包括最高 10 ms 回传时延和多厂商部署；初步讨论认为 CA 性能仍可优于单载波，但时延会影响时效性 MAC 操作、HARQ/ARQ、重排序、吞吐量与时延表现。方案倾向于双 PUCCH group、非分流上行承载，并由分布式调度器独立处理时效性 MAC 功能；高时延下的 single-scheduler 方案优先级已被提议降低。与此同时，载波角色与功能配置、PCell 故障恢复、灵活 UL/DL 解耦及 FR1/FR2 快速切换仍在研究，尚未形成完整定稿。"
+  },
+  "ran2_system_access": {
+    "open_issues": [
+      "SIB1 是否拆分、采用何种拆分方式，以及拆分引入的接入时延是否可接受，仍待研究；相关讨论已暂缓，等待内容或需求进一步明确。",
+      "SIB1 应包含哪些通用信息，哪些 UE 接入、区域特定或设备/特性专属信息可移至其他 SI，仍未定；区域特定 SIB1 也未有决定。",
+      "OD-SI 请求机制仍需比较 Msg1 与 Msg3 方案，并进一步研究 standalone OD-SIB1 的可行性与收益。",
+      "SI 窗口宽度、起始位置和窗口映射方式，以及如何处理未广播 SI 的窗口预留，尚未收敛；窗口聚合的网络节能收益及 UE 影响也需评估。",
+      "跨小区共享系统信息、area-specific SI 的部署与协调简化，以及 SI 变更通知粒度，仍需进一步研究。",
+      "多小区/载波协调接入、碎片化频谱的 cell 建模及 IDLE/INACTIVE 多载波需求尚待讨论，并需与 RAN1/RAN4 协调。"
+    ],
+    "stage": "讨论中",
+    "summary": "RAN2 已形成若干研究基线：SIB1 至少承载通用驻留、接入及 SI 调度信息，OD-SI 以 NR 的 Msg3 请求机制为起点，并研究 Msg1 方案。SI 调度研究正聚焦可扩展的统一框架，包括窗口起始位置、宽度、未广播 SI 的窗口处理，以及缩短 SI 接收时间的方案。SIB1 拆分、按需与区域特定 SI、跨小区共享 SI，以及多载波初始接入仍处于研究或暂缓阶段；相关讨论需权衡能耗、接入时延、实现复杂度及网络协调成本。RAN2#134 将 SI 调度工作拆为建立基线框架和评估快速接收机制两项目标，尚未记录关键设计的最终决定。"
+  },
+  "ran2_ue_capability": {
+    "open_issues": [
+      "动态能力更新的触发条件、请求内容、响应消息与时限，以及无响应、拒绝或配置不匹配时的UE行为仍待确定。",
+      "能力更新应采用完整container、变更参数或delta signaling，以及Idle/Inactive状态和移动性期间的处理仍待研究。",
+      "能力信令的模块化、基线与设备类型能力集、压缩和渐进式查询等方案尚需评估；RACS与RAN-based ID的取舍及标识符用法未定。",
+      "coarse granularity、band combination优化及可复用FeatureSet结构需结合后续RAN1/RAN4 feature list和实际容器评估。",
+      "商业化与IODT相关根因、mandatory feature支持的跟踪方式及跨工作组职责仍有未决事项。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2#132至#134已识别6GR UE能力框架的主要问题，包括信令量大、过滤粒度不足、能力结构重复或耦合、可选特性过多，以及动态能力变化与网络处理不匹配。讨论已形成若干研究方向：建立最低能力基线和按设备类型划分的能力集，支持模块化、差异化及压缩信令，并优化按band combination筛选和能力复用。动态能力更新研究已聚焦过热、功耗限制和MUSIM等用例，并同意仅报告相关能力，但请求、响应、计时器、重配置与回退行为尚未统一。整体仍处于研究和方案评估阶段，部分事项留待后续会议、WI阶段或其他工作组协同处理。"
+  },
+  "ran2_user_plane": {
+    "open_issues": [
+      "单一 SN、PDCP/RLC 分层或合并，以及不同部署架构下的控制 PDU、SN gap 和状态报告处理。",
+      "QoE 感知的重排序与丢弃，以及同一 DRB 内多种 QoS flow 的 HOL blocking 缓解方案。",
+      "HARQ 辅助快速 ARQ、HARQ 状态反馈、MAC control PDU 处理及成功解码 CB/CBG 交付，部分依赖 RAN1 设计。",
+      "统一且高效的 RACH 框架、资源自适应、early indication 和更大 Msg3/MsgA 的支持方式。",
+      "AI 流量特征与模型、TokenCom 特性及相应 QoS/L2 机制，需结合 SA4 等工作组反馈推进。",
+      "UDC、ROHC、EHC、SCHC 等机制如何构成并集成到 6G 压缩框架。"
+    ],
+    "stage": "收敛中",
+    "summary": "RAN2 已确认 6GR 用户面需支持一组核心传输、排序、安全、压缩、丢弃、复用及重传功能，并提出 Day‑1 支持要求；部分方向已有明确结论，例如 PDCP 与 RLC 重传保持分离、UDC 是 Day‑1 必要特性。协议栈架构、单一序列号及其与 CU-DU split、Dual Connectivity 等部署场景的适配仍在研究。针对高层与低层 HOL blocking、重排序、丢弃、HARQ 辅助快速 ARQ 及早期转发的机制和适用范围尚未完全确定，部分事项还依赖 RAN1。随机接入、QoS 映射、AI 流量支持和压缩框架也仍有待进一步研究或跨工作组协调。"
+  },
+  "rrc": {
+    "open_issues": [
+      "INACTIVE 的状态建模、与 IDLE 的关系及其 paging、context 管理和状态转换流程仍待明确。",
+      "SDT 是否及如何标准化仍需评估；适用流量、数据量、时延、移动性、覆盖和能效条件尚未确定。",
+      "CONNECTED 子状态的 C-DRX 增强、conditional mobility、唤醒机制及 mobility area 等细节仍待研究。",
+      "UE-initiated/request RRC connection release 的痛点、适用场景和流程影响尚待研究。",
+      "配置失败处理在简化重建、partial success、fallback 和失败信息报告等方案间尚未收敛，具体流程及报告粒度待定。",
+      "stored/reference configuration、delta signalling 和模块化 ASN.1 的具体结构、释放规则及兼容性仍待研究。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR RRC 已形成若干研究基线：连接管理以 establishment、resume、reconfiguration、re-establishment 和 release 为基础，设计暂按单一 RRC 层推进；同时继续研究以 RRC_INACTIVE 支持低频、时延不敏感业务，并以 CONNECTED 子状态支持突发、时延敏感业务。RAN2 已确认两类场景并行研究，也支持单一 paging 方向、基于 UE 的 mobility、stored/reference configurations 及模块化 RRC 结构等工作方向。配置失败处理的目标已明确为尽量避免服务中断并支持 UE 报告问题配置，但候选方案及网络控制方式尚未选定。多项关键流程和结构细节仍在研究，因此整体处于收敛阶段，尚未定稿。"
+  },
+  "waveform": {
+    "open_issues": [
+      "其他 SCS 选项是否纳入讨论、是否需要 normal CP 以外的 CP，以及 sensing numerology 如何确定。",
+      "FR2-1 网络侧 400 MHz 与 800 MHz 信道带宽的最终选择，以及 UE 侧是否支持相应带宽；400 MHz UE 实现选项及其性能、能效、成本和复杂度仍待研究。",
+      "UL low-PAPR 方案的适用 SE 范围、频谱扩展或截断条件、透明性与调制方式仍待筛选。",
+      "应用频谱扩展或截断前的 DFT size 选项 2（X=4）是否支持、RB 数量上限及相关评估结果仍待确定。",
+      "各波形方案的最终评估指标、适用场景与信号、兼容性及规范影响仍需进一步收敛。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR 波形研究以 NR 的 CP-OFDM、DFT-s-OFDM 及 normal CP 为基础，已明确上行与下行的主要研究方向，并建立了较细致的评估假设、指标和提案信息模板。上行低 PAPR 和多层 DFT-s-OFDM 研究持续推进，已汇总多种方案及评估结果；低 PAPR 技术正按频谱处理方式和调制方式进一步筛选。下行 DFT-s-OFDM 不再纳入 AI 10.2.1 的讨论，但相关下行信号仍可在各自议题中研究。SCS、部分带宽选项及若干方案适用条件仍未确定，现有材料尚未形成完整的波形与帧结构定稿。"
+  },
+  "wus": {
+    "open_issues": [
+      "DL WUS 序列族尚待选择，Zadoff-Chu 与 Gold sequence 的选择计划最迟于 RAN1#127 前作出。",
+      "FR2-1 中同步信号与数据信道采用不同 SCS 时，DL WUS 的 SCS 仍待讨论；部分链路级评估参数也仍为 FFS 或待公司报告。",
+      "DL WUS 的候选序列数量、扩展覆盖方案、监测时机与 QCL 细节，以及 connected 和 idle/inactive 状态下的唤醒行为和附加功能仍需研究。",
+      "UL WUS 的必要性与适用场景、配置所需信息及载荷仍待评估；部分场景的同步获取、功率确定、干扰缓解和定时可维持时长等问题尚未解决。",
+      "基于 EE processing 的 serving/neighboring cell 测量及 serving cell RLM 的可行性、精度、复杂度和规范影响仍待研究。"
+    ],
+    "stage": "收敛中",
+    "summary": "6GR WUS 已从总体可行性研究推进到具体设计与评估：DL WUS 已建立覆盖基线、链路级评估假设和 UE 节能结果模板，并研究 basic 与 extended coverage。研究范围涵盖不同 RRC 状态下的唤醒、PDCCH 监测、RRM/RLM 测量、同步、时频复用及附加信息与功能。UL WUS 仍在评估不同 standalone 和 multi-cell/carrier 场景中的必要性、配置获取、同步与发射功率等问题，所列场景仅用于研究，不代表 6GR 支持。已有若干评估假设和研究方向，但关键设计选择及部分参数仍待讨论，因此尚未定稿。"
+  }
+}

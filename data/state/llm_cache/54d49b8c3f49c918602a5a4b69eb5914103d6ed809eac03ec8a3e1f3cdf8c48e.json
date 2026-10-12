@@ -1,9 +1,0 @@
-{
-  "impact": "high",
-  "summary_zh": "6GR 下行以 5G NR 定义的 CP-OFDM 波形为基础，其增强或修改将作为潜在补充进行研究；DFT-s-OFDM 或其他基于 OFDM 的波形也将作为潜在下行补充波形研究。提案者需说明目标用例、信号/信道及与 CP-OFDM（包括 MRSS）的复用方式等，并提供相关性能、兼容性和复杂度信息。",
-  "tags": [
-    "CP-OFDM",
-    "DFT-s-OFDM",
-    "MRSS"
-  ]
-}

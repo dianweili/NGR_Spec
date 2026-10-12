@@ -14,6 +14,35 @@ WG_PATH = {
     "RANP": "tsg_ran/TSG_RAN/TSGR_%s",
 }
 
+# 会议原始材料只记录了会议编号；会期由 3GPP 公开会议日历补充维护。
+# key 与事件的 (wg, meeting, meeting_suffix) 保持一致。这里保存 ISO 日期，
+# 供网页排序、筛选标签和后续导出复用，而不是把文档上传日误当成会期。
+MEETING_PERIODS: dict[tuple[str, int, str], tuple[str, str]] = {
+    ("RAN1", 112, ""): ("2023-02-27", "2023-03-03"),
+    ("RAN1", 112, "b-e"): ("2023-04-17", "2023-04-26"),
+    ("RAN1", 113, ""): ("2023-05-22", "2023-05-26"),
+    ("RAN1", 114, ""): ("2023-08-21", "2023-08-25"),
+    ("RAN1", 114, "b"): ("2023-10-09", "2023-10-13"),
+    ("RAN1", 116, ""): ("2024-02-26", "2024-03-01"),
+    ("RAN1", 116, "b"): ("2024-04-15", "2024-04-19"),
+    ("RAN1", 117, ""): ("2024-05-20", "2024-05-24"),
+    ("RAN1", 118, ""): ("2024-08-19", "2024-08-23"),
+    ("RAN1", 118, "b"): ("2024-10-14", "2024-10-18"),
+    ("RAN1", 119, ""): ("2024-11-18", "2024-11-22"),
+    ("RAN1", 120, ""): ("2025-02-17", "2025-02-21"),
+    ("RAN1", 120, "b"): ("2025-04-07", "2025-04-11"),
+    ("RAN1", 121, ""): ("2025-05-19", "2025-05-23"),
+    ("RAN1", 122, ""): ("2025-08-25", "2025-08-29"),
+    ("RAN1", 123, ""): ("2025-11-17", "2025-11-21"),
+    ("RAN1", 124, ""): ("2026-02-09", "2026-02-13"),
+    ("RAN1", 124, "b"): ("2026-04-13", "2026-04-17"),
+    ("RAN1", 126, ""): ("2026-08-24", "2026-08-28"),
+    ("RAN2", 132, ""): ("2025-11-17", "2025-11-21"),
+    ("RAN2", 133, ""): ("2026-02-09", "2026-02-13"),
+    ("RAN2", 133, "bis"): ("2026-04-13", "2026-04-17"),
+    ("RAN2", 134, ""): ("2026-05-18", "2026-05-22"),
+}
+
 
 def _suffix(event: dict) -> str:
     return str(event.get("meeting_suffix") or "")
@@ -48,6 +77,15 @@ def _is_summarized(event: dict) -> bool:
     return event.get("llm_status") in {"ok", "needs_review"}
 
 
+def _meeting_period(wg: str, meeting: int, suffix: str) -> str:
+    """返回可展示的会期；没有经过校验的记录宁可明确缺失。"""
+    period = MEETING_PERIODS.get((wg, meeting, suffix))
+    if not period:
+        return "日期待补"
+    start, end = period
+    return start if start == end else f"{start} 至 {end}"
+
+
 def _payload(events: list[dict], features: list[Feature], feat_state: dict,
              generated: str) -> dict:
     """构建网页所需的自包含数据模型。
@@ -76,6 +114,7 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
             "stage": state.get("stage"),
             "summary": state.get("summary"),
             "open_issues": state.get("open_issues") or [],
+            "legacy_summary": state.get("legacy_summary"),
             "events": len(mine),
             "agreements": len(agreements),
             "six_events": sum(event.get("era") == "6G" for event in mine),
@@ -96,6 +135,7 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
             "meeting": meeting,
             "suffix": suffix,
             "label": f"{wg}#{meeting}{suffix}",
+            "period": _meeting_period(wg, meeting, suffix),
             "source_url": _meeting_url(wg, meeting, suffix),
             "events": len(mine),
             "agreements": sum(event.get("kind") == "agreement" for event in mine),
@@ -112,6 +152,8 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
     for event in ordered:
         item = dict(event)
         item["meeting_suffix"] = _suffix(event)
+        item["meeting_period"] = _meeting_period(
+            str(event.get("wg") or ""), int(event["meeting"]), _suffix(event))
         item["source_url"] = _meeting_url(str(event.get("wg") or ""), event.get("meeting"),
                                           _suffix(event))
         web_events.append(item)
@@ -286,28 +328,48 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp
 const cut = (value, length = 180) => { const text = String(value ?? '').replace(/\s+/g, ' ').trim(); return text.length <= length ? text : text.slice(0, length) + '…'; };
 const meetingKey = event => `${event.wg}-${event.meeting}${event.meeting_suffix || ''}`;
 const ready = event => ['ok', 'needs_review'].includes(event.llm_status);
-const state = { view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', page: 1 };
+const state = { view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', page: 1, trail: [] };
 const PAGE_SIZE = 30;
 function statCard(label, value, hint) { return `<article class="metric"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div><div class="hint">${esc(hint)}</div></article>`; }
 function badge(label, tone = '') { return `<span class="badge ${esc(tone)}">${esc(label)}</span>`; }
 function featureName(slug) { return DATA.features.find(feature => feature.slug === slug)?.name_zh || slug || '未归类'; }
-function showFeature(slug) { state.feature = slug; state.meeting = ''; state.page = 1; state.view = 'events'; render(); }
-function showMeeting(key) { state.meeting = key; state.feature = ''; state.page = 1; state.view = 'events'; render(); }
+function currentRoute() { const {view, query, wg, feature, era, kind, status, meeting, detail, page} = state; return {view, query, wg, feature, era, kind, status, meeting, detail, page}; }
+function persistRoute(mode = 'push') { try { window.history[mode + 'State']({ngr: true, route: currentRoute(), trail: state.trail}, ''); } catch (_) { /* file:// may restrict history */ } }
+function navigate(next) { state.trail.push(currentRoute()); Object.assign(state, next); persistRoute(); render(); }
+function goBack() { const previous = state.trail.pop(); if (!previous) return; Object.assign(state, previous); persistRoute('replace'); render(); }
+function backButton(fallback = '') { return state.trail.length ? '<button class="button" data-nav-back type="button">← 返回</button>' : (fallback ? `<button class="button" data-nav="${esc(fallback)}" type="button">← 返回</button>` : ''); }
+function showFeature(slug) { navigate({feature: slug, meeting: '', detail: '', page: 1, view: 'events'}); }
+function showFeatureOverview(slug) { navigate({detail: slug, view: 'feature-detail'}); }
+function showMeeting(key) { navigate({meeting: key, feature: '', detail: '', page: 1, view: 'events'}); }
 function renderOverview() {
   const stats = DATA.stats, latest = DATA.meetings.slice(0, 6), important = DATA.features.slice().sort((a, b) => b.events - a.events).slice(0, 8);
   const progress = stats.full_events ? `${stats.summarized} / ${stats.full_events}` : '—';
-  return `<div class="section-heading"><div><h2>全局概览</h2><p class="section-note">从一处查看当前建模范围、会议变化和摘要进度。</p></div></div>
+  return `<div class="section-heading"><div><h2>全局概览</h2><p class="section-note">从一处查看当前建模范围、会议变化和摘要进度。</p></div>${backButton()}</div>
     <section class="metric-grid">${statCard('已归集事件', stats.events.toLocaleString(), `${stats.six_events.toLocaleString()} 条 6G 决议`)}${statCard('已建模特性', stats.features, '按配置优先级排列')}${statCard('会议简报', stats.meetings, '每个会议可独立浏览')}${statCard('中文摘要', progress, '完整事件的已增强数量')}</section>
-    <section class="panel"><div class="panel-head"><div><h2>最近会议</h2><p class="section-note">点击进入该会议的完整决议清单。</p></div><button class="button" data-nav="meetings" type="button">全部会议</button></div><div class="cards">${latest.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-filter="${esc(meeting.key)}" type="button">${esc(meeting.label)}</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">${meeting.agreements} 条 agreement · ${meeting.summarized} 条已有中文摘要</p><div class="feature-tags">${meeting.features.slice(0, 4).map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">3GPP 会议目录 ↗</a></div></article>`).join('')}</div></section>
-    <section class="panel"><div class="panel-head"><div><h2>事件量最高的特性</h2><p class="section-note">特性卡片可直接进入对应的可检索事件视图。</p></div><button class="button" data-nav="features" type="button">特性目录</button></div><div class="cards">${important.map(feature => `<article class="card"><div class="card-top"><button class="card-title" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)}</button>${badge(feature.stage || '待综述')}</div><p class="card-copy">${feature.summary ? esc(cut(feature.summary, 118)) : '尚未生成特性综述；可先浏览逐条会议决议。'}</p><div class="card-meta">${badge(`${feature.events} 条事件`)} ${badge(`${feature.agreements} 条 agreement`)} ${feature.latest ? badge(`${feature.latest.wg}#${feature.latest.meeting}${feature.latest.suffix || ''}`) : ''}</div></article>`).join('')}</div></section>`;
+    <section class="panel"><div class="panel-head"><div><h2>最近会议</h2><p class="section-note">点击进入该会议的完整决议清单。</p></div><button class="button" data-nav="meetings" type="button">全部会议</button></div><div class="cards">${latest.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-filter="${esc(meeting.key)}" type="button">${esc(meeting.label)}</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">会期：${esc(meeting.period)} · ${meeting.agreements} 条 agreement · ${meeting.summarized} 条已有中文摘要</p><div class="feature-tags">${meeting.features.slice(0, 4).map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">3GPP 会议目录 ↗</a></div></article>`).join('')}</div></section>
+    <section class="panel"><div class="panel-head"><div><h2>事件量最高的特性</h2><p class="section-note">点击特性名称查看综述、阶段与未决问题；也可继续查看逐条决议。</p></div><button class="button" data-nav="features" type="button">特性目录</button></div><div class="cards">${important.map(feature => `<article class="card"><div class="card-top"><button class="card-title" data-feature-overview="${esc(feature.slug)}" type="button">${esc(feature.name_zh)}</button>${badge(feature.stage || '待综述')}</div><p class="card-copy">${feature.summary ? esc(cut(feature.summary, 118)) : '尚未生成特性综述；可先浏览逐条会议决议。'}</p><div class="card-meta"><button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${feature.events} 条事件</button> ${badge(`${feature.agreements} 条 agreement`)} ${feature.latest ? badge(`${feature.latest.wg}#${feature.latest.meeting}${feature.latest.suffix || ''}`) : ''}</div></article>`).join('')}</div></section>`;
 }
 function renderFeatures() {
-  const rows = DATA.features.map(feature => `<tr><td><button class="table-button" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)}</button><div class="muted">${esc(feature.slug)}</div></td><td>${esc(feature.stage || '待综述')}</td><td>${feature.has_legacy ? '5G-A → 6G' : '6G 原生'}</td><td>${feature.events}</td><td>${feature.agreements}</td><td>${feature.summarized} / ${feature.events}</td><td>${feature.latest ? `${esc(feature.latest.wg)}#${esc(feature.latest.meeting)}${esc(feature.latest.suffix || '')}` : '—'}</td></tr>`).join('');
-  return `<div class="section-heading"><div><h2>特性目录</h2><p class="section-note">所有已建模特性。点击名称查看该特性的协议事件、原文和中文摘要。</p></div></div><section class="panel"><div class="table-wrap"><table><thead><tr><th>特性</th><th>阶段</th><th>血统</th><th>事件</th><th>Agreement</th><th>摘要</th><th>最近活动</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  const rows = DATA.features.map(feature => `<tr><td><button class="table-button" data-feature-overview="${esc(feature.slug)}" type="button">${esc(feature.name_zh)}</button><div class="muted">${esc(feature.slug)}</div></td><td>${esc(feature.stage || '待综述')}</td><td>${feature.has_legacy ? '5G-A → 6G' : '6G 原生'}</td><td>${feature.events}</td><td>${feature.agreements}</td><td>${feature.summarized} / ${feature.events}</td><td>${feature.latest ? `${esc(feature.latest.wg)}#${esc(feature.latest.meeting)}${esc(feature.latest.suffix || '')}` : '—'}</td></tr>`).join('');
+  return `<div class="section-heading"><div><h2>特性目录</h2><p class="section-note">所有已建模特性。点击名称查看特性综述、阶段、未决问题与协议事件。</p></div>${backButton()}</div><section class="panel"><div class="table-wrap"><table><thead><tr><th>特性</th><th>阶段</th><th>血统</th><th>事件</th><th>Agreement</th><th>摘要</th><th>最近活动</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+function renderFeatureDetail() {
+  const feature = DATA.features.find(item => item.slug === state.detail);
+  if (!feature) return `<div class="panel empty">未找到所选特性。</div>`;
+  const issues = feature.open_issues.length
+    ? `<ul>${feature.open_issues.map(issue => `<li>${esc(issue)}</li>`).join('')}</ul>`
+    : '<p class="muted">当前没有记录未决问题。</p>';
+  const legacy = feature.legacy_summary
+    ? `<section class="panel"><h3>5G-A 源头</h3><p>${esc(feature.legacy_summary)}</p></section>`
+    : '';
+  return `<div class="section-heading"><div><h2>${esc(feature.name_zh)}</h2><p class="section-note">${esc(feature.has_legacy ? '5G-A → 6G 血统' : '6G 原生特性')} · ${feature.events} 条事件 · ${feature.summarized} 条已有摘要</p></div><div>${backButton('features')} ${badge(feature.stage || '待综述')}</div></div>
+    <section class="panel"><h3>当前进展</h3><p>${feature.summary ? esc(feature.summary) : '尚未生成特性综述。'}</p></section>
+    <section class="panel"><h3>未决问题</h3>${issues}</section>${legacy}
+    <section class="panel"><div class="panel-head"><div><h3>协议事件</h3><p class="section-note">浏览该特性的逐条中文摘要、英文原文与来源。</p></div><button class="button" data-feature-filter="${esc(feature.slug)}" type="button">查看 ${feature.events} 条事件</button></div></section>`;
 }
 function renderMeetings() {
-  const rows = DATA.meetings.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-filter="${esc(meeting.key)}" type="button">${esc(meeting.label)} · 增量简报</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">${meeting.agreements} 条 agreement · ${meeting.summarized} 条已有中文摘要</p><div class="feature-tags">${meeting.features.map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">打开 3GPP 会议目录 ↗</a></div></article>`).join('');
-  return `<div class="section-heading"><div><h2>会议简报</h2><p class="section-note">每张卡片是原先一个 Markdown 增量简报的 HTML 入口，可继续下钻到事件原文。</p></div></div><section class="cards">${rows || '<div class="panel empty">暂无会议数据。</div>'}</section>`;
+  const rows = DATA.meetings.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-filter="${esc(meeting.key)}" type="button">${esc(meeting.label)} · 增量简报</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">会期：${esc(meeting.period)} · ${meeting.agreements} 条 agreement · ${meeting.summarized} 条已有中文摘要</p><div class="feature-tags">${meeting.features.map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">打开 3GPP 会议目录 ↗</a></div></article>`).join('');
+  return `<div class="section-heading"><div><h2>会议简报</h2><p class="section-note">每张卡片是原先一个 Markdown 增量简报的 HTML 入口，可继续下钻到事件原文。</p></div>${backButton()}</div><section class="cards">${rows || '<div class="panel empty">暂无会议数据。</div>'}</section>`;
 }
 function option(value, label, selected) { return `<option value="${esc(value)}"${value === selected ? ' selected' : ''}>${esc(label)}</option>`; }
 function filteredEvents() {
@@ -324,28 +386,45 @@ function eventCard(e) {
   const summary = e.summary_zh || cut(e.text_en, 240), tone = e.impact || '';
   const status = ready(e) ? (e.llm_status === 'needs_review' ? '待复核' : '已摘要') : '待摘要';
   const meeting = `${esc(e.wg)}#${esc(e.meeting)}${esc(e.meeting_suffix || '')}`;
-  return `<article class="event"><div class="event-top"><div>${badge(`${e.era || '—'} / ${e.release || '—'}`)} <span class="badge">${meeting}</span> ${badge(e.kind || '事件')}</div>${badge(e.impact || '未评级', tone)}</div><h3 class="event-title">${esc(featureName(e.feature))}</h3><div class="event-agenda">${esc(e.agenda_item || '—')} · ${esc(e.agenda_title || '未命名议程')} · <code>${esc(e.id)}</code></div><p class="event-summary ${ready(e) ? '' : 'pending'}">${esc(summary)}</p><div class="card-meta">${badge(status, ready(e) ? (e.llm_status === 'needs_review' ? 'review' : 'ready') : '')}${(e.tags || []).map(tag => badge(tag)).join('')}</div><details><summary>展开英文原文与来源</summary><pre>${esc(e.text_en)}</pre><a class="source" href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">在 3GPP 会议目录中查看原始材料 ↗</a></details></article>`;
+  return `<article class="event"><div class="event-top"><div>${badge(`${e.era || '—'} / ${e.release || '—'}`)} <span class="badge">${meeting}</span> ${badge(e.kind || '事件')}</div>${badge(e.impact || '未评级', tone)}</div><h3 class="event-title">${esc(featureName(e.feature))}</h3><div class="event-agenda">${esc(e.meeting_period)} · ${esc(e.agenda_item || '—')} · ${esc(e.agenda_title || '未命名议程')} · <code>${esc(e.id)}</code></div><p class="event-summary ${ready(e) ? '' : 'pending'}">${esc(summary)}</p><div class="card-meta">${badge(status, ready(e) ? (e.llm_status === 'needs_review' ? 'review' : 'ready') : '')}${(e.tags || []).map(tag => badge(tag)).join('')}</div><details><summary>展开英文原文与来源</summary><pre>${esc(e.text_en)}</pre><a class="source" href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">在 3GPP 会议目录中查看原始材料 ↗</a></details></article>`;
 }
 function renderEvents() {
   const results = filteredEvents(), pages = Math.max(1, Math.ceil(results.length / PAGE_SIZE)); state.page = Math.min(state.page, pages);
   const start = (state.page - 1) * PAGE_SIZE, page = results.slice(start, start + PAGE_SIZE);
-  const meetingOptions = DATA.meetings.map(meeting => option(meeting.key, meeting.label, state.meeting)).join('');
+  const meetingOptions = DATA.meetings.map(meeting => option(meeting.key, `${meeting.label} · ${meeting.period}`, state.meeting)).join('');
   return `<div class="section-heading"><div><h2>事件检索</h2><p class="section-note">搜索中文摘要、英文原文、议程或 TDoc；只渲染当前页，适合长期持续回填。</p></div><button class="button" data-reset-filters type="button">清除筛选</button></div><section class="panel"><div class="toolbar"><input id="query" type="search" value="${esc(state.query)}" placeholder="搜索摘要、原文、议程、TDoc…" aria-label="搜索事件"><select id="wg-filter" aria-label="工作组">${option('', '全部工作组', state.wg)}${DATA.workgroups.map(wg => option(wg, wg, state.wg)).join('')}</select><select id="feature-filter" aria-label="特性">${option('', '全部特性', state.feature)}${DATA.features.map(feature => option(feature.slug, feature.name_zh, state.feature)).join('')}</select><select id="meeting-filter" aria-label="会议">${option('', '全部会议', state.meeting)}${meetingOptions}</select><select id="era-filter" aria-label="阶段">${option('', '全部阶段', state.era)}${option('6G', '6G / Rel-20', state.era)}${option('5G-A', '5G-A 血统', state.era)}</select><select id="status-filter" aria-label="摘要状态">${option('', '全部摘要状态', state.status)}${option('ready', '已有摘要', state.status)}${option('pending', '待摘要', state.status)}</select></div><p class="filter-summary">匹配 <strong>${results.length.toLocaleString()}</strong> 条事件 · 当前第 ${state.page} / ${pages} 页</p></section><section class="event-list">${page.map(eventCard).join('') || '<div class="panel empty">没有匹配的事件。请放宽筛选条件。</div>'}</section><nav class="pagination" aria-label="事件分页"><button class="button" data-page="prev" type="button" ${state.page <= 1 ? 'disabled' : ''}>← 上一页</button><span class="muted">${results.length ? `${start + 1}–${Math.min(start + PAGE_SIZE, results.length)} / ${results.length}` : '0 条'}</span><button class="button" data-page="next" type="button" ${state.page >= pages ? 'disabled' : ''}>下一页 →</button></nav>`;
 }
-function render() { document.querySelectorAll('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === state.view)); document.getElementById('app').innerHTML = state.view === 'overview' ? renderOverview() : state.view === 'features' ? renderFeatures() : state.view === 'meetings' ? renderMeetings() : renderEvents(); }
+function render() { const navView = state.view === 'feature-detail' ? 'features' : state.view; document.querySelectorAll('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === navView)); document.getElementById('app').innerHTML = state.view === 'overview' ? renderOverview() : state.view === 'features' ? renderFeatures() : state.view === 'feature-detail' ? renderFeatureDetail() : state.view === 'meetings' ? renderMeetings() : renderEvents(); const heading = document.querySelector('.section-heading'); if (heading && state.trail.length && !heading.querySelector('[data-nav-back]')) heading.insertAdjacentHTML('beforeend', backButton()); }
 document.addEventListener('click', event => {
-  const nav = event.target.closest('[data-nav]'); if (nav) { state.view = nav.dataset.nav; render(); return; }
+  const back = event.target.closest('[data-nav-back]'); if (back) { goBack(); return; }
+  const nav = event.target.closest('[data-nav]'); if (nav) { if (state.view !== nav.dataset.nav) navigate({view: nav.dataset.nav}); return; }
+  const featureOverview = event.target.closest('[data-feature-overview]'); if (featureOverview) { showFeatureOverview(featureOverview.dataset.featureOverview); return; }
   const feature = event.target.closest('[data-feature-filter]'); if (feature) { showFeature(feature.dataset.featureFilter); return; }
   const meeting = event.target.closest('[data-meeting-filter]'); if (meeting) { showMeeting(meeting.dataset.meetingFilter); return; }
   const page = event.target.closest('[data-page]'); if (page) { state.page += page.dataset.page === 'next' ? 1 : -1; render(); return; }
   if (event.target.closest('[data-reset-filters]')) { Object.assign(state, {query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', page: 1}); render(); }
 });
-document.addEventListener('input', event => { if (event.target.id === 'query') { state.query = event.target.value; state.page = 1; render(); } });
+document.addEventListener('input', event => {
+  if (event.target.id !== 'query') return;
+  // `render()` replaces the toolbar markup so the original <input> is removed.
+  // Restore focus and the caret on its replacement to keep incremental search usable.
+  const value = event.target.value;
+  const start = event.target.selectionStart ?? value.length;
+  const end = event.target.selectionEnd ?? start;
+  state.query = value; state.page = 1; render();
+  const query = document.getElementById('query');
+  if (query) {
+    query.focus({preventScroll: true});
+    query.setSelectionRange(Math.min(start, query.value.length), Math.min(end, query.value.length));
+  }
+});
 document.addEventListener('change', event => { const fields = {'wg-filter': 'wg', 'feature-filter': 'feature', 'meeting-filter': 'meeting', 'era-filter': 'era', 'status-filter': 'status'}; if (fields[event.target.id]) { state[fields[event.target.id]] = event.target.value; state.page = 1; render(); } });
+window.addEventListener('popstate', event => { const saved = event.state; if (!saved?.ngr) { state.trail = []; Object.assign(state, {view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', page: 1}); render(); return; } state.trail = saved.trail || []; Object.assign(state, saved.route); render(); });
 function setTheme(theme) { document.documentElement.dataset.theme = theme; try { localStorage.setItem('ngr-theme', theme); } catch (_) { /* file:// may disallow storage */ } }
 try { const saved = localStorage.getItem('ngr-theme'); if (saved) setTheme(saved); } catch (_) { /* no persistent storage */ }
 document.getElementById('theme-toggle').addEventListener('click', () => { setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); });
 document.getElementById('generated').textContent = `数据生成于 ${DATA.generated} · 本页无需网络或服务端`;
+persistRoute('replace');
 render();
 </script>
 </body>

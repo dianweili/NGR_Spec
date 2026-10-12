@@ -1,12 +1,23 @@
 # 6GR QoS/QoE 与服务感知
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+RAN2 已确认 6G Day-1 需考虑 immersive communication、mobile AI 和轻量级 AI/AR 眼镜等服务的动态流量与 QoS 需求，并以 5GS QoS Flow 为基线研究更细粒度的 RAN 服务感知和快速适配。研究方向包括按 PDU 或 PDU set 区分处理、基于预配置 QoS profiles 或 L2 参数范围动态调整，以及利用 UE 提供的 burst 信息改善调度；部分方案和研究场景已形成共识。多模态同步、AL-FEC 感知处理、tethering 时延补偿及 HOL blocking 也已纳入研究，并涉及向 SA2、SA4 协调。具体适配机制、职责划分及映射和交付方式仍待进一步研究，尚未定稿。
+
+**未决问题**
+
+- 动态 QoS 的适配粒度、可变参数、触发条件，以及 UE 自主选择与网络控制之间的职责仍待明确。
+- QoS flow、DRB、LCH 与预配置 QoS profiles 的映射和切换方案尚未收敛；1:N DRB 映射及其引发的上层重排序仍有争议。
+- UL/DL burst 信息的检测、预测和上报细节仍待研究，包括信息内容及其传递方式。
+- 多模态流之间是否需要 RAN 参与同步，以及相关协调机制仍未明确。
+- AL-FEC 相关信息如何提供给 AS、如何据此差异化处理或丢弃冗余数据，以及所需 HARQ 状态支持仍待研究并需与 SA4 协调。
+- tethering 时动态 non-3GPP 时延与可靠性如何纳入 QoS 适配，以及 default DRB HOL blocking 的解决方案仍待研究并需与 SA2 协调。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 研究在 QoS profile 不变或变化时，基于预配置范围/值动态调整 L2 参数；QoS profile 变化时需要与 SA2 协调。待讨论的事项包括适用于动态调整的功能、UE 切换条件与行为，以及 DRB 内的粒度和启用建模方式。
 
 ```text
 RAN2 studies dynamic adaptation of L2 parameters changed based on set of pre-configured ranges/values in case of no QoS profile change and of QoS profile change.   For the case of QoS profile change coordination with SA2 will be required.   FFS the questions to ask SA2.
@@ -25,6 +36,8 @@ R2-2603229	Discussion on QoS and Service-awareness	NTT DOCOMO	discussion
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.1.2 QoS, QoE and Service-awareness
 
+可向 scheduler 报告的数据突发信息包括 AS buffer 中已有数据、尚未进入 AS buffer 的当前数据，以及尚未生成的预期数据的突发大小。突发时间信息可包含首个数据包预计可供传输的时间；如何向网络发送这些信息仍待研究。
+
 ```text
 Burst information useful to report to scheduler (applicable for both 5G and 6G discussion)
 Burst size of data already in the AS buffer
@@ -39,12 +52,16 @@ R2-2603229	Discussion on QoS and Service-awareness	NTT DOCOMO	discussion
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+对于 Scenarios 2 和 3，QoS adaptation 需要在 user plane 按 per-PDU 或 per-burst 时间尺度发生。基于 control plane 的 reconfiguration 至少慢一个数量级。
+
 ```text
 For Scenarios 2 and 3, QoS adaptation needs to occur in the user plane on a per-PDU or per-burst timescale. Control-plane based reconfiguration is too slow by at least an order of magnitude.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o001`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+基于 user plane 的 QoS indication 可让 transmitter 按 per-PDU 从一组预配置 QoS profiles 中选择，以支持全部三个已同意的 dynamic QoS scenarios，同时保留 QoS flow baseline。
 
 ```text
 A user-plane based QoS indication, where the transmitter selects from a set of pre-configured QoS profiles on a per-PDU basis, can address all three agreed dynamic QoS scenarios while preserving the QoS flow baseline.
@@ -53,12 +70,16 @@ A user-plane based QoS indication, where the transmitter selects from a set of p
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+通过 higher-layer signaling 频繁进行 QoS reconfiguration 可能增加时延和信令开销，从而限制对快速 traffic 或 channel 变化的响应能力。
+
 ```text
 Frequent QoS reconfiguration via higher-layer signaling may introduce latency and signaling overhead, limiting responsiveness to fast traffic or channel variations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o003`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+Traffic characteristics（例如 burstiness、latency sensitivity）和 application requirements 的变化时间尺度可能短于典型 RRC reconfiguration procedures。
 
 ```text
 Traffic characteristics (e.g., burstiness, latency sensitivity) and application requirements may change on timescales shorter than typical RRC reconfiguration procedures.
@@ -67,12 +88,16 @@ Traffic characteristics (e.g., burstiness, latency sensitivity) and application 
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+6GR 维持 target QoS 的能力会受到动态变化的 radio 和 network conditions 影响，例如 load、interference 和 mobility。
+
 ```text
 6GR ability to maintain target QoS is affected by dynamically varying radio and network conditions (e.g., load, interference, mobility).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o005`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+在没有针对 dynamic QoS handling 的进一步增强时，1:1 和 N:1 “mapping to RBs” 不足以或至少效率不高，无法处理 6G 中动态变化的 QoS requirements。
 
 ```text
 1:1 and N:1 “mapping to RBs”, without further enhancements for dynamic QoS handling, is inadequate or at least inefficient to handle the “dynamically variable” QoS requirements in 6G.
@@ -81,12 +106,16 @@ Traffic characteristics (e.g., burstiness, latency sensitivity) and application 
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+尚未进入 Layer-2 buffer 的突发信息可用于 scheduling；无论突发是预测的，还是已存在于 higher-layer buffer 但尚未完全可供传输（例如由于 congestion control）均适用。
+
 ```text
 Information about bursts not yet in the Layer-2 buffer can be useful for scheduling, regardless of whether a burst is predicted or already exists in a higher-layer buffer but is not fully available for transmission yet (e.g. due to congestion control).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o007`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+UE 通常更适合估计 downlink burst 的到达时间和大小，这有助于网络实现更多 UE power savings。
 
 ```text
 UE often is in a better position to estimate the arrival time and size of a downlink burst, which can help network enable more UE power savings.
@@ -95,12 +124,16 @@ UE often is in a better position to estimate the arrival time and size of a down
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+在 AI glass、car、high-speed train、UAM、FWA 等场景中，service 可能并非由 UE 发起或终止，而是由通过 non-3GPP link（如 WiFi 和 BT）连接到 UE、并与 DN 通信的 tethered device 发起或终止。
+
 ```text
 In some scenarios (e.g. AI glass, car, high-speed train, UAM, FWA), service may not be originated from or terminated at UE, but tethered device instead, which is attached to a UE via non-3GPP link (e.g. WiFi and BT) for communication with DN.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o009`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+系留设备经历的 QoS 取决于该设备与 Data Network 之间的端到端路径。
 
 ```text
 The QoS experienced by a tethered device is dependent on the end to end path between the tethered device and the Data Network.
@@ -109,12 +142,16 @@ The QoS experienced by a tethered device is dependent on the end to end path bet
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+5G PIN 的 non-3GPP delay 方案无法充分利用数据包在 non-3GPP link 上经历的动态变化时延，也无法及时适配。
+
 ```text
 5G PIN non-3GPP delay solution cannot fully utilize and timely adapt to the dynamically changed delay experienced by a packet on the non-3GPP link.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o011`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+E2E reliability 由 non-3GPP link PER 和 3GPP link PER 共同决定。RAN/CN 需要获知 non-3GPP link PER，以便适当设置 3GPP link PER；5G PIN 不支持这一点。
 
 ```text
 E2E reliability is determined by both non-3GPP link PER and 3GPP link PER. RAN/CN needs to know the non-3GPP link PER in order to properly set 3GPP link PER, which is not supported by 5G PIN.
@@ -123,12 +160,16 @@ E2E reliability is determined by both non-3GPP link PER and 3GPP link PER. RAN/C
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+在当前 5GS QoS framework 中，RAN/UE 不具备对 PDU Set 内 AL-FEC structure 的 awareness，这会导致显著的 resource inefficiency。
+
 ```text
 In the current 5GS QoS framework, the lack of RAN/UE awareness regarding the AL-FEC structure within a PDU Set leads to significant resource inefficiency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o013`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+提出在 RAN 中支持可配置的 AL-FEC，以满足 application layer 的要求；原文指出这有助于缓解拥塞并降低时延。
 
 ```text
 AL-FEC support in RAN is helpful to ease congestion problem as well as to reduce latency. However, in 5G, AL-FEC is transparent to RAN. Concerns regarding the impact on application layer due to discarding in RAN can be addressed by configurable AL-FEC support in RAN to cater for requirements from application layer.
@@ -137,12 +178,16 @@ AL-FEC support in RAN is helpful to ease congestion problem as well as to reduce
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，接收端不同 SDF 间的 HOL blocking 最常见于 default QoS flow（即 default DRB），原因是运营商网络未部署 AF 时 CN 无法获取 packet filter。
+
 ```text
 HOL blocking among different SDFs at the receiver side most commonly happen in the default QoS flow (i.e. default DRB) as CN cannot acquire packet filter from AF due to the absence of AF deployment in operator's network.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o015`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+对于 Default QoS flow，一个 SDF 可以代表一个应用的流量；原文指出，保持 SDF 内的 in-order delivery 至关重要。
 
 ```text
 For the Default QoS flow, one SDF can represent the traffic from an application, it is crucial to keep in-order delivery inside a SDF.
@@ -151,12 +196,16 @@ For the Default QoS flow, one SDF can represent the traffic from an application,
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，RX 可能难以判断收到的 packet 是否可在不等待 reordering timer 的情况下交付给 upper layer，因为这可能需要新的 signalling。
+
 ```text
 It may be complicated for the RX to determine whether a received packet can be delivered to upper layer without waiting for reordering timer, due to potential need of new signalling.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-o017`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+提出从 RAN2 角度考虑 dynamic QoS 的方面：QoS Profiles 和 L2 Parameters 的选择与动态调整、多个 QoS flow-to-DRB mappings 及 L2 parameters 的配置流程和粒度，以及 RAN 与 UE 间的动态切换方案。
 
 ```text
 For dynamic QoS, at least the following aspects should be considered from RAN2 perspective:
@@ -167,6 +216,8 @@ For dynamic QoS, at least the following aspects should be considered from RAN2 p
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+提出研究动态调整多个 QoS profiles 或选择 L2 parameter sets 的责任归属，并逐项讨论 L2 parameters 的适配方式，以及修改后哪些需要 RAN 与 UE 配置对齐、哪些可单边更新。ATT 认为 QoS switching 在 CN 侧，研究应聚焦 L2 parameters switching。
 
 ```text
 Regarding the issue on whether the RAN or the UE is responsible for the dynamic adjustment of multiple QoS profiles or/and the selection of L2 parameter sets, it is proposed to study:
@@ -180,6 +231,8 @@ R2-2603583	QoS, QoE and SCA	Nokia	discussion	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+提出 RAN2 研究基于预配置 L2 parameter sets 或 ranges 的 dynamic QoS adaptation。
+
 ```text
 RAN2 studies dynamic QoS adaptation based on pre-configured L2 parameter sets or ranges.
 Noted
@@ -189,12 +242,16 @@ R2-2603026	Discussion on Adaptive QoS	AUMOVIO	discussion
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+提出研究基于 user-plane 的 dynamic QoS adaptation：通过 RRC 预配置 QoS attribute profiles，在 user-plane header 中携带 per-PDU 或 per-PDU-set QoS attribute indication，且该指示独立于 QFI。
+
 ```text
 Study a user-plane based dynamic QoS adaptation mechanism where: (a) a set of QoS attribute profiles is pre-configured via RRC; (b) a per-PDU or per-PDU-set QoS attribute indication is carried in the user-plane header; (c) the indication operates independently of the QFI.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p004`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+提出研究基于 user-plane 的 dynamic QoS adaptation 的 UL 方面，包括 UE 如何确定 UL 的 per-PDU QoS attribute，以及是否需要 BSR enhancement 来支持更细粒度调度。
 
 ```text
 Study UL aspects of user-plane based dynamic QoS adaptation, including: (a) how the UE determines the per-PDU QoS attribute for UL; (b) whether BSR enhancement is needed to support finer scheduling granularity.
@@ -205,12 +262,16 @@ R2-2603417	RAN-awareness of traffic characteristics, QoS principles	InterDigital
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+6GR 支持 QoS parameter ranging，并通过动态网络控制适用配置，以实现快速且低开销的 QoS 调整。
+
 ```text
 6GR supports QoS parameter ranging with dynamic network control of applicable configuration  to enable fast and low-overhead QoS adjustments.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p006`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+6GR 支持 UE 在网络配置的范围内或依据适用条件自主选择 QoS 参数，以改善时延和响应性。讨论提出需明确网络配置范围、L2 参数类别及自主选择条件，并平衡 UE 自主性与网络控制。
 
 ```text
 6GR supports UE-autonomous selection of QoS parameters within network-configured range or based on applicability conditions to improve latency and responsiveness.
@@ -226,6 +287,8 @@ R2-2603760	On Mobile AI Traffic Implications for Dynamic QoS and RAN Efficiency	
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p007`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 应评估面向 Mobile AI traffic 的 dynamic QoS 机制，同时考察 QoS 性能与 RAN efficiency，包括 spectral efficiency、signaling overhead 和 UE power consumption。讨论区分了 QoS profile 变更与仅调整 L2 parameters 的场景，并涉及 UE 自主决策及 CN 通知。
 
 ```text
 RAN2 should evaluate dynamic QoS mechanisms for Mobile AI traffic with respect to both QoS performance and RAN efficiency, including spectral efficiency, signaling overhead, and UE power consumption.
@@ -243,6 +306,8 @@ R2-2603148	Considerations on service-awareness in 6G	LG Electronics Inc.	discuss
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+提出支持一个 QoS flow 映射到多个 DRB（1:N mapping），并支持 per PDU 或 per PDU set level 的 RAN handling granularity。相关观察指出，多 DRB 映射可能导致上层重排序；对于频繁 IP 地址变化场景，RAN2 应等待 SA2 进展，仅在 SA2 要求时进行 AS 增强。
+
 ```text
 Support 1:N mapping of a QoS flow to multiple DRBs, and per PDU or per PDU set level RAN handling granularity.
 Noted
@@ -255,6 +320,8 @@ Observation 4-3:	For the scenario where a QoS flow dynamically changes one of it
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+提出不倾向于 1:N QoS flow to DRB mapping，并向 SA2 发送 LS 说明 RAN2 的偏好。
+
 ```text
 1:N QoS flow to DRB mapping is not preferred. Send an LS to SA2 about RAN2’s preference.
 Noted
@@ -263,6 +330,8 @@ R2-2603789	Discussion on RAN QoS handling granularity and mechanism	Futurewei	di
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 应考虑支持 dynamic 1:N DRB to LCHs mapping，以处理同一 QoS flow 内的可变 QoS。讨论还提出需进一步确认 1:N DRB、1:N LCH 和 per PDU 动态处理等方式。
 
 ```text
 RAN2 to consider supporting dynamic 1:N DRB to LCHs mapping to handle variable QoS within a same QoS flow.
@@ -278,6 +347,8 @@ R2-2603036	Discussion on QoS and Service-awareness	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+aNB 和 UE 的 QoS treatment granularity 定为 PDU set level，PDU level 为特殊情况。RAN2 应考虑四种 dynamic QoS adaptation 选项：在多个 LCH 间选择、切换预配置 QoS profiles、在预配置范围内动态调整参数，或将 QoS flow 映射到多个 DRB 并选择 DRB。
+
 ```text
 Granularity of QoS treatment in aNB and UE is PDU set level (with PDU level as a special case). RAN2 to consider following options for dynamic QoS adaptation:
 -	Option 1: A DRB can be associated to multiple LCHs, and for each PDU set / PDU of the DRB to transmit, the transmitter selects a LCH;
@@ -289,6 +360,8 @@ Granularity of QoS treatment in aNB and UE is PDU set level (with PDU level as a
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 应使 RAN 能够获知 burst time information，包括 burst arrival time 和/或 inter-arrival time，以及 burst delay budget。
+
 ```text
 -	RAN2 should enable RAN awareness of burst time information, including burst arrival time and/or inter-arrival time, and burst delay budget.
 Noted
@@ -297,6 +370,8 @@ R2-2602939	Discussion on QoS and service awareness	Qualcomm Incorporated	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p013`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+提出支持 UE 报告两类 uplink burst：应用尚未生成但预计稍后到达的 burst，以及应用已发送但尚未完全可供传输的 burst（例如因 congestion control）。
 
 ```text
 Support UE reporting of the following two types of uplink burst:
@@ -307,6 +382,8 @@ Support UE reporting of the following two types of uplink burst:
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+UE 可报告任一类型的 uplink burst，并至少提供其 Expected arrival time（time window），即 burst 可供初始传输的时间。Application-layer burst size 和关联的 Logical channel 为可选信息。
+
 ```text
 UE can report an uplink burst (either type) with at least the following information:
 -	Expected arrival time (time window), i.e. when the burst becomes available for initial transmission;
@@ -316,6 +393,8 @@ UE can report an uplink burst (either type) with at least the following informat
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p015`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+提出 UE 可报告 downlink burst 及其 expected arrival time。讨论认为该机制面向 interactive scenario，并提及 UE 可能基于 application layer 信息进行预测。
 
 ```text
 UE can report a downlink burst and its expected arrival time.
@@ -329,6 +408,8 @@ R2-2602947	Considerations on 6GR RAN QoS and service awareness	vivo	discussion	R
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p016`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 确认 burst information 包括 burst size 和 time information，UE 侧 UL traffic awareness 由 UE implementation 实现。Burst information 可由 UE 经 MAC CE 和 UAI 上报至 aNB。
 
 ```text
 For service awareness on burst information, RAN2 confirms:
@@ -345,6 +426,8 @@ Discussion on information for burst
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p017`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 应考虑 UE 向 RAN 暴露 QoS-related、QoE-related、E2E latency-related 和 transport layer-related information。提案指出，用于 RAN service differentiation 的 service characteristics and properties 应具有 QoS differentiation 意义、可由 UE 检测，并由网络通过 network-configured rules 控制；提议讨论 relative service priority、traffic characteristics 和 application/service requirements。
 
 ```text
 -	RAN2 should consider other information exposure from UE to RAN as follows:
@@ -368,12 +451,16 @@ R2-2604043	Discussion on the Support of Service Awareness for Tethered Device E2
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 同意研究支持 service characteristics differentiation，以改善 E2E user experience。
+
 ```text
 RAN2 agrees to study the support of service characteristics differentiation for E2E user experience.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p019`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+支持 service characteristics differentiation 以改善 E2E user experience 时，应考虑 tethering case。
 
 ```text
 The support of service characteristics differentiation for E2E user experience should take into account the tethering case.
@@ -382,12 +469,16 @@ The support of service characteristics differentiation for E2E user experience s
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+对于 tethering case，E2E user experience 应考虑 tethered device 与 Data Network 之间的 end to end path。
+
 ```text
 For tethering case, the E2E user experience should take into account the end to end path between the tethered device and the Data Network.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p021`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+为确保 tethered device 与 DN 之间的 E2E user experience，至少需要考虑 latency 和 reliability。
 
 ```text
 To ensure the E2E user experience between tethered device and DN, at least the latency and reliability need to be considered.
@@ -396,6 +487,8 @@ To ensure the E2E user experience between tethered device and DN, at least the l
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+为确保 tethering case 的 E2E latency，RAN2 同意研究在 AN PDB 中补偿 non-3GPP delay（tethered device 与 UE 之间的 delay）的 service awareness solutions。RAN2 已就此决定向 SA2 发送 LS。
+
 ```text
 To ensure the E2E latency for tethering case, RAN2 agrees to study service awareness solutions for compensating non-3GPP delay (delay between tethered device and UE) in AN PDB. A LS is sent to SA2 about our decision.
 R2-2603262	Views on 6G User Plane: QoS and User Experience	Apple	discussion	Rel-20	FS_6G_Radio
@@ -403,6 +496,8 @@ R2-2603262	Views on 6G User Plane: QoS and User Experience	Apple	discussion	Rel-
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p023`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+Dynamic QoS framework 应能够应对 tethering link 随机 jitter 导致的单个 traffic flow 中 effective PDB 变化。
 
 ```text
 Dynamic QoS framework should be able to cope with varying effective PDB in one traffic flow caused by random jitter in the tethering link.
@@ -414,12 +509,16 @@ R2-2602991	Discussion on QoS and Service Awareness	China Telecom	discussion
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究引入 AL-FEC aware L2 protocol stack，并研究相应增强，以根据 application-layer reconstruction requirements 对 source 和 repair packets 进行 differentiated handling。
+
 ```text
 RAN2 to study the introduction of an AL-FEC aware L2 protocol stack and corresponding enhancements to enable differentiated handling of source and repair packets based on application-layer reconstruction requirements.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p025`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+若 RAN2 同意研究 AL-FEC awareness mechanisms，研究应聚焦于达到 reconstruction targets 后主动丢弃冗余 PDUs，以及通过将同一 AL-FEC frame 的 packets 映射到不相关 radio resources 的 cross-PDU multiplexing strategies，以增强 transmission diversity。
 
 ```text
 If RAN2 agrees to study AL-FEC awareness mechanisms, the study should focus on proactive L2 discard of redundant PDUs upon meeting reconstruction targets and cross-PDU multiplexing strategies to enhance transmission diversity by mapping packets of the same AL-FEC frame to uncorrelated radio resources.
@@ -429,6 +528,8 @@ R2-2603148	Considerations on service-awareness in 6G	LG Electronics Inc.	discuss
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+研究支持对 AL-FEC 相关数据包进行差异化处理，并向 SA4 发送 LS，澄清 AL-FEC 相关信息（如组信息、恢复阈值及源/冗余指示）能否配置给 UE 并在 AS 层可用。
+
 ```text
 Study enhancements to support differentiated handling for AL-FEC related packets, and sends an LS to SA4 to clarify whether AL-FEC-related information (e.g., group information, recovery threshold, and source/redundant indication) can be provisioned to the UE and made available at the AS layer.
 R2-2603036	Discussion on QoS and Service-awareness	Xiaomi	discussion	Rel-20
@@ -436,6 +537,8 @@ R2-2603036	Discussion on QoS and Service-awareness	Xiaomi	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p027`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 研究从 CN 和 UE 向 RAN 提供 AL-FEC 相关信息，并研究 UL 和 scheduler 支持 DL 与 UL 中 AL-FEC 所需的内容；必要时可通过 LS 征询 SA4 意见。
 
 ```text
 RAN2 to study the provisioning of AL-FEC related information from CN and UE to RAN, and to study what is needed for the UL and scheduler to support AL-FEC in DL and UL. RAN2 can consult SA4’s opinion via LS if needed.
@@ -447,6 +550,8 @@ R2-2603037	Discussion on Higher layer HOL blocking issue at receiver side	Xiaomi
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+为解决 default DRB 的 PDCP 接收端 HOL blocking，RAN2 考虑设置额外的 default DRB，即支持 default QoS flow 到 default DRB 的 1:N 映射。
+
 ```text
 To resolve the HOL blocking issue at the PDCP receiver side for the default DRB, RAN2 considers to setup additional default DRBs (i.e. support 1:N mapping from default QoS flow to default DRB).
 ```
@@ -454,12 +559,16 @@ To resolve the HOL blocking issue at the PDCP receiver side for the default DRB,
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+由 UE 实现决定将 default QoS flow 映射到多个 default DRB。
+
 ```text
 It is up to UE implementation to map default QoS flow to multiple default DRBs.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p030`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 研究 UE 是否可在 aNB 配置的最大数量范围内动态建立或释放多个 default DRB。材料指出，HOL blocking 可通过将服务映射到不同 QoS flow 并配置 out-of-order delivery 来避免，并提出在需要时研究由运营商控制的 selective out-of-order delivery。
 
 ```text
 RAN2 to study if UE is allowed to dynamically setup/release multiple default DRBs up to a maximum number configured by aNB.
@@ -473,6 +582,8 @@ R2-2603474	Discussion on Dynamic QoS and HOL	CATT	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.2-p031`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 研究 HOL blocking 的三种方案：QoS flow 与 DRB 采用 1:1 映射；由发送端指示接收端是否直接向上层交付 SDU；或由接收端引入短于 t-Reordering 的定时器，在定时器到期时交付连续缓存的 SDU且不更新重排序窗口。
 
 ```text
 RAN2 study the following solutions for HOL blocking:
@@ -515,6 +626,8 @@ R2-2604168	Considerations on QoS, QoE and service-awareness for 6GR L2 design	Ra
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.1.2 QoS, QoE and Service-awareness
 
+提出研究面向 Mobile AI、XR 等流量的 dynamic QoS，涵盖应用在 QoS flows 间切换、QoS flow 属性变化及同一 QoS flow 内 PDUs（PDU sets）具有不同 QoS 属性等场景；同时继续研究 UL/DL burst information 的检测与提供方式，并研究增强 uplink scheduling mechanism。作为讨论基线，UE/aNB 至少按 QoS flow 粒度接收上层/CN 数据，并支持到 RB 的 1:1 和 N:1 灵活映射。
+
 ```text
 -	Observation from RAN2 point of view: The legacy 5G QoS framework based on GBR resource types and uniform PDB/PER enforcement is optimized for deterministic services, that may lead (e.g.  to significant spectral inefficiency and resource over-provisioning).  For some scenarios (will complete later).
 -	From RAN2 point of view, as baseline for discussion we assume UE/aNB receives packets from upper layers/CN at least QoS flow granularity.  At least, support flexible mapping to RBs (1:1 and N:1).  FFS other mechanisms (e.g. RAN handling granularity,1:N etc).
@@ -537,12 +650,16 @@ R2-2602345	Design consideration for 6G QoS framework	MediaTek Inc.	discussion	Re
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+6G 预期支持多样且动态、QoS requirements 随时间变化的流量，因此需要低时延和高效的 QoS adaptation mechanisms 来应对流量变化。
+
 ```text
 6G is expected to support diverse and dynamic traffic with time-varying QoS requirements, which necessitates low latency and efficient QoS adaptation mechanisms to cope with traffic variations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o001`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+6G immersive communication 具有相互依赖的多模态 flows（如 video、audio 和 haptic）、多样的流量模式，以及单个或多个 UE 间严格的同步要求。为满足 human perceptual thresholds，需要协调的 L2 handling 和联合 QoS adaptation。
 
 ```text
 6G immersive communication is characterized by interdependent multi-modal flows (e.g., video, audio, and haptic) with diverse traffic patterns and stringent synchronization requirements across single or multiple UEs, necessitating coordinated L2 handling and joint QoS adaptation to satisfy human perceptual thresholds.
@@ -551,12 +668,16 @@ R2-2602345	Design consideration for 6G QoS framework	MediaTek Inc.	discussion	Re
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+基于 GBR resource types 和严格 PDB/PER enforcement 的 legacy 5G QoS framework 面向确定性服务优化，在处理 6G immersive services 的非确定性、突发流量模式时会导致显著的频谱效率低下和资源过度配置。
+
 ```text
 The legacy 5G QoS framework based on GBR resource types and strict PDB/PER enforcement is optimized for deterministic services, leading to significant spectral inefficiency and resource over-provisioning when handling the non-deterministic, bursty traffic patterns of 6G immersive services.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o003`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+静态 5QI definitions 和半静态 RRC/NAS configurations 缺乏跟踪 6G 流量快速、多维变化的灵活性；Control Plane 驱动的重配置固有时延也不适用于实时 QoS adaptation 所需的毫秒级响应。
 
 ```text
 Static 5QI definitions and semi-static RRC/NAS configurations lack the agility to track the rapid, multi-dimensional variability of 6G traffic, while the inherent latency of Control Plane-driven reconfiguration is incompatible with the millisecond-level responsiveness required for real-time QoS adaptation.
@@ -565,12 +686,16 @@ Static 5QI definitions and semi-static RRC/NAS configurations lack the agility t
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+5GS QoS Flow 为 6G 提供稳定基线，但 flow-level granularity 太粗，无法跟踪 Mobile AI 和 multi-modal services 中快速变化的流量及差异化 packet importance。
+
 ```text
 While the 5GS QoS Flow concept provides a stable baseline for 6G, the current flow-level granularity is too coarse to track the rapid traffic variations and differentiated packet importance inherent in Mobile AI and multi-modal services.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o005`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+许多典型移动应用会建立大量短连接，导致 destination IP addresses 和 IP 5-tuples 快速变化。IP 5-tuples 动态变化会直接引发对应 QoS rules 和 mappings 频繁且不可预测地变化。
 
 ```text
 Many typical mobile applications may establish a large number of short-lived connections, which results in rapidly changing destination IP addresses and varying IP 5-tuples. Dynamically varying IP 5tuples directly leads to frequent and unpredictable changes in the corresponding QoS rules and mappings.
@@ -579,12 +704,16 @@ Many typical mobile applications may establish a large number of short-lived con
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+新兴 6G 服务对 latency、packet loss rate 等 QoS metrics 有严格要求，且 QoS requirements 可能随实时状态动态变化。现有 static QoS mechanism 无法适应这种动态性。
+
 ```text
 Emerging 6G services have the stringent requirements on QoS metrics (e.g., latency, packet loss rate) and the QoS requirements may be dynamically variable based on real-time states. The existing static QoS mechanism is inherently incapable of adapting to such dynamicity.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o007`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+流量特征包括同一 data flow 内的 packets 具有不同 QoS requirements 的情形，例如 data burst。
 
 ```text
 Traffic characteristics include cases where packets within the same data flow may have differing QoS requirements (e.g., data burst).
@@ -593,12 +722,16 @@ Traffic characteristics include cases where packets within the same data flow ma
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+NR QoS framework 在 RAN 内将 data flow 中所有 packets 半静态地映射到单一 QoS treatment。因此，同一 DRB 承载的所有 packets 在 RAN protocol stack 中接受统一的 QoS treatment。
+
 ```text
 NR QoS framework provides semi-static mapping of all packets in a data flow to a single QoS treatment within the RAN. As a result, all packets carried over the same DRB are subject to uniform QoS treatment within the RAN protocol stack.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o009`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+按 per-packet 或 per-packet-group granularity 进行 QoS handling，可比 per-DRB granularity 实现更轻量、高效的差异化处理。Qualcomm 询问了一个打破 intra-flow 的 per-packet group 示例。
 
 ```text
 QoS handling at per-packet or per-packet-group granularity can enable more lightweight and efficient differentiated treatment compared to per-DRB granularity.
@@ -608,12 +741,16 @@ QoS handling at per-packet or per-packet-group granularity can enable more light
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+Per-packet 或 per-packet-group QoS granularity 可在 data flow 内实现更细粒度、动态的 traffic 到 QoS treatment 的映射。
+
 ```text
 Per-packet or per-packet-group QoS granularity enables more fine-grained and dynamic mapping of traffic to QoS treatment within a data flow.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o011`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+更细的 QoS granularity 可使 resource allocation 更好匹配瞬时 traffic characteristics，从而减少 resource over-provisioning。
 
 ```text
 Finer QoS granularity can reduce resource over-provisioning by allowing resource allocation to better match the instantaneous traffic characteristics.
@@ -622,12 +759,16 @@ Finer QoS granularity can reduce resource over-provisioning by allowing resource
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+GBR 需要非常严格的 resource reservation 来保证 bit rate，但这种方式的 resource efficiency 不高。
+
 ```text
 GBR requires a very strict resource reservation to guarantee bit rate, which is not so resource efficient.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o013`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+支持 dynamic QoS requirements 和 pre-authorization 的解决方案正在 SA2 讨论中。
 
 ```text
 Solutions to support dynamic QoS requirements and pre-authorization are under discussion in SA2.
@@ -636,6 +777,8 @@ Solutions to support dynamic QoS requirements and pre-authorization are under di
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+5G 仅对 XR service 的部分 packet（即 PDU set）进行区分：UL 取决于 UE 实现，DL 则通过 GTP-U header 中的 CN indication 对 RAN 可见。6G 应支持 diverse applications，并满足同一 service flow（或 QoS flow）内不同 packet 的多样 transmission requirements。
+
 ```text
 In 5G, only the packets from XR service is differentiated (i.e. PDU set), i.e. UL up to UE implementation and DL visible to RAN via CN indication in GTP-U header. However, 6G should be able to support diverse applications (e.g. immersive communication and mobile AI traffic), with various transmission requirements for different packets within a certain service flow (or QoS flow).
 ```
@@ -643,12 +786,16 @@ In 5G, only the packets from XR service is differentiated (i.e. PDU set), i.e. U
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+同一 service 的不同 QoS flows 若因 QoS requirements 不同而映射到不同 DRBs，AS 交付给 upper layer 的 packets 将出现 out-of-order。由此会降低 throughput，并增加 signalling overheads 和 redundant packet transmission。
+
 ```text
 When different QoS flows with different QoS requirements from the same service are mapped to different DRBs, the packets delivered from AS to upper layer will be out-of-order, which causes throughput reduction, extra signalling overheads and redundant packet transmission (e.g. due to TCP fast retransmission and flow control).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o016`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+6G AI traffic 的独特特征可归纳为 Multi-modality、E2E latency，以及在采用 two-sided model 时的 Error tolerance。
 
 ```text
 The unique feature of 6G AI traffic can be further abstracted into the following key aspects:
@@ -660,12 +807,16 @@ Error tolerance (if two-sided model is applied)
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+在当前 5GS QoS framework 中，RAN/UE 不具备对 PDU Set 内 AL-FEC structure 的 awareness，这会导致显著的 resource inefficiency。
+
 ```text
 In the current 5GS QoS framework, the lack of RAN/UE awareness regarding the AL-FEC structure within a PDU Set leads to significant resource inefficiency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o018`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+SA2 已开始研究 AL-FEC 的 QoS aspects。
 
 ```text
 SA2 has started study of QoS aspects for AL-FEC.
@@ -674,12 +825,16 @@ SA2 has started study of QoS aspects for AL-FEC.
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+在 RAN 中支持 AL-FEC 有助于缓解 congestion 并降低 latency，而 5G 中 AL-FEC 对 RAN 是 transparent 的。可通过在 RAN 中配置 AL-FEC support，以满足 application layer requirements，并处理 RAN discarding 对 application layer 的影响顾虑。
+
 ```text
 AL-FEC support in RAN is helpful to ease congestion problem as well as to reduce latency. However in 5G, AL-FEC is transparent to RAN. Concerns regarding the impact on application layer due to discarding in RAN can be addressed by configurable AL-FEC support in RAN to cater for requirements from application layer.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o020`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+R19 支持基于 AL-FEC 的 discard 的主要问题是：对于 UM DRB，无法获知 PDCP SDU 是否已成功传输。
 
 ```text
 The main issue for R19 to support AL-FEC based discard is that for UM DRB, it is not possible to know whether a PDCP SDU is successfully transmitted or not.
@@ -688,12 +843,16 @@ The main issue for R19 to support AL-FEC based discard is that for UM DRB, it is
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+可利用 UL HARQ status indication 来判断 PDCP SDU 是否已成功传输。
+
 ```text
 UL HARQ status indication could be utilized for determining whether a PDCP SDU has been successfully transmitted or not.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o022`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+基于 FEC-ratio 的 discard 有助于缓解 congestion，同时维持 immersive communication service 的 continuity。
 
 ```text
 FEC-ratio based discard is beneficial for alleviating congestion, while at the same time maintaining the continuity of the immersive communication service.
@@ -702,12 +861,16 @@ FEC-ratio based discard is beneficial for alleviating congestion, while at the s
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+在 AI glass、car、high-speed train、UAM、FWA 等场景中，service 可能并非由 UE 发起或终止，而是由通过 non-3GPP link（如 WiFi 和 BT）连接到 UE、并与 DN 通信的 tethered device 发起或终止。
+
 ```text
 In some scenarios (e.g. AI glass, car, high-speed train, UAM, FWA), service may not be originated from or terminated at UE, but tethered device instead, which is attached to a UE via non-3GPP link (e.g. WiFi and BT) for communication with DN.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o024`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+系留设备经历的 QoS 取决于该设备与 Data Network 之间的端到端路径。
 
 ```text
 The QoS experienced by a tethered device is dependent on the end to end path between the tethered device and the Data Network.
@@ -716,12 +879,16 @@ The QoS experienced by a tethered device is dependent on the end to end path bet
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+5G PIN 的 non-3GPP delay 方案无法充分利用数据包在 non-3GPP link 上经历的动态变化时延，也无法及时适配。
+
 ```text
 5G PIN non-3GPP delay solution cannot fully utilize and timely adapt to the dynamically changed delay experienced by a packet on the non-3GPP link.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o026`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+E2E reliability 由 non-3GPP link PER 和 3GPP link PER 共同决定。RAN/CN 需要获知 non-3GPP link PER，以便适当设置 3GPP link PER；5G PIN 不支持这一点。
 
 ```text
 E2E reliability is determined by both non-3GPP link PER and 3GPP link PER. RAN/CN needs to know the non-3GPP link PER in order to properly set 3GPP link PER, which is not supported by 5G PIN.
@@ -730,12 +897,16 @@ E2E reliability is determined by both non-3GPP link PER and 3GPP link PER. RAN/C
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+在 tethering 用例中，air interface delay budget 可以动态变化，以确保满足 end-to-end latency requirement。
+
 ```text
 In tethering use cases, the air interface delay budget may be dynamically changed to ensure the end-to-end latency requirement can be satisfied.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o028`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+当 tethered UE 经由 tethering UE 使用 non-3GPP link 接入网络时，端到端用户体验取决于 3GPP segment 和 non-3GPP segment。
 
 ```text
 In scenarios where tethered UE accesses the network via tethering UE using a non-3GPP link, the end-to-end user experience depends on both the 3GPP segment and the non-3GPP segment.
@@ -744,12 +915,16 @@ In scenarios where tethered UE accesses the network via tethering UE using a non
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
 
+根据 5G NR PDU session Modification procedure（TS 23.501），PEGC 向 SMF 提供 non-3GPP delay，SMF 可以通过调整 CN PDB 补偿该时延。
+
 ```text
 According to the 5G NR PDU session Modification procedure (TS 23.501), the PEGC provides non-3GPP delay to the SMF and the SMF may compensate for this delay by adjusting the CN PDB.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-o030`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.2 QoS, QoE and Service-awareness
+
+当前通过 PDU Session Modification 调整 CN PDB 来补偿 non-3GPP delay 的机制，可能不足以覆盖时延动态变化的各种场景。
 
 ```text
 The current PDB compensation mechanism, in which non-3GPP delay is compensated through CN PDB adjustment via PDU Session Modification, may not be sufficient to capture the various scenarios with delay dynamics.
@@ -758,12 +933,16 @@ The current PDB compensation mechanism, in which non-3GPP delay is compensated t
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究 6G QoS mechanism 向动态、service-aware model 的演进，重点支持更细粒度 QoS 和快速适配 6G 服务的多维变化及时变需求（例如 Mobile AI 和 immersive communication），同时确保资源高效利用。
+
 ```text
 RAN2 to study the evolution of the 6G QoS mechanism toward a dynamic and service-aware model, focusing on supporting finer QoS granularity and rapid adaptation to accommodate the multi-dimensional variability and time-varying requirements of 6G services (e.g., Mobile AI and immersive communication) while ensuring efficient resource utilization.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p001`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 将考虑以 5GS QoS Flow 作为 6G 基线，并研究支持更细粒度、使 Access Stratum 内 QoS 能够快速自主调整的增强方案。
 
 ```text
 RAN2 to consider the 5GS QoS Flow as the baseline for 6G, while investigating enhancements to support finer granularity to enable rapid, autonomous QoS adjustment within the Access Stratum.
@@ -780,6 +959,8 @@ R2-2602412	Considerations on QoS framework and service-awareness information  in
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+针对 6G 新服务，需要动态 QoS mechanism，由 RAN 直接调整服务的 QoS requirements，以保障数据传输和处理的及时性与可靠性；调整项可包括 Delay Budget、Error Rate 和 importance，粒度可为 QoS flows、PDU sets 或 packets。采用新 QoS requirements 的 QoS flows/PDU sets 将伴随 L2-related parameters 调整，例如 remaining time thresholds、discard timers、重传机制的启停及 scheduling priority。
+
 ```text
 For the 6G new services, a dynamic QoS mechanism is needed to support, where the RAN directly adjusts the QoS requirements of services to ensure the timeliness and reliability of data transmission and processing. In the dynamic QoS mechanism:
 The RAN could dynamically adjust the QoS requirements, e.g., Delay Budget, Error Rate, and importance. The granularity of dynamic QoS could be QoS flows, PDU sets or packets.
@@ -790,6 +971,8 @@ The QoS flows/PDU sets under the new QoS requirements will be accompanied by adj
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p003`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+动态 QoS 研究应考虑关键网络指标监测、业务类型与需求识别、新处理流程设计，以及 RAN 与核心网交互。会上说明，UL 可依赖 UE，DL 可依赖 RNA 进行识别。
 
 ```text
 For the study of dynamic QoS, the following aspects should be considered:
@@ -805,6 +988,8 @@ R2-2601893	QoS, QoE and SCA	Nokia	discussion	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+6G QoS 框架中，QoS flow 仍是最细粒度，并保留与 RB 的灵活映射（1:1 和 N:1），同时支持在 RAN 中更明确地处理 QoS flow。假设 UE 从上层/CN 接收 QoS flow 粒度的数据包，RAN 可继续讨论更细粒度。
+
 ```text
 QoS flow remains the finest granularity in 6G QoS framework, while retaining flexible mapping to RBs (1:1 and N:1) and enabling enhancements for more explicit QoS flow-level handling in RAN.
 -	Xiaomi and interdigital think that we can further discuss further treatment for dynamic qos can be further discussed.
@@ -818,6 +1003,8 @@ R2-2601992	RAN-awareness of traffic characteristics, QoS principles	InterDigital
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+6GR 支持基于可配置参数的 RAN packet classification，以便在 flow 内进行逐包分类并提供差异化 QoS 处理。讨论提及，burst 或数据包类型的信息可来自 CN 或 UE。
+
 ```text
 6GR supports a RAN-based packet classification function with configurable parameters to support intra-flow per-packet classification for differentiated QoS treatment.
 -	Nokia asks what does this mean, it is to identify the burst packets.   Interdigital explains that we need to separate RAN and UE.  For RAN the information can come from CN, and from UE it can be from UE, we can detect or have information on bursts or type of packets.
@@ -826,6 +1013,8 @@ R2-2601992	RAN-awareness of traffic characteristics, QoS principles	InterDigital
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p006`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+6GR 支持根据 PDU 分类结果，将 PDU 动态映射到适用的 QoS 配置之一。讨论确认这是 6G 新增内容，并提出可向 SA2 询问是否支持对数据包或数据包组进行差异化处理。
 
 ```text
 6GR supports dynamic mapping of a PDU to one of the applicable QoS configurations based on the outcome of the PDU’s classification.
@@ -838,6 +1027,8 @@ R2-2601830	Views on 6G User Plane: QoS and User Experience	Apple	discussion	Rel-
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+为应对基于 Application/Service awareness 的动态 QoS 需求，RAN2 应优先研究 UE 如何动态调整 UL traffic flow 的 radio treatment。讨论指出，相关 DL 问题需要 SA2 输入，RAN2 仍有进一步研究工作。
+
 ```text
 To cope with dynamic QoS requirement based on Application/Service awareness, RAN2 should prioritize the study on how the UE can adapt the radio treatment for a UL traffic flow in a dynamic manner.
 -	Mediatek asks about the DL and whether we can consider UL providing informaito not the aNB to assist it.   Apple thinks that this requires SA2 input and from RAN2 point of view there is more work we can do.
@@ -845,6 +1036,8 @@ To cope with dynamic QoS requirement based on Application/Service awareness, RAN
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p008`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 可研究三种方式，为同一 traffic flow 中的数据包动态提供差异化 radio treatment：一个 QoS flow 关联多个 DRB 并选择 DRB；一个 DRB 关联多个 RLC/LCH 并选择 C/LCH；或一个 DRB 配置多组参数并按包切换参数集。ZTE 提出可考虑 1:N，并假设不存在 in-order delivery。
 
 ```text
 RAN2 can consider the following options to dynamically provide differentiated radio treatments for packets on one traffic flow:
@@ -860,6 +1053,8 @@ R2-2602345	Design consideration for 6G QoS framework	MediaTek Inc.	discussion	Re
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 研究 aNB/UE 如何及何时在 CN 预配置的 QoS requirements 范围内切换参数，包括 aNB 可依据哪些标准改变 QoS requirements。
+
 ```text
 RAN2 to study how and when the aNB/UE can switch parameters from the range of QoS requirements preconfigured by the CN. (e.g., aNB can change QoS requirements based on what criteria, etc)
 Noted
@@ -869,12 +1064,16 @@ R2-2602127	On 6G QoS Framework	Lenovo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 应研究支持基于动态 traffic awareness 等因素的 dynamic QoS adaptation，包括 QoS flow 具有一组 QoS 参数取值范围、具有多个 QoS profiles，以及将 application traffic 动态映射到多个 QoS flows。
+
 ```text
 RAN2 should study to support dynamic QoS adaptation, e.g., based on dynamic traffic awareness, which includes the following options: 1a) a QoS flow with a range of values of QoS parameters, 1b) a QoS flow with multiple QoS profiles; and 2) dynamic mapping of application traffic to the multiple QoS flows.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p011`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 应研究 dynamic QoS adaptation 引起的 layer 2 影响，例如 DRB 的 LCP adaptation 或 packet retransmission。
 
 ```text
 RAN2 should study layer 2 impacts (e.g., adaptation of LCP /retransmission of packets of a DRB) caused by dynamic QoS adaptation.
@@ -885,6 +1084,8 @@ R2-2601464	Discussion on QoS and service awareness	Qualcomm Incorporated	discuss
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 应至少研究三类 dynamic QoS 场景：应用在一组 QoS flows 间动态切换 traffic；QoS flow 动态改变某个 QoS attribute；以及同一 QoS flow 内的 PDUs（PDU sets）具有不同 QoS attributes。
+
 ```text
 Study RAN2 aspects of dynamic QoS in at least the following scenarios:
 An application may dynamically switch its traffic between a set of QoS flows (AI traffic);
@@ -894,6 +1095,8 @@ PDUs (PDU sets) within the same QoS flow may have varying QoS attributes (XR)
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p013`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+研究支持目标用例动态 QoS 的 RAN2 方案，包括通过新的 AS signaling 在 RAN 和 UE 间切换 QoS profiles、预配置并联合适配 Layer2 参数与 QoS 属性，以及在同一 QoS flow 内进行差异化 QoS 处理。讨论指出还需明确会变化的 QoS 参数、动态属性及其变化程度，并聚焦需求动态变化且 QoS re-configuration 不足以应对的应用。
 
 ```text
 Study at least the following RAN2 solutions to support dynamic QoS in the target use cases listed in Proposal 2:
@@ -911,12 +1114,16 @@ R2-2601557	Generic framework for QoS and service-awareness	OPPO, LG Electronics 
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+service-awareness framework 应适用于多种应用，包括 immersive communication 和 mobile AI traffics，并支持应用到 UE 的 UL 指示及 CN 到 RAN 的 DL 指示。其要求是同一 service 内不同 packets 可具有 dynamic/adaptive QoS requirement。
+
 ```text
 The service-awareness framework that supports APP to UE indication for UL and CN to RAN indication for DL should be applicable to various applications (e.g. immersive communication and mobile AI traffics), with the requirement that different packets within a certain service can have dynamic/adaptive QoS requirement.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p015`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 假定 UL 和 DL 的 service-awareness 均包含 QoS flow level 的差异化 QoS requirement。还包含同一 QoS flow 内 packet/burst level 的差异化 QoS requirement。
 
 ```text
 RAN2 assumes that the service-awareness for both UL and DL include:
@@ -926,6 +1133,8 @@ Packet/burst level differentiated QoS requirement within a QoS flow
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p016`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+拟向 SA2 发送 LS，说明 RAN2 对 generic framework for service-awareness 的理解，并解释同一应用以多个 QoS flows 区分不同 packets 的 QoS requirement 时，AS 到 upper layer 的 out-of-order delivery 问题。还将询问 SA2/SA4 是否会提供标准方案，使 AS layer 能获知 service 的差异化 packet transmission requirements，以支持 UE 的 UL 和/或 RAN 的 DL service-awareness。
 
 ```text
 Send an LS to SA2 to clarify the followings:
@@ -943,6 +1152,8 @@ R2-2601567	Dicussion on QoS and Service-awareness	DOCOMO Beijing Labs	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究 generalized service-awareness framework，其中包括从 UE 向 RAN 暴露 assistance information。XR 中相应的 awareness framework 可作为起点。
+
 ```text
 RAN2 to study a generalized service-awareness framework, including assistance information exposure from UE to RAN, and the corresponding awareness framework in XR could serve as a starting point.
 Noted
@@ -952,12 +1163,16 @@ R2-2602510	Further discussions on service-characteristics awareness	Futurewei	di
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+为获取 TCP ACKs awareness，RAN2 将研究 transmitter side approach，同时支持发送端的 TCP ACK transmission prioritization 和接收端的 selective OOD。
+
 ```text
 For obtaining the awareness of TCP ACKs, RAN2 study the transmitter side approach to support both transmission prioritization of TCP ACKs on the transmitter side and the selective OOD on the receiver side.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p019`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 将向 SA2（抄送 RAN3）发送 LS，询问 UPF 是否能对 TCP stream 的 QoS flow 中每个 DL packet 进行分类和标记，以指明其是否携带 TCP ACK，或是否要求 in-order delivery。
 
 ```text
 RAN2 send LS to SA2 (CC RAN3), asking whether the UPF can perform packet classification and marking regarding whether each DL packet of a QoS flow of a TCP stream carries a TCP ACK or not (or whether in-order delivery is required on the DL packet or not).
@@ -966,12 +1181,16 @@ RAN2 send LS to SA2 (CC RAN3), asking whether the UPF can perform packet classif
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将考虑在 6GR 中采用 hybrid SDU delivery mechanism。该机制可对携带 TCP ACK 的 SDUs 选择性采用 out-of-order delivery，而同一 DRB 的其他 SDUs 采用 in-order delivery。
+
 ```text
 RAN2 consider a hybrid SDU delivery mechanism in 6GR, wherein out-of-order delivery can be selectively applied, e.g., to SDUs carrying a TCP ACK, while in-order delivery is applied to other SDUs of the same DRB.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p021`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+为获取 TCP ACKs awareness，RAN2 将研究 transmitter side approach，同时支持发送端的 transmission prioritization 和接收端的 selective OOD。该提案标记为 Noted。
 
 ```text
 For obtaining the awareness of TCP ACKs, RAN2 study the transmitter side approach to support both transmission prioritization on the transmitter side and the selective OOD on the receiver side.
@@ -981,12 +1200,16 @@ Noted
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究 UE 应向 aNB 提供哪些信息以及如何提供，例如 traffic types、patterns 和相应的 QoS requirements。传递方式可包括 UAI message 或其他机制。
+
 ```text
 RAN2 to study how and what information (e.g., traffic types, patterns and corresponding QoS requirements) UE should provide to aNB. (e.g., via UAI message or other mechanisms)
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p023`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 将研究 QoS requirement 变化对 LCP behavior 的影响。还将研究为高效 uplink scheduling 提供精确 data burst information（如 data volume 和 duration）的机制。
 
 ```text
 RAN2 to study how changes to QoS requirement affect LCP behavior.
@@ -1000,12 +1223,16 @@ R2-2601487	Discussion on QoS and service-awareness for 6G	China Telecom	discussi
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究引入 AL-FEC aware L2 protocol stack，并研究相应增强，使 source 和 repair packets 能根据 application-layer reconstruction requirements 得到差异化处理。
+
 ```text
 RAN2 to study the introduction of an AL-FEC aware L2 protocol stack and corresponding enhancements to enable differentiated handling of source and repair packets based on application-layer reconstruction requirements.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p025`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+若 RAN2 同意研究 AL-FEC awareness mechanisms，研究应聚焦于达到 reconstruction targets 后主动丢弃冗余 PDUs，以及跨 PDU multiplexing 策略。后者通过将同一 AL-FEC frame 的 packets 映射到不相关的 radio resources 来增强 transmission diversity。
 
 ```text
 If RAN2 agrees to study AL-FEC awareness mechanisms, the study should focus on proactive L2 discard of redundant PDUs upon meeting reconstruction targets and cross-PDU multiplexing strategies to enhance transmission diversity by mapping packets of the same AL-FEC frame to uncorrelated radio resources.
@@ -1015,6 +1242,8 @@ R2-2601499	Discussion on QoS and Service-awareness	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究从 CN 和 UE 向 RAN 提供 AL-FEC related information，并研究 UL 和 scheduler 为支持 DL 与 UL 中的 AL-FEC 所需的内容。如有需要，可通过 LS 征询 SA4 意见。
+
 ```text
 RAN2 to study the provisioning of AL-FEC related information from CN and UE to RAN, and to study what is needed for the UL and scheduler to support AL-FEC in DL and UL. RAN2 can consult SA4’s opinion via LS if needed.
 R2-2601623	Discussion on QoS, QoE and service in 6G	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
@@ -1022,6 +1251,8 @@ R2-2601623	Discussion on QoS, QoE and service in 6G	Huawei, HiSilicon	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p027`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+研究面向 6G immersive communication 的 FEC-based discard mechanism：拥塞期间，可根据 FEC ratio 并基于 HARQ status indication，丢弃 PDU Set 内冗余的 PDCP SDUs。
 
 ```text
 Study FEC-based discard mechanism for immersive communication in 6G: During congestion, redundant PDCP SDUs within the PDU Set could be discarded according to the FEC ratio, based on the HARQ status indication.
@@ -1033,12 +1264,16 @@ R2-2601500	Discussion on the support of Service awareness for tethered device E2
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 同意研究对 service characteristics 进行差异化支持，以改善 E2E user experience。
+
 ```text
 RAN2 agrees to study the support of service characteristics differentiation for E2E user experience.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p029`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+对 E2E user experience 的 service characteristics differentiation 支持应考虑 tethering case。
 
 ```text
 The support of service characteristics differentiation for E2E user experience should take into account the tethering case.
@@ -1047,6 +1282,8 @@ The support of service characteristics differentiation for E2E user experience s
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+对于 tethering case，E2E user experience 应考虑 tethered device 与 Data Network 之间的端到端路径。
+
 ```text
 For tethering case, the E2E user experience should take into account the end to end path between the tethered device and the Data Network.
 ```
@@ -1054,12 +1291,16 @@ For tethering case, the E2E user experience should take into account the end to 
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+为保障 tethered device 与 DN 之间的 E2E user experience，至少需要考虑 latency 和 reliability。
+
 ```text
 To ensure the E2E user experience between tethered device and DN, at least the latency and reliability need to be considered.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p032`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+为保障 tethering case 的 E2E latency，RAN2 同意研究在 AN PDB 中补偿 non-3GPP delay（tethered device 与 UE 之间的 delay）的 service awareness solutions。已就此决定向 SA2 发送 LS。
 
 ```text
 To ensure the E2E latency for tethering case, RAN2 agrees to study service awareness solutions for compensating non-3GPP delay (delay between tethered device and UE) in AN PDB. A LS is sent to SA2 about our decision.
@@ -1069,6 +1310,8 @@ R2-2601830	Views on 6G User Plane: QoS and User Experience	Apple	discussion	Rel-
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
 
+除 AI applications 外，RAN2 可以同意 varying QoS requirement 的特征也存在于其他用例，包括 Immersive XR 和 Tethering-based 场景。
+
 ```text
 In addition to AI applications, RAN2 can agree that the characteristics of varying QoS requirement can also exist in other use cases, including Immersive XR and Tethering-based scenarios.
 R2-2601959	Considerations on service-awareness in 6G	LG Electronics Inc.	discussion	FS_6G_Radio
@@ -1076,6 +1319,8 @@ R2-2601959	Considerations on service-awareness in 6G	LG Electronics Inc.	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.2-p034`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.2 QoS, QoE and Service-awareness
+
+研究 RAN 层面的潜在增强，以支持通过 non-3GPP links 连接的 tethered UEs 的 dynamic QoS handling。
 
 ```text
 Study potential enhancement at the RAN level to support dynamic QoS handling for tethered UEs connected via non-3GPP links.
@@ -1111,12 +1356,16 @@ R2-2602613	Mobile AI traffic characteristics	NVIDIA	discussion	Rel-20	Late
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN1 已就 extended XR 的 traffic model 达成一致。
+
 ```text
 RAN1 has reached the traffic model for extended XR.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o001`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+R18 XR 引入基于 FEC characteristic 的 QoS level information，用于粗略指示 QoS flow 中的 PDU Set 是否具有 integrity requirement。
 
 ```text
 R18 XR introduced QoS level information based on the FEC characteristic, to coarsely indicate whether the PDU Set from the QoS flow exhibits the integrity requirement.
@@ -1125,12 +1374,16 @@ R18 XR introduced QoS level information based on the FEC characteristic, to coar
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+在 FEC-assisted immersive communication 中，只有当缺失 PDUs 的比例超过预定义阈值时，PDU set 才会解码失败。
+
 ```text
 In FEC-assisted immersive communication, an PDU set can only fail to be decoded if the ratio of missing PDUs exceeds a predefined threshold.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o003`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，Legacy DG/CG 对 haptic data 的传输可能效率不高，因为其 PDB 严格、突发大小不可预测且周期性不规则。
 
 ```text
 Legacy DG/CG may be not efficient for the transmission of haptic data which have stringent PDB, unpredictable burst size and irregular periodicity.
@@ -1139,12 +1392,16 @@ Legacy DG/CG may be not efficient for the transmission of haptic data which have
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，haptic data 的传输可能影响 video 和 audio 的传输，并降低资源效率。
+
 ```text
 The transmission of haptic data may impact the transmission of video and audio, and decrease the resource efficiency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o005`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，在现有 scheduling mechanism 下，存在 haptic traffic 时网络容量可能下降。
 
 ```text
 Under the existing scheduling mechanism, the network capacity may be decreased if there is haptic traffic.
@@ -1153,12 +1410,16 @@ Under the existing scheduling mechanism, the network capacity may be decreased i
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，E2E latency 对确保 IC services 的良好用户体验至关重要。
+
 ```text
 The E2E latency is critical for ensuring good user experience in IC services.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o007`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，multi-modal traffic 的 immersive communication 被视为 6GR 中有前景的新兴应用之一。在 NR 中，尚未充分处理 multi-modal communication session 内多个 flows（如 haptic、audio 和 video）的传输协调，包括 intra-UE 和 inter-UE 场景。
 
 ```text
 Immersive communication with multi-modal traffic is foreseen as one of the promising emerging applications in 6GR, while coordination of the transmission among multiple flows (e.g., haptic, audio and video) within a multi-modal communication session, including intra-UE or inter-UE cases, has not been well addressed in NR.
@@ -1167,12 +1428,16 @@ Immersive communication with multi-modal traffic is foreseen as one of the promi
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，作为 immersive communication 组成部分的 haptic 具有低时延、高可靠性、低 jitter 和非周期性流量到达等特征。NR 尚未充分评估 haptic，也未充分处理 haptic traffic 的高效传输。
+
 ```text
 Haptic as an integral part of immersive communication, which is characterized by low latency, high reliability, low jitter and aperiodic traffic arrival, has not been thoroughly evaluated and the efficient transmission of haptic traffic has not been well addressed in NR.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o009`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，运行于 lightweight glasses 和 AI capable UEs 的新兴服务对节能和 QoS 有并发要求，例如较低时延和较高数据速率。
 
 ```text
 The emerging services running on lightweight glasses and AI capable UEs impose concurrent requirements for power saving and QoS such as comparably low latency and high data rates.
@@ -1181,12 +1446,16 @@ The emerging services running on lightweight glasses and AI capable UEs impose c
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，mobile AI service flow 的流量特征和要求可能在不同突发之间及随时间显著变化。
+
 ```text
 The traffic characteristics and requirements of mobile AI service flow may vary significantly across different bursts and over time.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o011`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，涉及 NAS/NG signalling 的传统 QoS adaptation procedures 不适用于 QoS 要求快速变化的 AI/XR applications。
 
 ```text
 Traditional QoS adaptation procedures involving NAS/NG signalling are not well suited for AI/XR applications that involve rapid changes of QoS requirements.
@@ -1195,12 +1464,16 @@ Traditional QoS adaptation procedures involving NAS/NG signalling are not well s
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，NR QoS framework 的一个问题是，它依赖第三方提供启动流程所需的 SLA information。
+
 ```text
 One issue of the NR QoS framework is that it relies on third-party to provide the SLA information necessary to initiate the process.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o013`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+6GR QoS framework 应支持 user-operator 直接交互，并尽量减少对 external parties 的依赖。
 
 ```text
 6GR QoS framework should enable direct user-operator interaction, minimizing reliance on external parties.
@@ -1209,12 +1482,16 @@ One issue of the NR QoS framework is that it relies on third-party to provide th
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+除 GBR 和 non-GBR 外，可以定义一种新的 QoS flow type，为一系列 QoS parameters 提供保证。
+
 ```text
 In addition to GBR and non-GBR, a new QoS flow type could be defined which can provide guarantee over a range of QoS parameters.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o015`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+负载下的 best-effort uplink scheduling 会导致过高的 burst latency；缺少 burst-aware 或 QoS mechanisms 时，与 continuous uplink traffic 的竞争会显著延迟 burst completion。
 
 ```text
 Best-effort uplink scheduling results in excessive burst latency under load indicating that contention with continuous uplink traffic significantly delays burst completion in the absence of burst-aware or QoS mechanisms.
@@ -1223,12 +1500,16 @@ Best-effort uplink scheduling results in excessive burst latency under load indi
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+High-priority QoS 可降低 burst latency，但会牺牲 radio resource efficiency，使 uplink resources 接近饱和，并且难以扩展到 multi-UE 或 high-load 环境。
+
 ```text
 High-priority QoS minimizes burst latency at the expense of radio resource efficiency i.e., at the cost of near-saturation of uplink resources and hard to scale in a multi-UE or high-load environment.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o017`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN-level service awareness 可超越传统 GBR-based QoS approaches 的限制，为具有异构且高度动态 traffic characteristics 的 AI-based 和/或 immersive applications 提高 radio resource utilization 效率。
 
 ```text
 Support for RAN-level service awareness can go beyond the limits of traditional GBR-based QoS approaches in terms of efficient radio resource utilization for AI-based and/or immersive applications with heterogeneous, highly dynamic traffic characteristics.
@@ -1237,12 +1518,16 @@ Support for RAN-level service awareness can go beyond the limits of traditional 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+在 immersive XR 等部分 6G use cases 中，同一 traffic flow 内的 packets 不一定具有相同的 reliability target。
+
 ```text
 In some 6G use cases such as immersive XR, the packets on the same traffic flow do not necessarily have the same reliability target.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o019`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+在 Generative AI 和 tethering-based Immersive XR 等部分 6G use cases 中，air interface delay budget 可动态变化，以满足 end-to-end latency requirement。
 
 ```text
 In some 6G use cases such as Generative AI and tethering-based Immersive XR, the air interface delay budget may be dynamically changed to ensure the end-to-end latency requirement can be satisfied.
@@ -1251,12 +1536,16 @@ In some 6G use cases such as Generative AI and tethering-based Immersive XR, the
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+当具有不同 in-sequence delivery requirement 的多个 traffic flows 映射到同一 DRB 时，接收端共用的 reordering timer 可能导致部分 packets 被不必要地延迟。
+
 ```text
 When multiple traffic flows with different in-sequence delivery requirement are mapped to the same DRB, some packets may be unnecessarily delayed due to a common reordering timer at the receiver side.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o021`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+NR 的 QoS and traffic classification framework 通用且灵活，可适用于许多不同类型的 traffic。待 SA2 提供进一步输入前，RAN2 可假设沿用同一 framework。
 
 ```text
 The QoS and traffic classification framework in NR is general and flexible to many different types of traffic. RAN2 can assume the same framework applies pending further input from SA2.
@@ -1265,12 +1554,16 @@ The QoS and traffic classification framework in NR is general and flexible to ma
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+legacy QoS and resource management framework 可能无法高效支持 mobile AI、XR 和 immersive communications 等 6G applications；这些应用会根据 user behavior、application context、link quality 等改变 traffic 和 QoS requirements。
+
 ```text
 The legacy QoS and resource management framework may not be able to efficiently support 6G applications such as mobile AI, XR and immersive communications, which can change their traffic and QoS requirements based on user behavior, application context, link quality, etc.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-o023`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+需要基于 radio condition、UE power consumption 和 computing resource availability 进行 Dynamic QoS adaptation，例如支持 rendering tasks 的动态 splitting/offloading。
 
 ```text
 Dynamic QoS adaptation based on radio condition, UE power consumption and computing resource availability is needed, e.g., to support dynamic splitting/offloading rendering tasks.
@@ -1279,6 +1572,8 @@ Dynamic QoS adaptation based on radio condition, UE power consumption and comput
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，涉及 NAS/NG signalling 的传统 QoS adaptation procedures 不适用于 QoS 要求快速变化的 AI/XR applications。
+
 ```text
 Traditional QoS adaptation procedures involving NAS/NG signalling are not well suited for AI/XR applications that involve rapid changes of QoS requirements.
 ```
@@ -1286,12 +1581,16 @@ Traditional QoS adaptation procedures involving NAS/NG signalling are not well s
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将 RAN1-agreed traffic model for eXR 作为 6G immersive communications 研究的 baseline。
+
 ```text
 RAN2 to take the RAN1-agreed traffic model for eXR as the baseline for the study of immersive communications in 6G.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p001`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 将研究 6G immersive communications 中的 AL-FEC 及必要增强。讨论涉及拥塞时冗余 packet 的丢弃和优先级处理，以及 RAN 对 FEC 的支持；其必要性和影响仍有不同看法。
 
 ```text
 RAN2 to study AL-FEC and the necessary enhancements in 6G immersive communications.
@@ -1307,6 +1606,8 @@ RAN2 to study AL-FEC and the necessary enhancements in 6G immersive communicatio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将从 haptic KPI 和 network capacity 角度研究 multi-modal XR services 的 scheduling enhancements。讨论指出 current CG 可能不足以满足 haptics，且该提案针对 scheduling。
+
 ```text
 RAN2 to study scheduling enhancements for multi-modal XR services with haptic data from the haptic KPI and the network capacity point of view.
 -	Lenovo asks if for proposal 3 if we have any new requirements.   Huawei thinks that neither CG and DG are useful because it is periodic but the size is variable.   Lenovo thinks that this is not specific to multi-modal it is more a general UL resource efficiency enhancements.    Qualcomm would like to avoid spending time studying another URLLC.
@@ -1317,6 +1618,8 @@ RAN2 to study scheduling enhancements for multi-modal XR services with haptic da
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究保证 E2E latency requirement 的增强。该提案被记为 Noted。
+
 ```text
 RAN2 to study enhancements to guarantee the E2E latency requirement.
 [3 min]
@@ -1326,6 +1629,8 @@ R2-2600076	Considerations on 6GR RAN QoS and service awareness	vivo	discussion	R
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p004`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 确认 6G Day-1 design 应考虑 immersive communication、mobile AI 和 lightweight AI/AR glasses 的服务特征与需求。涉及多模态同步、haptic traffic 的低时延与高可靠性，以及 power saving 与 high performance 的权衡。
 
 ```text
 RAN2 identifies the following new services with traffic characteristics and requirements, which should be considered in 6G Day-1 design to ensure that the system can efficiently support and fulfil the needs of such services:
@@ -1341,6 +1646,8 @@ R2-2600162	Service awareness and QoS handling in 6G	ZTE Corporation, Sanechips	d
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+为应对 SA1 识别的 6G 新需求，RAN2 需要研究 fast and dynamic QoS requirements、多模态 XR/AI traffic 的同步需求、error tolerant data traffic，以及与授权 UE/第三方应用交换 application related information 的增强领域。
+
 ```text
 In order to address the new requirements for 6G identified by SA1, RAN2 needs to study the following areas of enhancements:
 -	Traffic with fast and dynamic QoS requirements
@@ -1351,6 +1658,8 @@ In order to address the new requirements for 6G identified by SA1, RAN2 needs to
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p006`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+提议 6GR 支持对 multi-modal traffic 及各 modality 对应 QoS requirements 的 RAN awareness。讨论对 synchronization 是否需要 RAN 参与意见不一，提及 MSSID 及 RAN 获得 flow 间需求信息的可能性；该提议标记为 Not treated。
 
 ```text
 6GR should support RAN awareness of multi-modal traffic and the associated QoS requirements for each modality.
@@ -1377,6 +1686,8 @@ Observation 1f: Large-scale industrial automation traffic exhibits periodic high
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 应研究代表性 use cases 及其特征，包括具 error tolerance 的非对称且低时延数据、超低时延/低 jitter/高可靠性的非周期或周期数据流，以及紧密同步的异构或同构多数据流。
+
 ```text
 To support the diverse requirements and traffic characteristics of 6G use cases, RAN2 should investigate representive use cases and their characterizations, including:
 ∙	Asymmetry data stringent latency requirement but capable of error tolerance,
@@ -1390,12 +1701,16 @@ R2-2600150	Discussion on QoS, QoE and service-awareness	Huawei, HiSilicon	discus
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究在 QoS flow 内对 packets 进行 differentiated handling 的机制，并考虑 6G 新服务需求。
+
 ```text
 RAN2 to study the mechanism for differentiated handling of packets within a QoS flow by taking into account the 6G new service requirements.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p009`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+Traffic characteristics awareness 的范围是让 RAN 感知来自 UE 和/或 CN 的流量特征，粒度可为 packet-level、service flow-level 或 DRB-level；用途包括适当配置和 packet-level handling。
 
 ```text
 Traffic characteristics awareness of RAN could have the following components:
@@ -1409,6 +1724,8 @@ R2-2600736	Common traffic characteristics, service-awareness, QoS	InterDigital	d
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+6GR 支持针对 delay-critical data bursts 的差异化处理机制，例如 burst-aware scheduling，以实现高效资源分配。
+
 ```text
 6GR supports differentiated treatment mechanisms for delay-critical data bursts e.g., burst-aware scheduling, for efficient resource allocation.
 ```
@@ -1416,12 +1733,16 @@ R2-2600736	Common traffic characteristics, service-awareness, QoS	InterDigital	d
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+Service-awareness 在 RAN 中被定义为 Access Stratum 识别、解释、分类并处理与生成流量的 service 或 application 相关信息的能力。
+
 ```text
 Service-awareness in the RAN is defined as the capability of the Access Stratum to identify, interpret, classify, and act upon information related to the service or application generating the traffic.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p012`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+6GR 支持基于 service 的 QoS differentiation 和 per-packet QoS differentiation，例如基于 L2 application-level awareness。原文指出，6G 应支持多种应用及同一 service flow（或 QoS flow）内不同 packet 的不同传输需求。
 
 ```text
 6GR supports service-based and per-packet QoS differentiation e.g., based on L2 application-level awareness.
@@ -1433,12 +1754,16 @@ Observation 1.1: In 5G, only the packets from XR service is differentiated (i.e.
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+Service-awareness framework 应适用于 immersive communication 和 mobile AI 等多种应用，并支持同一 service 内不同 packet 具有动态或自适应的 QoS requirement。
+
 ```text
 The service-awareness framework should be applicable to various applications (e.g. immersive communication and mobile AI traffics), with the requirement that different packets within a certain service can have dynamic/adaptive QoS requirement.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p014`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 假设 UL 和 DL 的 RAN service-awareness 均包括 QoS flow-level 的 QoS requirement awareness，以及 QoS flow 内 packet-level 的 QoS requirement awareness。
 
 ```text
 RAN2 assumes that the service-awareness in RAN for both UL and DL include:
@@ -1452,12 +1777,16 @@ R2-2600448	Views on 6G User Plane: QoS and Service Awareness	Apple	discussion	Re
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+为应对基于 Application/Service awareness 的动态 QoS requirement，RAN2 应研究 UE 如何动态调整 UL traffic flow 的 radio treatment。
+
 ```text
 To cope with dynamic QoS requirement based on Application/Service awareness, RAN2 should study how the UE can adapt the radio treatment for a UL traffic flow in a dynamic manner.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p016`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 可考虑三种为同一 traffic flow 中的 packet 动态提供差异化 radio treatment 的方案：QoS flow 映射多个 DRB、DRB 关联多个 RLC/LCH，或 DRB 配置多组参数并由发送端选择。
 
 ```text
 RAN2 can consider the following options to dynamically provide differentiated radio treatments for packets on one traffic flow:
@@ -1471,6 +1800,8 @@ R2-2600140	Discussion on QoS, QoE and application awareness	Qualcomm Incorporate
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 假设以下 QoS framework 作为 baseline，尚待 SA2 确认：PDU session 中 QoS differentiation 的最细粒度是 QoS flow，AS 中基于 QFI 识别 traffic，且一个 QoS flow 映射到单个 DRB。
+
 ```text
 RAN2 assumes the following QoS framework as a baseline, subject to confirmation by SA2:
 -	QoS flow is the finest granularity for QoS differentiation in the PDU session.
@@ -1481,12 +1812,16 @@ RAN2 assumes the following QoS framework as a baseline, subject to confirmation 
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+对于具有 elastic delay requirements 的应用（例如 mobile AI 或 HTTP based apps），应研究使 RAN 感知其存在及特殊 service requirement 的方法，以及改善用户体验的 L2 mechanisms。
+
 ```text
 For applications with elastic delay requirements (e.g. mobile AI or any HTTP based apps), study methods to enable RAN awareness of their presence and special service requirement and L2 mechanisms that improve their user experience.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p019`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+研究 L2 机制，以支持应用根据用户行为、应用上下文和链路质量等因素频繁改变流量与 QoS 属性时的动态 QoS。
 
 ```text
 Study L2 mechanisms to support dynamic QoS for applications that may frequently change their traffic and QoS attributes based on user behavior, application context, link quality, etc.
@@ -1497,12 +1832,16 @@ R2-2600746	On 6G QoS Framework	Lenovo	discussion	Rel-20	Late
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 应研究支持动态 QoS adaptation，例如基于 dynamic traffic awareness 的适配。
+
 ```text
 RAN2 should study to support dynamic QoS adaptation, e.g., based on dynamic traffic awareness.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p021`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 应研究动态 QoS adaptation 引起的 layer 2 影响，例如 DRB 分组的 LCP adaptation 或 retransmission。
 
 ```text
 RAN2 should study layer 2 impacts (e.g., adaptation of LCP /retransmission of packets of a DRB) caused by dynamic QoS adaptation.
@@ -1512,6 +1851,8 @@ R2-2600162	Service awareness and QoS handling in 6G	ZTE Corporation, Sanechips	d
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.2-p022`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+6GR 应支持在不同 preconfigured QoS profiles 之间进行 RAN based switching，且不涉及 NAS/NG signalling，以实现 RAN 级快速 QoS adaptation。
 
 ```text
 6GR shall support RAN based switching between different preconfigured QoS profiles without involving NAS/NG signalling to enable fast QoS adaptation at RAN level
@@ -1544,6 +1885,8 @@ R2-2601107	Discussion on Qos,QoE and Service Awareness	Rakuten Mobile, Inc	discu
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.3.1.2 QoS, QoE and Service-awareness
 
+初步研究 RAN 和 UE 的 application/service awareness，应聚焦识别目标 6G use cases 共有的 traffic characteristics/requirements，并探索能否以及如何通过尽可能通用的框架提供这些信息；需要时可与 SA2 协调。RAN2 还将讨论 service characteristics 和 information 如何影响 UL/DL 的 L2 protocols。
+
 ```text
 1	Initial study on application/service awareness in RAN and UE should focus on identifying traffic characteristics/requirements common among the target 6G use cases and exploring whether/how it can be made available to RAN and UE in a generalized framework (as much as possible).  This can be done in coordination with SA2 when needed.
 2	RAN2 to discuss how the characteristics and information of services can influence L2 protocols for both UL/DL
@@ -1554,12 +1897,16 @@ R2-2508300	6G QoS, QoE, and Service awareness	Nokia, Nokia Shanghai Bell	discuss
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN 支持感知动态流量特征，例如周期性/突发性、最大突发大小、高吞吐量和低时延，以实现更高效的资源分配与调度。
+
 ```text
 The RAN supports awareness of dynamic traffic characteristics—such as periodicity/burstiness, maximum burst size, high throughput, and low latency—to enable more efficient resource allocation and scheduling.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o001`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+Multi-modal communication 被视为 6GR 中有前景的新兴应用之一。NR 尚未充分处理多模态会话中多个流（如 haptic、audio、video）的传输协调（包括 intra-UE 或 inter-UE 情况），以及 haptic traffic 的高效传输。
 
 ```text
 Multi-modal communication is foreseen as one of the promising emerging applications in 6GR, while coordination of the transmission among multiple flows (e.g., haptic, audio and video) within a multi-modal communication session, including intra-UE or inter-UE cases, and the efficient transmission of haptic traffic, are not yet well addressed in NR.
@@ -1568,12 +1915,16 @@ Multi-modal communication is foreseen as one of the promising emerging applicati
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+GenAI service flow 的流量特征和需求可能在不同 bursts 之间及随时间显著变化。
+
 ```text
 The traffic characteristics and requirements of GenAI service flow may vary significantly across different bursts and over time.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o003`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+与 JPEG 等传统图像格式相比，discrete image tokenizers 可在具有更好感知质量的同时减少传输图像大小，但代价是高失真。当前最先进的图像生成模型很少使用 discrete image tokenizers，主要使用 VAE 作为 image tokenizer。
 
 ```text
 Compared with traditional image formats like JPEG, discrete image tokenizers can reduce the transmitted image size while having better perceptual quality, at the cost of high distortion. Discrete image tokenizers are rarely used in state-of-the-art image generation models, which mostly use VAE for image tokenizer.
@@ -1582,12 +1933,16 @@ Compared with traditional image formats like JPEG, discrete image tokenizers can
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+当前 AI 模型通常在 server side 执行 AI tokenization；对 image generation model，将 image 和 video 的 AI tokenization 移至 UE side 不会减少流量，而对 image understanding model 会显著增加流量，且 processing offloading 收益可忽略。此举还增加 tokenizer model 更新和 client-server version compatibility 等复杂性。
+
 ```text
 In current usage of AI models, AI tokenization is performed at the server side. For image and video, moving AI tokenization to UE side does not reduce the traffic compared with transmitting image / video directly for image generation model while increase the traffic significantly for image understanding model, and the gain of processing offloading is negligible. There is increased complexity like update of tokenizer model and version compatibility between client and server.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o005`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+使用单一 radio bearer 承载 UE 的所有服务会导致接收端所有服务发生 head-of-line blocking。
 
 ```text
 The use of a single radio bearer to transport all services for a UE as is typical in the field, leads to head-of-line blocking of all services at the receiver.
@@ -1596,12 +1951,16 @@ The use of a single radio bearer to transport all services for a UE as is typica
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+6G 的目标应用（如 XR、mobile AI）具有相似的流量特征，例如分组之间存在依赖关系和重要性差异。
+
 ```text
 Target applications in 6G (e.g. XR, mobile AI) exhibit similar traffic characteristics, such as dependency and different importances among packets.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o007`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+从调度和资源管理角度看，最重要的是流量属性和 QoS requirements，而不是生成流量的应用类型。
 
 ```text
 From a scheduling and resource management standpoint, what matters most are traffic attributes and QoS requirements, rather than the type of applications that generate the traffic.
@@ -1610,12 +1969,16 @@ From a scheduling and resource management standpoint, what matters most are traf
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+由于 UE 承载应用并终止协议栈各层的所有协议，许多场景下 UE 可获得大量 QoE 信息，从而直接跟踪应用状态。
+
 ```text
 For many cases, a lot of QoE information is available at the UE on account of hosting the application as well as terminating all protocols across the stack. This allows close and straightforward tracking of the application state.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o009`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+UE 可调整许多 L2 protocol parameters，且对 NW operation 影响很小或没有影响。
 
 ```text
 Many L2 protocol parameters can be adapted by the UE with little or no impact of NW operation.
@@ -1624,12 +1987,16 @@ Many L2 protocol parameters can be adapted by the UE with little or no impact of
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+5G NR 使用 QoS profiles 和 QoS rules 将数据包映射到合适的 QoS Flows 和 DRBs。
+
 ```text
 In 5G NR, QoS profiles and QoS rules are used to map packets to appropriate QoS Flows and DRBs.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o011`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，目前没有开发新 QoS framework（例如新的 QoS granularity）的具体且紧迫需求。
 
 ```text
 There is no specific and urgent requirements to develop new QoS framework such as new QoS granularity for 6GR.
@@ -1638,12 +2005,16 @@ There is no specific and urgent requirements to develop new QoS framework such a
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，NR QoS model 缺少 per-packet 或 per packet-group granularity。
+
 ```text
 NR QoS model lacks per-packet or per packet-group granularity
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o013`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文指出，NR QoS model 缺少在 RAN 中将数据包动态映射到 packet treatment 的能力。
 
 ```text
 NR QoS model lacks dynamic mapping of packets to packet treatment in RAN
@@ -1652,6 +2023,8 @@ NR QoS model lacks dynamic mapping of packets to packet treatment in RAN
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN 支持感知动态 traffic characteristics，包括 periodicity/burstiness、maximum burst size、high throughput 和 low latency，以便更高效地分配资源和进行调度。
+
 ```text
 The RAN supports awareness of dynamic traffic characteristics—such as periodicity/burstiness, maximum burst size, high throughput, and low latency—to enable more efficient resource allocation and scheduling.
 ```
@@ -1659,12 +2032,16 @@ The RAN supports awareness of dynamic traffic characteristics—such as periodic
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文指出，需要通过动态 QoS adaptation 支持 GenAI service。
+
 ```text
 Dynamic QoS adaptation to support GenAI service is needed.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-o016`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+讨论提出在 6GR 中研究 immersive communications 和 AI mobile traffic 的 traffic characteristics，包括 non-integer periodicity、delay sensitive、jitter、multi-modal service、PDU set transmission 和 small packet。与会方还提出考虑 data bursts、等待 SA4，以及在研究 procedures 时留意这些特征。
 
 ```text
 Study the following traffic characteristics in 6GR for immersive communications and AI mobile traffic:
@@ -1687,6 +2064,8 @@ R2-2508048	Considerations on 6GR RAN QoS	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+原文提出，6GR 应研究并识别新服务及其 traffic characteristics 和对应 requirements，并在 6G Day-1 design 中加以考虑。列举的服务包括 immersive communication、GenAI 和 lightweight AI/AR glasses；观察还指出 token-based communications 可容错，且不同 token 的重要性因 modality 和其在 traffic stream 中的位置而异。
+
 ```text
 6GR should study and identify the following new services with traffic characteristics and corresponding requirements. These characteristics and requirements should be considered in the 6G Day-1 design to ensure that the system can efficiently support and fulfil the needs of such services:
 -	Immersive communication service: synchronization for multi-modal service, critical latency and vary burst size for haptic traffic;
@@ -1700,6 +2079,8 @@ Observation 1-2:	Token-based communications is error tolerant and different toke
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+6G UP functionality 的设计应考虑 AI services 的 requirements 和 characteristics，例如 error tolerance 及不同 tokens 的可变重要性。原文还指出，E2E latency 对 immersive communications (IC) 的用户体验至关重要，且其要求可在单个 IC application 内随时间变化。
+
 ```text
 The design of 6G UP functionality should take into account the requirements and characteristics of AI services such as error tolerance and variable importance of different tokens.
 Observation 2-2:	The E2E latency is critical for ensuring good user experience in IC services. However, the E2E latency requirement can be time-varying even within a single IC application.
@@ -1707,6 +2088,8 @@ Observation 2-2:	The E2E latency is critical for ensuring good user experience i
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p003`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+原文提出研究 6G immersive communications traffic 的 E2E latency requirement。原文还指出，基于 real-time video traffic characteristics 定义的现有 R18/R19 XR enhancements，不能复用于 R20 将研究的 non-real-time mobile AI traffic。
 
 ```text
 Study the E2E latency requirement for 6G immersive communications traffic.
@@ -1716,6 +2099,8 @@ Observation 3-4:	The existing R18/R19 XR enhancements, defined based on real-tim
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 将研究 mobile AI traffic 中 non-token-based 和 token-based 两类流量的特征。
+
 ```text
 For mobile AI traffic, RAN2 to study the characteristics of both non-token-based and token-based mobile AI traffic.
 [2 min]
@@ -1724,6 +2109,8 @@ R2-2508093	Consideration on 6G UP QoS and Service-awareness	Xiaomi	discussion	Re
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p005`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+在考虑于 RAN 中采用 AI tokenizer approach 前，RAN2 应仔细评估其 pros and cons，包括 transmission efficiency、quality distortion、UE memory and processing requirements，以及 service provider complexity。
 
 ```text
 RAN2 should carefully evaluate the pros and cons (e.g. transmission efficiency, quality distortion, UE memory and processing requirements, complexity for service provider) before considering AI tokenizer approach in RAN.
@@ -1735,6 +2122,8 @@ R2-2509039	On service awareness in the access stratum	MediaTek Inc., Meta	discus
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+AS 中的 service awareness framework 采用 service-agnostic 设计，以适应 6G 生命周期内不断演进的多种服务。讨论提到 service 可指 QoS flow 或 sub-flow，并提出需讨论 flows 是否映射到同一 data bearer 及相关问题。
+
 ```text
 The framework for service awareness in the AS is designed in a service-agnostic way to ensure that it can cater to varied services that will evolve over 6G’s lifetime.
 -	Huawei asks what is service agnostic
@@ -1745,6 +2134,8 @@ The framework for service awareness in the AS is designed in a service-agnostic 
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+AS 中的 service awareness framework 支持以 service-level granularity 动态区分 data handling；讨论中有人询问所指的动态区分方式。
+
 ```text
 The framework for service awareness in the AS enables dynamic differentiation of data handling at a service-level granularity.
 -	Nokia asks what kind of dynamic differentiation you have in mind.
@@ -1752,6 +2143,8 @@ The framework for service awareness in the AS enables dynamic differentiation of
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p008`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+AS 中的 service awareness framework 旨在避免同一 bearer 中某项 service 对其他 services 造成 head-of-line blocking。
 
 ```text
 The framework for service awareness in the AS is designed to ensure that one service does not cause head-of-line blocking of other services carried in the same bearer.
@@ -1763,12 +2156,16 @@ R2-2508033	Discussion on QoS and service awareness for 6G	Qualcomm Incorporated	
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN 中 application/service awareness 的初期研究应识别目标 6G use cases 的共同 traffic characteristics，并探索如何通过 generalized framework 将其提供给 RAN 和 UE。
+
 ```text
 Initial study on application/service awareness in RAN should focus on identifying traffic characteristics common among the target 6G use cases and exploring whether/how it can be made available to RAN and UE in a generalized framework.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p010`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 将讨论 UE application awareness 如何影响 L2 protocols，例如 UE 在需要时处理 out of order traffic 的能力。
 
 ```text
 RAN2 to discuss how UE application awareness can influence L2 protocols, e.g., UE ability to process traffic out of order when needed.
@@ -1779,12 +2176,16 @@ Noted
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 初期将围绕从 UE 收集信息开展 service awareness 讨论，以帮助 RAN 处理动态 traffic behaviour。
+
 ```text
 RAN2 initially focuses service awareness discussions on collecting information from the UE to help the RAN handling dynamic traffic behaviour.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p012`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 将研究增强 6G observability，以准确测量 per QoS flow performance，包括 packet delay。
 
 ```text
 RAN2 study for enhanced observability for 6G to enable accurate measurement of per QoS flow performance, including packet delay.
@@ -1796,6 +2197,8 @@ R2-2508190	6GR QoS and service-awareness	Samsung	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 被要求以 5G NR 的 QoS Flow based model 作为讨论 6GR AS level QoS mechanisms 的起点。
+
 ```text
 RAN2 is asked to adopt QoS Flow based model in 5G NR as a starting point for discussing AS level QoS mechanisms in 6GR.
 [2 min]
@@ -1804,6 +2207,8 @@ R2-2508428	Considerations on service-awareness in 6G	LG Electronics Inc.	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p014`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+研究在单个 QoS flow 内基于 packet priority 对数据包进行优先级区分或差异化处理的机制。示例包括为单个 QoS flow 映射不同 DRB，或为一个 DRB 映射不同 logical channel。
 
 ```text
 Study a mechanism to prioritize/differentiate packets based on packet priority in a single QoS flow, e.g.
@@ -1814,12 +2219,16 @@ b. Mapping different logical channels for a DRB.
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+研究支持在 packet level 具有 inter-QoS flow dependency 的 multi-modality。
+
 ```text
 Study the support of multi-modality with inter-QoS flow dependency on packet level.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p016`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+研究适用于混合类型 packet flow 的 per-packet transmission mode。示例包括按单个 packet 决定是否 retransmission，以及让单个 DRB 同时支持 lossless 和 lossy transmission。
 
 ```text
 Study per-packet transmission mode suitable for mixed type packet flow, e.g.,
@@ -1832,12 +2241,16 @@ R2-2508642	Requirements for QoS, QoE and Service-Awareness	InterDigital	discussi
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+6GR QoS framework 支持基于 service 的 differentiation 和 sub-flow granularity，例如基于 L2 application-level awareness。该框架允许按 per-packet 或 per-packet-group basis 提供差异化 QoS treatment。
+
 ```text
 6GR QoS framework support service-based differentiation and sub-flow granularity e.g., based on L2 application-level awareness, to allow differentiated QoS treatment on per-packet or per-packet-group basis.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p018`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+6GR QoS framework 应支持 QoS burst profile parameters，以资源高效的方式保障不同 volume 和 inter-burst interval 的 delay critical bursts。示例是避免 over-provisioning of radio resources。
 
 ```text
 The 6GR QoS framework shall support QoS burst profile parameters for QoS burst guarantees of delay critical bursts of varying volumes and inter-burst interval in a resource efficient manner (e.g., without over-provisioning of radio resources).
@@ -1847,6 +2260,8 @@ R2-2508317	Service awareness and QoS handling in 6G	ZTE Corporation, Sanechips	d
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p019`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+6GR 应支持在 RAN 内不同预配置 QoS profiles 之间切换，无需 NAS/NG signalling，以便在 RAN level 快速适配 QoS。另有观察提出，除 GBR 和 non-GBR 外，可定义一种能在一系列 QoS parameters 上提供保证的新 QoS flow type。
 
 ```text
 6GR shall support RAN based switching between different preconfigured QoS profiles without involving NAS/NG signalling to enable fast QoS adaptation at RAN level
@@ -1861,12 +2276,16 @@ Observation 4-3:	In addition to GBR and non-GBR, a new QoS flow type could be de
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+RAN2 研究 RAN-level dynamic QoS adaptation mechanisms。
+
 ```text
 RAN2 to study the RAN-level mechanisms for dynamic QoS adaptation.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p021`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 研究 QoS flow 内数据包差异化处理机制，并考虑 6G 新服务需求。示例需求包括 AI token-based communication 和 immersive communication。
 
 ```text
 RAN2 to study the mechanism for differentiated handling of packets within a QoS flow by taking into account of the 6G new service requirements (e.g. AI token-based communication and immersive communication).
@@ -1877,6 +2296,8 @@ R2-2508595	Discussion on QoS and Service-awareness	HONOR	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
 
+6G 研究在 UE 和 RAN 两端快速适配 transmission configurations，以适应动态 QoS requirements。
+
 ```text
 6G study fast adaptation of transmission configurations at both UE and RAN to accommodate dynamic QoS requirements.
 [2 min]
@@ -1885,6 +2306,8 @@ R2-2508658	On 6G QoS Framework	Lenovo	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.2-p023`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.2 QoS, QoE and Service-awareness
+
+RAN2 应研究 dynamic QoS adaptation 引起的 layer 2 影响，例如 DRB packet 的 LCP adaptation 或 retransmission。相关示例包括支持 dynamic splitting/offloading rendering tasks 和 GenAI service。
 
 ```text
 RAN2 should study layer 2 impacts (e.g., adaptation of LCP /retransmission of packets of a DRB) caused by dynamic QoS adaptation e.g., to support dynamic splitting/offloading rendering tasks and GenAI service.

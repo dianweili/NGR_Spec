@@ -1,12 +1,23 @@
 # 6GR 初始接入与系统信息
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：讨论中
 
-_尚无综述_
+RAN2 已形成若干研究基线：SIB1 至少承载通用驻留、接入及 SI 调度信息，OD-SI 以 NR 的 Msg3 请求机制为起点，并研究 Msg1 方案。SI 调度研究正聚焦可扩展的统一框架，包括窗口起始位置、宽度、未广播 SI 的窗口处理，以及缩短 SI 接收时间的方案。SIB1 拆分、按需与区域特定 SI、跨小区共享 SI，以及多载波初始接入仍处于研究或暂缓阶段；相关讨论需权衡能耗、接入时延、实现复杂度及网络协调成本。RAN2#134 将 SI 调度工作拆为建立基线框架和评估快速接收机制两项目标，尚未记录关键设计的最终决定。
+
+**未决问题**
+
+- SIB1 是否拆分、采用何种拆分方式，以及拆分引入的接入时延是否可接受，仍待研究；相关讨论已暂缓，等待内容或需求进一步明确。
+- SIB1 应包含哪些通用信息，哪些 UE 接入、区域特定或设备/特性专属信息可移至其他 SI，仍未定；区域特定 SIB1 也未有决定。
+- OD-SI 请求机制仍需比较 Msg1 与 Msg3 方案，并进一步研究 standalone OD-SIB1 的可行性与收益。
+- SI 窗口宽度、起始位置和窗口映射方式，以及如何处理未广播 SI 的窗口预留，尚未收敛；窗口聚合的网络节能收益及 UE 影响也需评估。
+- 跨小区共享系统信息、area-specific SI 的部署与协调简化，以及 SI 变更通知粒度，仍需进一步研究。
+- 多小区/载波协调接入、碎片化频谱的 cell 建模及 IDLE/INACTIVE 多载波需求尚待讨论，并需与 RAN1/RAN4 协调。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.2.3 System Information
+
+研究按每条 SI message 配置 SI-window width，并在方案研究中考虑 UE impacts、避免频繁 SI updates。还将研究显式或隐式的 window start positions，及其与每条 SI window width 和 UE calculations 的配合。
 
 ```text
 1	Study per-SI-message configuration of SI-window width.  During the study of the various solutions, companies should consider UE impacts and avoid frequent SI updates.
@@ -24,12 +35,16 @@ R2-2603731	Views on 6G system information	Apple	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.2.3 System Information
 
+原文指出，flexible SI scheduling 带来的 UEPS 收益有限，因为现有 scheduling mechanism 运作良好，且 UE 只需在相对较长的周期内接收一次 SIBs。
+
 ```text
 The flexible SI scheduling brings marginal UEPS benefit, since existing scheduling mechanism functions well and the UE only needs to receive SIBs once within a relatively long period.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.3-o001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
+
+6GR SI framework 应考虑为每条 SI message 配置 SI-window start position 和 SI-window width。原文指出，NR 可结合 implicit 和 explicit SI window determination，以减少 SI 配置开销并提升部分 SI messages 的配置灵活性。
 
 ```text
 For 6GR SI framework, the following mechanisms should be considered:
@@ -43,6 +58,8 @@ Observation 1-4: 	In NR, the implicit and explicit SI window(s) determination me
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
 
+RAN2 将研究结合 explicit window start positions（per SI message configurable position）与基于 scheduling list 顺序的 implicit window start positions。原文指出，每个 SI window 仅支持 SI window granularity offset 可能增加 common signalling 总发送时长；结合该 offset 与适用于所有 SI windows 的 SFN 或 slot granularity offset 可使首个 SI window 紧接 SIB1 或其他 common signals 开始，并减少开销。
+
 ```text
 RAN2 to study supporting a mixed use of explicit window start positions (per SI message configurable position) and implicit window start positions (based on the order of SI message in the scheduling list) as in NR.
 Observation 2-3:	Only supporting the SI window granularity offset for each SI window (as si-WindowPosition introduced in NR R17) may not allow the SI window of the first SI message to start immediately after SIB1 or other common signals. This will cause an increase in the total duration for sending the common signalling, which is not beneficial for network energy saving.
@@ -52,6 +69,8 @@ Observation 2-5:	Supporting the SI window granularity offset for each SI window 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.3-p002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
+
+RAN2 将研究在 per-SI-window、SI window granularity start position 之外，为所有 SI windows 配置 SFN 或 slot granularity start position，以便将 SI transmission 与其他 common broadcast signalling 聚集。关于 per-SI-message SI-window width 的讨论意见不一，原文未给出结论。
 
 ```text
 RAN2 to study a configurable start position of all SI windows (with SFN or slot granularity) in addition the per SI window start position (with SI window granularity, as si-WindowPosition introduced in NR R17), so that the SI transmission can be clustered with other common broadcast signalling.
@@ -69,6 +88,8 @@ Discussion per-SI-message configuration of SI-window width?
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
 
+6G on-demand SI design 以 NR Msg3-based OD-SI design 为起点。RAN2 应研究 Msg1-based 和 Msg3-based Other SI request schemes；原文指出前者降低 UE complexity 和 power consumption，后者可一次请求多个 SI 并避免大量请求。
+
 ```text
 On demand SI design in 6G takes the NR Msg3 based OD-SI design as starting point.
 R2-2603252	Discussion on the system information for 6GR	Google	discussion	Rel-20	FS_6G_Radio
@@ -82,6 +103,8 @@ R2-2602953	Discussion on 6GR system information design	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
 
+对于 non-broadcasting SI，其 SI window position 不在 SIB1 中预留；broadcast status 通过 SIB1 modification 改变，并遵循与其他 system information changes 相同的 SI modification period。临时 OD-SI transmission 的 reception window 可通过 SI request 响应或预定义时机上的 L1 signalling 指示给 UE。
+
 ```text
 To address the problem of reserving SI window for currently non-broadcasted SI, RAN2 support the solution as follows:
 -	The SI window position of SI whose broadcast status is ‘non-broadcasting’, is not pre-reserved in SIB1. Broadcast status change is performed via SIB1 modification, and follows the SI modification period like other system information changes.
@@ -92,6 +115,8 @@ R2-2603666	System Information for 6GR	InterDigital, Inc.	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
 
+RAN2 将进一步研究解决未广播 SI message 预留 SI window 问题的三种方案：有 SI 未广播时将 SI windows 前移、将 on-demand SI 的 SI windows 配置在 SI transmission period 末尾，以及在 SI request 后提供 dynamically allocated windows 的 SI scheduling information。
+
 ```text
 RAN2 further study the three solutions for the problem of reserving SI window for not broadcasting SI message: 1) Moving SI windows forward when some SI are not being broadcast; 2) Configuring SI windows of on-demand SI at the end of the SI transmission period; 3) SI scheduling information of dynamically allocated windows provided upon SI request
 [20 min]
@@ -101,6 +126,8 @@ R2-2603799	AreaScope and SI scheduling	Lenovo	discussion	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.3-p006`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
+
+Paging DCI 包含指示哪些 SIB(s) 已修改或更新的 SI-modification information，使 UE 仅在更新的 SIB(s) 与其相关时获取信息。原文还提出进一步讨论同一 SI window 内多个 SI messages 的 TDM 方案（通过 PDCCH 动态指示下一条传输）和 FDM 方案（在载波带宽不同部分传输）。
 
 ```text
 Paging DCI includes SI-modification information on which SIB(s) have been modified/ updated so that UE acquires updated information only if the updated SIB(s) is of interest to it.
@@ -123,6 +150,8 @@ R2-2603364	System information for 6G radio	MediaTek Inc.	discussion	Rel-20	FS_6G
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.2.3-p007`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.2.3 System Information
+
+RAN2 应将 SI scheduling study 拆分为两个目标：优先建立 extensible、unified SI scheduling baseline framework，并考虑 R17 configurable starting position；另一个目标是研究更短时间内接收 SI 的机制，并重新评估 power-saving gains、相关影响及与其他 NES features（如 OD-SIB）的比较。
 
 ```text
 RAN2 should decouple the study of SI scheduling into separate targets:
@@ -160,6 +189,8 @@ R2-2604094	Discussion on the 6G system Information	CSCN	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.3 System Information
 
+研究 periodic SI window，包括可配置的 window 宽度和起始位置，并研究如何处理当前未广播 SI 的窗口预留问题。灵活 SI scheduling 可研究将不同 periodicities 的 SIBs 合并传输、在一个 SI-window 内发送多个 SI messages，或通过不同 frequency resources 发送；评估需考虑网络节省、UE 功耗与复杂度及 SI modification 影响。
+
 ```text
 1	Study periodic SI window, including configurable width of window(s), configurable start position.
 2 	Study how to address the problem of reserving SI window for currently non-broadcasted SI
@@ -184,6 +215,8 @@ R2-2602423	Discussion on 6G system information	CMCC	discussion	Rel-20	FS_6G_Rad
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.3 System Information
 
+NR SIB1 的主要开销来自 DL 和 UL BWP configurations，约占 70%；启用 SUL 或 RedCap 的 initial DL/UL 配置时，BWP 相关配置大小至少翻倍。若网络配置多个 SI、PLMN ID list、UAC list 并支持 RedCap 等额外特性，SIB1 很可能超过 2976 bits 限制。
+
 ```text
 For contributors of NR SIB1 size:
 -	The main overhead lies in DL and UL BWP configurations for approximately 70% (including initial UL, initial DL, SUL, and initial DL/UL for specific features like RedCap);
@@ -196,12 +229,16 @@ For contributors of NR SIB1 size:
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.3 System Information
 
+当 SIB1 被拆分且部分内容移至 OSI 时，最坏情况下获取完整 SIB1 的时延预计等于最短 SI message periodicity，通常为 80 ms。
+
 ```text
 When SIB1 is split and part of it is moved to OSI, in worst case the latency to acquire the complete SIB1 is expected to be equal to the shortest SI message periodicity (typically 80 ms).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-o002`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.3 System Information
+
+当前 NR SIB1 的很大一部分由 UL 和 DL cell configurations 构成，例如 servingCellConfigCommon、RACH configurations 和 initial BWP。多数此类信息仅在 UE 主动发起接入时需要，而 UE 仅驻留时不需要。
 
 ```text
 A significant portion of the current NR SIB1 consists of UL and DL cell configurations (e.g., servingCellConfigCommon, RACH configurations, and initial BWP). Most of this information is only required when the UE actively initiates access, not when it is merely camping.
@@ -210,12 +247,16 @@ A significant portion of the current NR SIB1 consists of UL and DL cell configur
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.3 System Information
 
+将 access information 移到另一条 SI message 以解决 SIB1 大小问题，会因 two-step acquisition 及需在 SI window 内获取而引入相较 NR 的接入时延；原文认为 6G 应避免这种做法。
+
 ```text
 Moving access information to a different SI message to solve the SIB1 size issue introduces an access delay compared to NR due to two-step acquisition and the need to acquire within an SI window. This should be avoided in 6G.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-o004`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.3 System Information
+
+5G 中，SIB1 大量包含支持特定 features 或 verticals 所需的系统信息。特定 features/verticals 的驻留和接入信息增大了 SIB1，并常导致不必要的网络/UE 功耗。
 
 ```text
 Lesson learned from 5G: A large amount of SIB1 in 5G consists of system information needed to support specific features or verticals. Camping and access information specific to certain features/verticals has resulted in increase in SIB1 size and often unnecessary network/UE power consumption.
@@ -224,6 +265,8 @@ Lesson learned from 5G: A large amount of SIB1 in 5G consists of system informat
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.3 System Information
 
+增强网络节能的最有效方式是尽可能少发送 SIB1。
+
 ```text
 Most efficient way to enhance network energy saving is to send SIB1 as seldomly as feasible
 ```
@@ -231,12 +274,16 @@ Most efficient way to enhance network energy saving is to send SIB1 as seldomly 
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
 
+RAN2 需确认 SIB1 split 引入的时延可以接受，且不构成该研究的 showstopper。是否以及如何改善时延仍待研究（FFS）。
+
 ```text
 RAN2 to confirm that the increased latency introduced by SIB1 split is acceptable and not considered as a showstopper for the SIB1 split study. FFS whether and how to improve the latency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-p001`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
+
+RAN2 将讨论三种 SIB1 splitting 方法并确定偏好：将 UE access 相关字段、area-specific 字段，或不同 device types（如 eMBB UEs）对应字段移至 subSIB1。
 
 ```text
 RAN2 to discuss the following three methods of SIB1 splitting and to conclude on RAN2 preference:
@@ -250,6 +297,8 @@ R2-2601507	System information in 6GR	Xiaomi	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
 
+RAN2 可假设从 NR Rel-15 SIB1 拆出的信息量（包括 UE access 相关信息和 paging information）约为 200 至 12000 bits。实际部署中的信息量可能小得多，例如低一个数量级。
+
 ```text
 RAN2 can assume that the size of the information that can be split out from NR Rel-15 SIB1 (including UE access related information and paging information) ranges from about 200 bits (based on RAN5 test setup) to 12000 bits (the maximum size allowed by ASN.1 signalling, and the actual size in real deployment can be much smaller, e.g. one order of magnitude).
 ```
@@ -257,12 +306,16 @@ RAN2 can assume that the size of the information that can be split out from NR R
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
 
+RAN2 讨论是否将 UE access 相关信息和 paging information 移出 SIB1。主要权衡是减少 SIB1 大小与增加 UE 获取相关信息前接入网络的时延。
+
 ```text
 RAN2 discusses whether to move UE access related information and paging information outside of SIB1, considering the main trade-off being the SIB1 size reduction at the cost of latency of access to network (if UE has not obtained the related information).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-p004`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
+
+RAN2 假设 SIB1 包含 6GR 中适用于所有 features/device types 的通用信息。
 
 ```text
 RAN2 assumes SIB1 includes the information commonly applied to all features/device types in 6GR.
@@ -273,6 +326,8 @@ R2-2602197	System Information for 6GR	InterDigital, Inc.	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
 
+提出将 SIB1 结构拆为分别发送的 primary SIB1 和 SIB1x：primary SIB1 至少包含 PLMN information、(re)selection parameters 和 cell barring；SIB1x 包含 UL/DL access BW configurations、RACH resources 和 access control parameters。
+
 ```text
 Structure SIB1 as two separately transmitted SIBs: 1) primary SIB1 which contains at least PLMN information, (re)selection parameters and cell barring; 2) SIB1x which contains UL and DL access BW configurations, RACH resources, and access control parameters.
 ```
@@ -280,12 +335,16 @@ Structure SIB1 as two separately transmitted SIBs: 1) primary SIB1 which contain
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
 
+Primary SIB1 和 SIB1x 遵循类似 legacy SIB1 的调度原则；SIB1x 不依赖 SI window concept。
+
 ```text
 Primary SIB1 and SIB1x follow scheduling principles similar to legacy SIB1 (i.e., SIB1x does not rely on SI window concept).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-p007`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
+
+SIB1x 至少包含与所有 UE 支持的最低 device capabilities 相关的驻留和接入参数。额外的 vertical/feature-specific 接入信息或其他载波相关信息可通过不同版本的 SIB1x 广播。
 
 ```text
 SIB1x contains at least the camping and access parameters relevant to the minimum device capabilities supported by all UEs.  Additional vertical/feature specific access information or information related to other carriers can be broadcast in a different version of SIB1x.
@@ -295,6 +354,8 @@ R2-2601669	System Information Handling	Nokia	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-p008`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
+
+暂缓 SIB1 splitting 讨论，待 6G SIB1 内容或新需求有进一步进展后再继续。恢复讨论时可考虑将 UE access、area-specific 或不同 device types/features 相关字段移至 SIB1x 或其他 SIB，并进一步研究 splitting 的动机以及采用 fixed 还是 flexible split。
 
 ```text
 6G should to enable sending of SIB1 less frequently than in 5G  and enable splitting of SIB1 information flexibly without fixed information contents for different instances of SIB1
@@ -342,6 +403,8 @@ Observation 4-3:	The SFN or slot granularity offset can shorten the length of th
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
 
+RAN2 将研究 SI window 的可配置起始位置，包括 slot granularity 的起始位置，以及 SI window granularity 的 per-window 起始位置（如 Rel-17 NR 的 si-WindowPosition），以便将 SI transmission 与其他 common broadcast signaling 聚集。还指出，部分 OD-SI 即使未发送也会占用 SI window 时间，并影响网络和 UE 的功耗。
+
 ```text
 RAN2 to study a configurable start position of SI windows (with slot granularity) in addition the per SI window start position (with SI window granularity, as si-WindowPosition in Rel-17 in NR), so that the SI transmission can be clustered with other common broadcast signaling.
 Observation 5-1:	Some OD-SI messages occupy SI window time even if they are not transmitted, thereby causing a relatively long total duration for sending SI messages, and affecting power consumption of network and UEs.
@@ -349,6 +412,8 @@ Observation 5-1:	Some OD-SI messages occupy SI window time even if they are not 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-p010`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
+
+RAN2 将研究 OD-SI 的 dynamic SI window allocation，例如仅在相关 OD-SI 正在广播时分配 SI windows。讨论还涉及可配置 SI window 起始点、缩短 SI messages 的整体发送时长及 clustering，并提到不排除 dedicated OD SI。
 
 ```text
 RAN2 to study a dynamic SI window allocation for OD-SI, e.g. only allocating SI windows when the related OD-SI is broadcasting.
@@ -367,6 +432,8 @@ dynamic SI window allocation
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.3-p011`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.3 System Information
+
+6G 的 on-demand SI 可考虑支持 on-demand (other) SI，并将 MSG3 based UE request OD SI 作为 baseline，且规定为 UE mandatory feature。RAN2 也应研究 Msg1- 和 Msg3-based Other SI request schemes：前者降低 UE complexity 和 SI acquisition 的 UE power consumption，后者可一次请求多个 SI 以避免大量请求。
 
 ```text
 For on-demand SI mechanism, the following can be considered in 6G:
@@ -409,6 +476,8 @@ R2-2602610	Discussion on 6G System Information	Fraunhofer IIS, Fraunhofer HHI	di
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.2.3 System Information
 
+SIB1 至少需提供用于判断 camping suitability 的 cell basic camping information、所需的 cell barring information，以及接收下一个 SIB 所需的 scheduling information；并研究将其他内容移出 SIB1 的拆分及其系统性能权衡。条目还列出 area-specific SIB1 相关提案，包括按部署场景采用 cell-specific 或 area-specific SIB1 的建议，但未记录决定。
+
 ```text
 1.	SIB1 needs to provide at least:
 -	Cell basic camping information to determine suitability check for camping
@@ -438,6 +507,8 @@ R2-2600669	Discussion on system information of 6GR	Spreadtrum, UNISOC	discussion
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.2.3 System Information
 
+研究进一步的 SI scheduling mechanisms，以支持更短时间内传输 SI，并研究基于 window scheme 的灵活 SI scheduling mechanism。研究需考虑收益与复杂度之间的权衡，并覆盖包括 low end devices 在内的所有设备。
+
 ```text
 Study further SI scheduling mechanisms to enable transmissions of SIs in a shorter period of time
 Study an a flexible SI scheduling mechanism based on window scheme
@@ -450,12 +521,16 @@ R2-2600234	System information for 6G radio	MediaTek Inc.	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
 
+原文指出，5G on-demand SIB1 mechanism 在 standalone mode 下无法良好工作，因为 UE 需要从其他 cell 获取一个 NES cell 的 OD-SIB1 request configuration。
+
 ```text
 5G on-demand SIB1 mechanism cannot work well in the standalone mode, since UE is required to acquire the OD-SIB1 request configuration for one NES cell from other cells.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-o001`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
+
+5G 的 SIB1 中有大量信息用于支持特定 features 或 verticals。
 
 ```text
 A large amount of SIB1 in 5G consists of system information needed to support specific features or verticals.
@@ -464,12 +539,16 @@ A large amount of SIB1 in 5G consists of system information needed to support sp
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
 
+5G 的经验表明，特定 features/verticals 的 camping 和 access information 增加了 SIB1 大小，并经常造成不必要的 network/UE 功耗。
+
 ```text
 Lesson learned from 5G: Camping and access information specific to certain features/verticals has resulted in increase in SIB1 size and often unnecessary network/UE power consumption.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-o003`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
+
+On-demand SI 可提高 energy efficiency。与 IDLE/INACTIVE 中基于 Msg3 的 on-demand SI 相比，基于 Msg1 的方法时延更低但占用更多 RACH resources；CONNECTED 状态支持的 on-demand SIB 包括 posSIBs、用于 ATG 的 SIB22 等。
 
 ```text
 On-demand SI can achieve energy efficiency. Compared with Msg3-based on-demand SI in IDLE/INACTIVE, Msg1-based method provides lower latency but occupies more RACH resources. And the supported on-demand SIBs in CONNECTED include posSIBs, SIB22 for ATG and so on.
@@ -478,12 +557,16 @@ On-demand SI can achieve energy efficiency. Compared with Msg3-based on-demand S
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
 
+5G SI scheduling mechanism 可能降低 network scheduling 和 UE monitoring complexity，但在需要广播或接收多个 SI message 时，会降低 network 和 UE 的 energy efficiency。
+
 ```text
 5G SI scheduling mechanism may reduce network’s scheduling and UE monitoring complexity, while reduce both network and UE’s energy efficiency when multiple SI message should be broadcasted or received.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-o005`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
+
+将多个（N）SI-message 映射到更少（<N）的 SI windows，可降低 network 和 UE 的 energy consumption，但由于同一 SI window 中传输更多 SIB，会增加 network scheduling complexity。
 
 ```text
 Mapping multiple(N) SI-message into less SI windows(<N) can reduce both network and UE’s energy consumption, while increase network’s scheduling complexity, since more SIB are transmitted in the same SI window.
@@ -492,12 +575,16 @@ Mapping multiple(N) SI-message into less SI windows(<N) can reduce both network 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
 
+在同一 SI-window 聚合不同 periodicities 的 SIB，可能增加 UE implementation complexity 或造成 SI reception 的 UE 功耗浪费。若支持该 scheduling mechanism，这些复杂度或功耗浪费将成为每种 UE implementation 都不可避免的 essential UE feature。
+
 ```text
 The flexible SI scheduling that aggregates SIBs of different periodicities in the same SI-window can lead to impact on UE implementation complexity or wasted UE power consumption for SI reception as listed in Table 1. If such an SI scheduling mechanism is supported, it has to be an essential UE feature, with the complexity or power consumption wastage unavoidable for every UE implementation.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-o007`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
+
+将不同 periodicities 的 SIB 聚合到同一 SI-window 是否能节省 NW energy consumption 尚不明确：SI window 数量或 SI transmission duration 可减少，但每个 SI-window 内的 energy consumption 会增加。
 
 ```text
 It is unclear whether aggregating SIBs of different periodicities into the same SI-window can really save the NW energy consumption, with the observation that the number of SI window/duration of SI transmission can be reduced but the energy consumption within each SI-window is increased.
@@ -506,6 +593,8 @@ It is unclear whether aggregating SIBs of different periodicities into the same 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
 
+原有 SI window design 的驱动因素在 6G 中仍然成立，但 NR SI scheduling design 的复杂性要求进行增强或简化。
+
 ```text
 The drivers for the original SI window design are still valid in 6G, but the complexity of the NR SI scheduling design(s) calls for some enhancements/simplifications.
 ```
@@ -513,12 +602,16 @@ The drivers for the original SI window design are still valid in 6G, but the com
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.3 System Information
 
+在 6G 中，UE 需要为每次 SI change 唤醒的问题预计会更严重，尤其是在通过 low-power radio 监听 paging 时。
+
 ```text
 The problem of UEs needing to wake up for every SI change may be expected to be worse in 6G, especially if paging is monitored by a low-power radio.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-o010`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+6G on-demand SIB1 design 以 NR design 为起点，RAN2 首先关注 non-standalone OD-SIB1。
 
 ```text
 6G on-demand SIB1 design takes NR design as starting point, and RAN2 focus on non-standalone OD-SIB1 first.
@@ -528,6 +621,8 @@ R2-2601123	System Information in 6G	Nokia	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p001`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+进一步研究 standalone OD-SIB1 的可行性与收益，待 RAN1 取得进展后再考虑；下一次 RAN2 会议预计不讨论 OD-SIB1。典型或基本配置下，当前 SIB1 大小已能满足要求，但复杂部署场景下 SIB1 大小可能限制更多功能。
 
 ```text
 OD-SIB procedures for 6G could be based on UE sending RACH/WUS to the cell. 6G should support methods provide WUS configuration from the cell for which SIB1 request is sent as well as providing WUS configuration from another cell (like 5G OD-SIB1) and involve RAN1 request feasibility for coverage layer on demand SIB1 support.
@@ -565,6 +660,8 @@ Observation 4-1:	In typical or basic configuration scenarios, the current SIB1 s
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
 
+SIB1 至少应包含基本 camping/access 配置和基本 SI scheduling 配置，以避免大多数部署场景中因额外消耗时间资源而增加接入时延。
+
 ```text
 At least basic camping/access related configurations and basic SI scheduling configuration shall be included in SIB1 to avoid performance degradation (i.e., increased access delay by consuming extra time resources) in the majority of deployment scenarios.
 Noted
@@ -577,6 +674,8 @@ R2-2600441	System Information for 6GR	InterDigital France R&D, SAS	discussion	Re
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p003`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+SIB1 至少包含适用于所有 UE 所支持最低设备能力的 camping 和 access 参数。是否需要额外的 vertical/feature-specific 信息，以及如何高效广播，仍待研究。
 
 ```text
 SIB1 contains at least the camping and access parameters relevant to the minimum device capabilities supported by all UEs.  FFS if additional vertical/feature specific information is needed and how to broadcast it in a signalling efficient way.
@@ -604,6 +703,8 @@ Access information
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
 
+NR 中基于 Msg1 和 Msg3 的 SI request 机制可作为 6G OD-SI procedure 的起点。
+
 ```text
 The Msg1 and Msg3-based SI request mechanism in NR can serve as the starting point for the 6G OD-SI procedure.
 R2-2600069	Discussion on System Information	CATT	discussion	Rel-20	FS_6G_Radio
@@ -611,6 +712,8 @@ R2-2600069	Discussion on System Information	CATT	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p005`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+RAN2 研究 6GR 非连接态下仅采用 Msg3-based method 的 on-demand SI，以及连接态下的 on-demand SIBs。
 
 ```text
 RAN2 study on-demand SI in non-connected mode for 6GR only within Msg3-based method, and on-demand SIBs in connected mode for 6GR.
@@ -621,12 +724,16 @@ R2-2600949	Discussion on 6G System Information	CMCC	discussion	Rel-20	FS_6G_Radi
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
 
+提议 6G SI-scheduling 基于 SI-window。
+
 ```text
 6G SI-scheduling is proposed to be based on SI-window.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p007`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+RAN2 可进一步讨论两种 SI 与 SI-window 映射机制：不同周期的 SI 映射到互不重叠的不同窗口，或映射到较少窗口并允许窗口在时域重叠。窗口长度是否可配置，以及 UE 如何消除歧义并组合重叠窗口中接收的 SI，仍有待讨论。
 
 ```text
 RAN2 can further discuss the following two SI and SI-window mapping mechanisms:
@@ -640,6 +747,8 @@ R2-2600122	Discussion on System information in 6GR	Xiaomi	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p008`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+研究将不同周期的 SIB 聚合到同一 SI-window 前，应先论证网络节能收益；若收益成立，还需评估各方案对 UE 实现和 RAN1 的影响。方案包括同一窗口内不同 SI message、时域重叠的不同窗口，以及将 SIB 放入同一 SI message；其中同一 SI message 可能导致 UE 接收不感兴趣的 SIB、增加功耗。
 
 ```text
 For the study on aggregating SIBs of different periodicities in the same SI window, RAN2 should first justify the benefits on the NW energy saving, and (if justified) carry out the study taking into account the impacts on UE implementation and RAN1 dependency by various options listed as follows:
@@ -656,6 +765,8 @@ R2-2600234	System information for 6G radio	MediaTek Inc.	discussion	Rel-20	FS_6G
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p009`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+研究灵活调整 SI scheduling window 的方案，可考虑重叠窗口、多个 SI-RNTI、显式指示窗口位置和 service-specific SIB 分组，并考虑 UE 组合 SI message 重复传输的需求。
 
 ```text
 Study an approach to SI scheduling in which the window scheme is adapted for flexibility, considering as possible enhancements overlapping windows, multiple SI-RNTIs, explicit scheduling of window positions, and grouping of service-specific SIBs, considering the need for UEs to combine SI message repetitions.
@@ -675,6 +786,8 @@ Discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.3-p010`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.3 System Information
+
+从 RAN2 角度并与 RAN1 协作，研究提高 SI change notification 的粒度，以便对 SI changes 分组，减少对变更 SIB 不感兴趣的 UE 的 wake-up events。该项未讨论。
 
 ```text
 Study (from RAN2 perspective and cooperate with RAN1) an increase in granularity for the SI change notification, with the objective of grouping SI changes and reducing wake-up events for UEs not interested in the SIB(s) that changed.
@@ -711,6 +824,8 @@ R2-2601093	Discussion on System information design principles for 6G Radio	Rakut
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.2.3 Initial and System Access and Others
 
+若 SIB1 按需传输，UE 可通过多种机制确定请求 SIB1 所用的 uplink configuration。
+
 ```text
 If SIB1 is transmitted on demand, a UE could use any of several mechanisms to determine what uplink configuration to use to request SIB1.
 ```
@@ -718,12 +833,16 @@ If SIB1 is transmitted on demand, a UE could use any of several mechanisms to de
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.2.3 Initial and System Access and Others
 
+NR 中 RMSI（即 SIB1）随网络演进显著扩展，导致信息过载。当前 RMSI 结构造成能效不佳。
+
 ```text
 RMSI (i.e., SIB1) in NR has expanded significantly with network evolution, leading to information overload. The current structure of RMSI results in suboptimal energy efficiency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-o002`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.2.3 Initial and System Access and Others
+
+指出 on-demand OSI 与 area specific SI 尚未成功商业化；若不部署 area specific SI，频繁的 UE 请求会显著削弱 on-demand SI 的收益。area specific SI 的痛点包括网络配置与 gNB 协调复杂，以及 SIB1 不能按区域配置导致 UE 仍需消耗接收 SIB1 的功耗。
 
 ```text
 On-demand OSI and area specific SI are features in initial release of 5G, but not successfully commercialized, the pain points include:
@@ -735,6 +854,8 @@ SIB1 cannot be area specific even if most of the content in SIB1 is the same, th
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-o003`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.2.3 Initial and System Access and Others
+
+RAN2 应仔细研究是否可使 system information（或部分 SIB）在多个小区间共用。另有提案提出 SIB1 可依运营商部署场景设为 cell-specific 或 area-specific，并进一步研究哪些内容可设为 area-specific。
 
 ```text
 RAN2 should carefully study if it is possible to have system information (or part of SIB) being common among multiple cells
@@ -750,6 +871,8 @@ R2-2508501	Discussion on Initial and System Access in 6GR	China Telecom	discussi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-o004`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+记录的协议方向是假设支持 on-demand SI 和 area specific SI，并进一步研究 on-demand SIB1 及哪些信息可共用；area specific SIB1 仍为 FFS。讨论还提出继承 NR 的 always-on broadcasting 与 OD-OSI/SIB1，并扩展 UE request mechanism，但相关方式仍需研究。
 
 ```text
 Both always-on broadcasting and OD-OSI/SIB1 mechanism specified in NR should be inherited in 6GR. And extend NR OD-SIB1 with UE request mechanism to cover: 1) standalone OD-SIB1 (e.g. the UE can obtain OD-SIB1 request configuration from SSB of the OD-SIB1 cell); 2) cell A-assisted OD-SSB&OD-SIB1 (i.e. cell A provides the OD-SSB&OD-SIB1 request configuration of the NES cell).
@@ -775,6 +898,8 @@ R2-2508346	System information and access for 6G radio	MediaTek Inc.	discussion	R
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+记录研究按需请求 SIB1 的选项，包括新到达小区的 UE 如何获取请求配置：固定 uplink configuration、PHY/MIB 中的 indexed uplink configuration，或通过 MIB/其他 SI 显式信令配置。
+
 ```text
 Study options for requesting SIB1 on demand, including how a newly-arrived UE in a cell can obtain a configuration for requesting SIB1, e.g., via a fixed uplink configuration, an indexed uplink configuration in PHY/MIB, or an explicit uplink configuration signalled in the MIB or in other SI.
 Noted
@@ -785,6 +910,8 @@ Observation 2-1:	The current SI scheduling mechanism restricts the network's abi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p002`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+记录研究更灵活的 SI scheduling，以及与其他 common signalling 的传输聚类或捆绑，并考虑 UE 与网络复杂度；目标是在可行时采用一种机制。研究动因包括减少 SI windows 和 SI transmission 时长，讨论也提及 CELL DTX/DRX 与能量节省。
 
 ```text
 In order to reduce the number of SI windows and thereby decrease the duration of SI transmission, RAN2 should study the mechanisms of mapping SIBs with different periodicities into one SI window.
@@ -814,6 +941,8 @@ R2-2508081	On system information, paging, initial access and spectrum aggregatio
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+提出 6G SIB1 至少包含 UE 小区驻留所需的通用信息，以及获取其他 SI 和进行 paging monitoring 所需的通用调度/资源配置信息。若支持 OD-SI，SIB1 还应包含 SI request 的 RACH configuration（可纳入 SI scheduling info）。
+
 ```text
 6G SIB1 should include at least the following essential common information:
 	Information used by the UE for cell camping (e.g. PLMN/TA info, Cell barring info, cell selection info, etc. as in 5G NR);
@@ -828,6 +957,8 @@ R2-2508068	Considerations on Spectrum Aggregation, Initial and System Access	CAT
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+研究将 RMSI 重构为 sub-RMSI1（例如 camping 信息）和 sub-RMSI2（例如 access 信息），以进一步降低网络和 UE 的能耗与复杂度。记录指出，UE 若无需读取第二个 SIB，可能节省功耗；拆分也可能带来 latency cost。
+
 ```text
 In order to further reduce energy consumption and the complexity for both network and UE, RAN2 study to restructure RMSI in 6GR, e.g., RMSI in NR (SIB1) is restructured into sub-RMSI1 (e.g, information for camping) and sub-RMSI2 (e.g, information for access).
 -	Nokia asks if there is any UE power savings.    CATT thinks there is power saving as the UE won’t have to read the second SIB if it doesn’t have to.
@@ -838,6 +969,8 @@ R2-2508147	Initial and System Access for 6G	LG Electronics Inc.	discussion	Rel-2
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p005`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+研究 6GR 中模块化 SIB1 的可扩展大小构造与传输：SIB1 由多个信息模块组成，并可按模块设计调度、传输、更新和维护。讨论中有人指出，这与拆分 SIB 的做法相同。
 
 ```text
 Study a scalable size of modular SIB1 construction/transmission for 6GR
@@ -850,6 +983,8 @@ R2-2508746	Observations for initial and system access	Lenovo, Aumovio	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p006`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+SIB1 splitting 的研究应基于 SIB1 on-demand provisioning 进行评估，并考虑目标小区规模下合理的 PBCH load 限制。讨论结论是先了解 SIB1 的设计、内容和大小，再结合收益、UE 与网络影响及 access latency，重新评估是否需要拆分。
 
 ```text
 A study for SIB1 splitting should be justified with evaluation assuming SIB1 on-demand provisioning and keeping in mind plausible PBCH load restrictions for intended cell sizes.
@@ -872,6 +1007,8 @@ R2-2508346	System information and access for 6G radio	MediaTek Inc.	discussion	R
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+提议从 RAN2 角度研究提高 SI change notification 的 granularity，以减少对变更的 SIB 不感兴趣的 UE 的 wake-up events。
+
 ```text
 Study (from RAN2 perspective) an increase in granularity for the SI change notification, with the objective of reducing wake-up events for UEs not interested in the SIB(s) that changed.
 (Not treated) SIB Validity
@@ -880,6 +1017,8 @@ R2-2508619	Discussion on cell management and system access	Huawei, HiSilicon	dis
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p008`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+提议联合研究 on-demand SI 与 area-specific SI，以最大化网络和 UE 的节能收益。还提出简化 SI area 部署，例如使网络侧 area management（identical SI identification 和 update synchronization）不必依赖 inter-RAN node comparison/coordination。
 
 ```text
 Regarding on-demand SI and area-specific SI, RAN2 should:
@@ -891,6 +1030,8 @@ R2-2508244	System Access and Carrier Aggregation in 6GR	Nokia, Nokia Shanghai Be
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+支持在 6G paging 设计中采用不均匀的 PF/PO 分布。
+
 ```text
 Support uneven distribution of PF/PO in 6G paging design.
 Multicarrier for “IDLE”
@@ -900,12 +1041,16 @@ R2-2508409	6G initial and system access	ZTE Corporation, Sanechips	discussion	Re
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+提议支持统一的 multi-cell/carrier coordinated initial and system access procedure，以高效利用频谱、时间和空间域资源及 satellite orbits，并提供整体覆盖和高吞吐，同时降低网络与 UE 的能耗。
+
 ```text
 A unified multi-cell/carrier coordinated initial and system access procedure should be supported for efficient utilization of network resources, e.g. spectrum, time and spatial domain resources, satellite orbits, to provide overall coverage, high throughput with reduced energy consumption at both network and UE side.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p011`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+提出 multi-cell/carrier coordinated initial and system access 的功能：UE 在 anchor cell/carrier 接收系统信息（包括 assisting cell/carrier 的初始接入信息），需要接入时在 anchor 与 assisting cells 中选择接入载波并执行接入。Assisting cell/carrier 可采用 TDD 或 FDD、可与 anchor 共址或非共址；其频谱资源应建模为 cell 还是 carrier 尚待讨论。
 
 ```text
 Multi-cell/carrier coordinated initial and system access need incorporation of the following functionalities.
@@ -922,6 +1067,8 @@ R2-2508850	Initial and System Access for 6GR	Samsung	discussion	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+为高效利用碎片化频谱，支持由 fragmented carriers 构成的 single cell 概念。N-carrier Single Cell（NSC）包含 DL/UL anchor carriers 和一个或多个 DL/UL non-anchor carriers，初始接入在 NSC 的 anchor carrier 上执行。
+
 ```text
 For efficient usage of fragmented frequency spectrum, the single cell concept with fragmented carriers is supported. The N-carrier Single Cell (NSC) consists of DL/UL anchor carriers and one or more DL/UL non-anchor carrier(s). The initial access is performed on the anchor carrier of the NSC.
 -	Huawei asks what is the purpose of the non-anchor carrier if initial access is done in anchor.   Samsung explains that this is similar to SUL.   Huawei thinks that if it is like SUL then initial access can be performed in non-anchor carrier.
@@ -932,6 +1079,8 @@ R2-2508244	System Access and Carrier Aggregation in 6GR	Nokia, Nokia Shanghai Be
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p013`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+同意研究 IDLE/INACTIVE（如支持）状态下对 multicarrier operation 的需求，涵盖用于 paging、system information 和/或 random access 的载波。研究需考虑 latency、设备类别与特性、capacity、coverage、UE 功耗与复杂度、网络节能，并与 RAN1/RAN4 密切协调；cell 建模仍待讨论。
 
 ```text
 RAN2 to study the need for multicarrier operation (carrier(s) for paging and/or random access) considering all device categories by e.g., taking into account latency and capacity requirements
@@ -953,6 +1102,8 @@ R2-2508672	Discussion on initial access and system information	NEC	discussion	Re
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+RAN2 将 CA 作为基线，用于聚合一个频段内的连续频率资源（作为一个 cell）和另一频段内的连续频率资源（作为另一个 cell），并研究其改进。
+
 ```text
 RAN2 assume to support the CA as baseline for aggregating consecutive frequency resources of one band (as one cell) and another consecutive frequency resources of the other band (as the other cell) and study its improvements.
 ```
@@ -960,12 +1111,16 @@ RAN2 assume to support the CA as baseline for aggregating consecutive frequency 
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+RAN2 将 BWP 作为基线，至少用于一个 cell 内的连续频率资源，并研究其改进。
+
 ```text
 RAN2 assume to support the BWP as baseline at least for consecutive frequency resources within a cell and study its improvements.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p016`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+RAN2 将与 RAN1 和/或 RAN4 协调，研究聚合多个频谱片段的潜在用法。示例包括将每个片段视为一种 BWP 并一次使用单个 active BWP，或将多个 BWP 用作 BWP aggregation。
 
 ```text
 RAN2 study potential usage of aggregation of multiple pieces of spectrums with coordinating with RAN1 and/or RAN4, where examples are:
@@ -977,6 +1132,8 @@ R2-2508409	6G initial and system access	ZTE Corporation, Sanechips	discussion	Re
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+6G 中面向 RRC connected 的 spectrum aggregation 将考虑 capacity、coverage 和 robust enhancement，并支持 collocated 与 non-collocated deployment。目标还包括弱化 PCell 与 SCell 的区分，以及实现快速 PCell change 和 recovery。
+
 ```text
 The spectrum aggregation for RRC connected in 6G shall consider capacity, coverage and robust enhancement, support both collocated and non-collocated deployment, Aim to weaken the distinction between PCell and SCell, Strive to achieve fast PCell change & recovery.
 R2-2508452	Views on 6G Spectrum Aggregation	Apple	discussion	Rel-20	FS_6G_Radio
@@ -984,6 +1141,8 @@ R2-2508452	Views on 6G Spectrum Aggregation	Apple	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p018`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+RAN2 研究 6G CA 时应考虑两个方向：为 SCell 支持更多功能（例如 RLM、RA-SR），以及通过 SCell 进行 PCell failure recovery。
 
 ```text
 RAN2 study on 6G CA should consider the following two directions:
@@ -996,6 +1155,8 @@ R2-2508072	Discussion on initial and system access	Transsion Holdings	discussion
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
 
+5G 的 UAC、Cell status、cell reservations 和基于 MSG3 cause 的 RRC Reject 将作为 6G cell access control 设计的基线。RAN2 将与 SA1/CT1 协调，研究基于更细粒度的 access control 增强。
+
 ```text
 The UAC, Cell status and cell reservations, RRC Reject based on MSG3 cause from 5G will be baseline for cell access control design in 6G.
 R2-2508141	Discussion on 6GR Initial Access and Spectrum aggregation	OPPO	discussion	Rel-20	FS_6G_Radio
@@ -1005,6 +1166,8 @@ R2-2508590	Discussion on Initial and System Access for 6GR	HONOR	discussion	Rel-
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.2.3-p020`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.2.3 Initial and System Access and Others
+
+提出 6G 应设计统一的 access control mechanism，考虑不同 service type、device type 以及 NW/UE capability。Barring information 可通过 system information 携带。
 
 ```text
 For 6G, RAN2 should aim to design a unified access control mechanism considering different service type (e.g., emergency call, MT, MO, or other 6G new services), and device type and NW/UE capability. Barring information could be carried in system information.

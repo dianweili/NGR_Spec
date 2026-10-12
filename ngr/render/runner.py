@@ -37,7 +37,19 @@ def render_all(events: list[dict], features: list[Feature], feat_state: dict,
 
     def write(rel: str, text: str) -> None:
         p = out_dir / rel
-        p.write_text(text, encoding="utf-8", newline="\n")
+        # 浏览器或预览器短暂占用旧文件时，直接截断写入会使整轮摘要在最后
+        # 一步失败。先写同目录临时文件，再原子替换；Windows 上遇到短暂句柄
+        # 占用时重试，旧页面始终保持完整。
+        tmp = p.with_name(f".{p.name}.tmp")
+        tmp.write_text(text, encoding="utf-8", newline="\n")
+        for attempt in range(5):
+            try:
+                tmp.replace(p)
+                break
+            except OSError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.2 * (attempt + 1))
         written.append(p)
 
     write("dashboard.md", render_dashboard(events, features, feat_state,

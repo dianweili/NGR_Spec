@@ -1,12 +1,22 @@
 # 6GR MAC 与调度
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+RAN2#132 至 #134 已形成 6GR MAC 与调度的若干基线：支持 dedicated SR、buffer/delay status reporting、基于序列号的 L2 ARQ recovery，并以 legacy per-LCG reporting 和 NR 4-step/2-step RA 等作为起点。工作重点包括评估 CB-PUSCH 对低时延和资源效率的收益、增强 CG 的灵活配置与资源回收，以及改进 scheduling information reporting 和 LCP，以适配突发、时延敏感及具备不同 QoS 的业务。部分方向已有共识或评估假设，例如 4-step 与 2-step RA 均受支持、UE 可配置多个 CG，以及 CB-PUSCH 评估从共享资源传输 BSR 开始。整体仍处于收敛阶段，关键机制的适用范围、细节及与物理层设计的协同尚未全部确定。
+
+**未决问题**
+
+- CB-PUSCH 是用于一般上行目的还是限于 BSR，以及其相对 SR/其他方案在碰撞、时延和资源效率上的表现仍待评估；评估还依赖 UE population、traffic models 和 RAN1 物理层输入。
+- 统一的 BSR/DSR 或上行状态报告机制仍待明确，包括报告内容与粒度、触发条件、格式，以及是否包含 data importance、anticipated arrival 等信息。
+- LCP 与 UL grant 的增强粒度、动态参数调整方式，以及如何权衡 DCI 开销、QoS 适配和多种性能目标仍待研究。
+- CG 的配置更新、动态激活与资源回收机制，以及其相对 dynamic grant 的适用性仍待进一步明确。
+- 2-step/4-step RA 的统一方式、CB-PUSCH 与 RACH 的关系、fallback 条件、RACH partitioning 及动态资源分配细节仍有待解决。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
+
+由于 XR 和 IC 等实时流量出现增多，legacy LCP procedure 可能不足以支持 6G 中更多样的流量。
 
 ```text
 The legacy LCP procedure may not be sufficient in supporting more diverse traffic in 6G, due to increased presence of real time traffic such as XR and IC.
@@ -15,12 +25,16 @@ The legacy LCP procedure may not be sufficient in supporting more diverse traffi
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
 
+6G 的新用例和流量特征要求更具适应性的 LCP。
+
 ```text
 New use cases and traffic characteristics in 6G call for more adaptive LCP.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-o002`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
+
+现有 LCP framework 可通过为每个 QoS flow 配置专用 DRB/LCH 实现 QoS adaptation，但受 DRB/LCH 数量有限、配置开销以及半静态 priority、PBR 和 BSD 限制，缺乏可扩展性和动态性。
 
 ```text
 Existing LCP framework can achieve QoS adaptation by configuring dedicated DRB/LCH per QoS flow. However, it is not scalable and dynamic due to the limited number of DRBs/LCHs, configuration overhead, and semi-static priority, PBR and BSD.
@@ -29,12 +43,16 @@ Existing LCP framework can achieve QoS adaptation by configuring dedicated DRB/L
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
 
+5G NR 的 LCP procedure 在 MAC entity 中所有已选 logical channel 之间执行，导致 XR service 和 mobile AI 的各 traffic stream uplink grant 调度缺乏灵活性。
+
 ```text
 LCP procedure in 5G NR is performed among all the selected logical channels in the MAC entity, causing inflexibility to schedule the uplink grant for each traffic streams in XR service and mobile AI.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-o004`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
+
+NR 中为 XR traffics 设计的 refined buffer status granularity 仍会在大数据量下产生 quantization errors。
 
 ```text
 In NR, refined buffer status granularity was intended for XR traffics. Therefore, quantization errors would still occur for large data volumes.
@@ -45,12 +63,16 @@ R2-2603343	Scheduling Aspects for 6GR	Sharp	discussion
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
 
+6G 中需要更高效地使用 SR resources，以便为小区内尽可能多的 UEs 提供低时延 UL access。
+
 ```text
 SR resources need to be used more efficiently in 6G, to provide low latency UL access to as many UEs as possible in a cell.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-o006`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling
+
+Short BSR 的 maximum reportable size 对应的 UL grant 无法传完剩余 UL data 时，UE 必须等待 periodicBSRTimer 到期后才能再次发送 BSR，因此会增加时延。
 
 ```text
 The UE must wait for the expiration of the periodicBSRTimer to be triggered to send another BSR for the remaining UL data that could not be transmitted using the UL grant corresponding to the maximum reportable size of a Short BSR.　This leads to additional delay.
@@ -59,12 +81,16 @@ The UE must wait for the expiration of the periodicBSRTimer to be triggered to s
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+研究新的 LCP 设计，在一个统一流程中支持具有不同性能目标的多样化业务，例如最大化吞吐量或保证时延。
+
 ```text
 Study new LCP designs that can support diverse traffic with distinct performance objectives (e.g. maximize throughput vs guarantee delay) in one unified procedure.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+研究自适应 LCP 设计，以更好支持 6G 用例，包括动态参数适配，以及提高 UE 在信道选择和优先级设置方面的灵活性。该提案已记录（Noted）。
 
 ```text
 Study adaptive LCP designs that can better support 6G use cases, e.g. dynamic parameter adaptation, increased UE flexibility in channel selection and prioritization.
@@ -74,6 +100,8 @@ R2-2602948	Discussion on 6GR scheduling	vivo	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+RAN2 将进一步研究面向 6GR 的 LCP 增强，并考虑时延、重要性及 QoS flow/packet 间依赖等业务特征。相关意见指出，需识别现有设计的不足，并考虑为多样化数据重新审视 LCP。
 
 ```text
 RAN2 to further study LCP enhancements considering various traffic characteristics, e.g., delay, importance, inter-QoS flow/packet dependency for 6GR.
@@ -90,6 +118,8 @@ R2-2604156	Views on UL scheduling	NTT DOCOMO INC..	discussion
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+研究 UL 资源分配框架，使其能以比 LCH 级更细的粒度进行动态控制，以支持 QoS adaptation 并缓解 inter DRB HoL blocking。该提案已记录（Noted），讨论中有人询问 finer granularity 的含义。
+
 ```text
 Study the framework for allocating UL resources to UL data that allow dynamic control at a finer granularity than the LCH level to enable QoS adaptation and to mitigate inter DRB HoL blocking.
 -	Lenovo asks what is meant by finer granularity
@@ -99,6 +129,8 @@ R2-2603353	Consideration on Scheduling and uplink scheduling information in 6G	L
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p004`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+研究更细粒度的 UL grant 增强，例如 per-LCG 或 per-LCH UL grant；提案还提出 RAN2 与 RAN1 共同研究 UL grant 粒度改进。讨论涉及 DCI signaling 开销、对 LCP 和 BSR 的影响，以及需要明确问题与场景；该议题已记录（Noted）。
 
 ```text
 Study UL grant enhancement with finer granularity, e.g., per-LCG UL grant, per-LCH UL grant.
@@ -131,6 +163,8 @@ R2-2602948	Discussion on 6GR scheduling	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 将支持在 scheduling information 中报告 data importance information，其粒度仍待确定（FFS）。
+
 ```text
 RAN2 to support data importance information reporting as part of scheduling information. FFS the granularity of the importance information.
 R2-2603115	Uplink scheduling in 6G	Samsung	discussion	Rel-20	FS_6G_Radio
@@ -139,6 +173,8 @@ R2-2603115	Uplink scheduling in 6G	Samsung	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 将考虑在 6G 中使用 BSR 指示待处理的 MAC CE 及其潜在大小。
+
 ```text
 RAN2 to consider using BSR to indicate the pending MAC CE(s) and their potential size in 6G.
 R2-2603466	UP Scheduling aspects	Nokia	discussion	FS_6G_Radio
@@ -146,6 +182,8 @@ R2-2603466	UP Scheduling aspects	Nokia	discussion	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p007`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+支持在 6G 中至少将 PHR reporting 与 BSR/DSR 分开。PHR mechanism 的细节可待 CA framework 和 RAN1 对 MIMO 的要求更明确后再讨论。
 
 ```text
 At least separate PHR reporting from BSR/DSR is supported for 6G. The details on the PHR mechanism could be discussed later after the CA framework as well as the RAN1 requirement on MIMO become clearer.
@@ -156,6 +194,8 @@ R2-2603038	Discussion on scheduling	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 以 legacy per-LCG scheduling information reporting 作为基线。
+
 ```text
 RAN2 to reuse the legacy per-LCG scheduling information reporting as the baseline.
 R2-2603907	Discussion on MAC scheduling enhancements	1Finity	discussion	Rel-20	FS_6G_Radio
@@ -163,6 +203,8 @@ R2-2603907	Discussion on MAC scheduling enhancements	1Finity	discussion	Rel-20	F
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p009`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+RAN2 研究更细粒度的 SR，以支持无需单独发送 BSR 即可直接分配 UL 资源。
 
 ```text
 RAN2 to study finer granularity of SR to enable direct UL resource allocation without separate BSR transmission.
@@ -172,6 +214,8 @@ R2-2603263	Views on 6G User Plane: Scheduling	Apple	discussion	Rel-20	FS_6G_Radi
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+为降低 SR/BSR latency，可考虑用 SR configuration ID 表示与 buffer status 相关的信息，例如 buffer size 或是否存在 delay-critical data。这样网络可在没有 BSR 的情况下及时分配更合适的 UL 资源。
+
 ```text
 To reduce SR/BSR latency, RAN2 can consider using SR configuration ID to represent certain information related to the buffer status (e.g. buffer size, or presence of delay-critical data), such that network can timely allocate more appropriate UL resource even without BSR.
 R2-2602940	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
@@ -179,6 +223,8 @@ R2-2602940	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p011`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+研究提高 SR resources 使用效率的方法，例如与 PDCCH 联合调整、动态 de-/activation SR resources，以及避免 resource partitioning。
 
 ```text
 Study methods to achieve more efficient use of SR resources, e.g. joint adaptation with PDCCH, dynamic de-/activation of SR resources, avoid resource partitioning, etc.
@@ -189,6 +235,8 @@ R2-2603603	Further Discussion on Uplink Scheduling	Lenovo	discussion	Rel-20	FS_6
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+对于 6G unified uplink data status procedure 的触发条件，RAN2 同意将 5G NR 规定的 BSR 和 DSR triggering events 作为基线。
+
 ```text
 RAN2 to agree that for the triggering conditions for the unified uplink data status procedure in 6G, BSR and DSR triggering events specified for 5G NR are considered as a baseline.
 R2-2603475	Scheduling, Scheduling Information Reporting and LCP	CATT	discussion	Rel-20	FS_6G_Radio
@@ -197,6 +245,8 @@ R2-2603475	Scheduling, Scheduling Information Reporting and LCP	CATT	discussion	
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+unified scheduling information reporting 可由事件触发，也可周期性进行。触发事件至少应考虑 data arrival、padding 和 remaining time。
+
 ```text
 The unified scheduling information reporting can be event-triggered and periodical. The trigger events should at least consider data arrival, padding and remaining time.
 R2-2604156	Views on UL scheduling	NTT DOCOMO INC..	discussion
@@ -204,6 +254,8 @@ R2-2604156	Views on UL scheduling	NTT DOCOMO INC..	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p014`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+研究新的 triggering conditions，以支持 6G 中及时、准确地报告 buffer information。
 
 ```text
 Study new triggering conditions to enable timely and accurate buffer information reporting in 6G.
@@ -214,12 +266,16 @@ R2-2603263	Views on 6G User Plane: Scheduling	Apple	discussion	Rel-20	FS_6G_Radi
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 应确认 CB-PUSCH 是用于所有 general purposes，还是仅用于 BSR。
+
 ```text
 RAN2 should confirm whether we aim to use CB-PUSCH for all general purposes, or only for BSR.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p016`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+CB based PUSCH mechanism 以 CG based transmission mechanism 为起点，进一步增强仍待讨论（FFS）。
 
 ```text
 CB based PUSCH mechanism takes CG based transmission mechanism as the starting points, FFS on the further enhancement.
@@ -231,12 +287,16 @@ R2-2603051	Framework for RACH and CB-PUSCH	ZTE Corporation, Sanechips, Samsung, 
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
 
+6G 应复用 RACH framework 作为启用 CB-PUSCH 的基线，以避免 RACH 与 CB-PUSCH 功能重复，并尽量减少 CB-PUSCH 的规范工作。
+
 ```text
 6G should avoid duplicate functionality between RACH and CB-PUSCH and minimize the specification work for CB-PUSCH by reusing RACH framework as the baseline for enabling CB-PUSCH
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.1-p018`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.1 Scheduling
+
+对于 CB-PUSCH，除常规 2-step RACH mode（preamble + PUSCH）外，RAN2 应研究 UE 在具有 valid TA 时能否不发送 preamble 而传输 MSGA payload part。条目记录了 simulation assumptions 已在 R2-2604388 中达成一致。
 
 ```text
 For CB-PUSCH, in addition to the normal 2-step RACH mode (i.e. preamble + PUSCH), RAN2 should study whether the UE can transmit the MSGA payload part without the preamble when the UE has a valid TA
@@ -274,6 +334,8 @@ R2-2604169	MAC handling assumptions for uplink scheduling information	Rakuten Mo
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.1.3.2 Other MAC functionalities
 
+支持 2-step RA 和 4-step RA，并寻找 MAC commonalities 以期统一；设计应确保 4-step RA 无需 2-step RA 即可工作。向 RAN1 通知该决定并询问能否在不进行 RACH partitioning 的情况下支持两者，同时研究用于 RA load management 和 energy saving 的 RACH designs。
+
 ```text
 1	Support 2-step RA and 4-step RA.   Find commonalities in MAC with the aim to unify (if possible) but the design should ensure that 4 step RA can work without the need for 2-step RA
 2	Indicate to RAN1 our decision to support 2-step and 4-step and take into account.  Explain that RAN2 discussed whether it is possible to do 2-step and 4-step without RACH partitioning and ask whether it is possible.
@@ -286,6 +348,8 @@ R2-2604396	Summary of [AT134][010][6G UP] Random Access (Huawei)	Huawei, HiSilic
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-a001`
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.1.3.2 Other MAC functionalities
+
+将所列 2-step 与 4-step CBRA/CFRA procedures 作为 6G 讨论基线，并支持在网络解码 preamble 但未解码 msgA-PUSCH payload 时从 2-step RA fallback 到 4-step RA 的 msg3 transmission。两种 RA 均支持的决定及关于 RACH partitioning 和 2-step RA 中 preamble 与 PUSCH 对应关系的问题将发送给 RAN1；窗口长度统一等事项仍为 FFS。
 
 ```text
 RA procedure for 2-step and 4-step RA
@@ -317,12 +381,16 @@ Scope of the post email discussion
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.2 Other MAC functionalities
 
+在 NR 中，RACH resources 难以适应接入负载的短期变化，常导致高争用和接入失败。
+
 ```text
 In NR, RACH resources do not adapt well to short-term variations in access load, often resulting in high level of contention and access failures.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-o001`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.2 Other MAC functionalities
+
+允许 CCCH channel segmentation 可使 MSG3 payload size 更灵活，同时不损害 coverage，并避免通过 preamble partitioning 指示 MSG3/MSGA payload size。它还可让可延后至 MSG3 的功能（如 early UE type、slice indication）使用基于 MSG3 而非 MSG1 的指示。
 
 ```text
 Allowing segmentation for CCCH channel can enable the following:
@@ -333,12 +401,16 @@ o	Enable more features that can wait till MSG3 (e.g. early UE type, slice indica
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.2 Other MAC functionalities
 
+CCCH segmentation 需要多轮 Msg2 reception 和 segment transmission，会增加 UE implementation complexity，并增加 contention resolution delay。
+
 ```text
 CCCH segmentation requires multiple-round Msg2 reception and segment transmission, which introduces complexity on UE implementation as well as additional delay for contention resolution.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-o003`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.2 Other MAC functionalities
+
+CCCH segmentation 需要在 Msg3 中增加指示，以说明是否还有后续 segment，和/或指示每个 segment 的 sequence number。
 
 ```text
 CCCH segmentation requires additional indication in Msg3 to indicate if there is more segment or not and/or the sequence number of each segment.
@@ -347,12 +419,16 @@ CCCH segmentation requires additional indication in Msg3 to indicate if there is
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.2 Other MAC functionalities
 
+如果 CG 用于 bursty traffic，可利用 UTO-UCI 和 early report 来提高 radio efficiency。
+
 ```text
 If CG is to be used for bursty traffic, to improve radio efficiency, UTO-UCI and early report can be utilized.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-o005`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+6G 的 RACH framework 应支持 4-step RA、2-step RA，以及在网络解码 preamble 但未解码 RACH payload 时从 2-step RA fallback 到 4-step RA。Qualcomm 认为，在无法解码 payload 时应使用 failure indication，而非 fallback。
 
 ```text
 The RACH framework in 6G should support:
@@ -364,6 +440,8 @@ The RACH framework in 6G should support:
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+RACH 的 RAR format 应支持 TA、backoff、contention resolution 和 UL grant（用于 4-step RA）的指示，并支持从 2-step RA fallback 到 4-step RA；RAR format 的最终设计可留到 stage-3。讨论中提出研究 unified RACH framework，包括 common RACH pool、由 UE 根据网络指示和/或预配置条件选择 Msg1 resources，以及用 unified RAR 响应不同 UL transmissions。
 
 ```text
 RAR format for RACH should support indication of TA, backoff, contention resolution, UL grant (for 4-step RA) and should enable fallback from 2-step to 4-step RA. Final design of RAR format can be left for stage-3.
@@ -387,6 +465,8 @@ R2-2602949	Considerations on 6GR Random Access and Configured Grant	vivo	discuss
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+在 6GR 中，以 NR 4-step RA procedure 为基线，4-step RA procedure 包括 RACH request、RACH response、Msg3 payload 和 Contention resolution 四步。
+
 ```text
 In 6GR, taking the NR 4-step RA procedure as baseline, the 4-step RA procedure includes the following steps:
 1) RACH request;
@@ -398,6 +478,8 @@ In 6GR, taking the NR 4-step RA procedure as baseline, the 4-step RA procedure i
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+在 6GR 中，以 NR 2-step RA procedure 为基线，2-step RA procedure 包括两步：RACH request 与 MsgA payload，以及 RACH response 与 Contention resolution。
+
 ```text
 In 6GR, taking the NR 2-step RA procedure as baseline, the 2-step RA procedure includes the following steps:
 1) RACH request and MsgA payload;
@@ -406,6 +488,8 @@ In 6GR, taking the NR 2-step RA procedure as baseline, the 2-step RA procedure i
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p004`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+为统一 4-step 和 2-step RA，考虑共用 RA configuration parameter structure、Contention resolution determination、recovery mechanism 和统一的 MAC PDU format。还考虑共用 backoff mechanism、power ramping accumulation and reset，以及 maximum access attempt。
 
 ```text
 For the commonization of 4-step and 2-step RA, at least the following aspects are considered:
@@ -418,6 +502,8 @@ R2-2602941	Discussion on other MAC functionalities	Qualcomm Incorporated	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p005`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+研究提升资源使用效率的 RACH designs，例如 dynamic 或 on-demand allocation of RACH resources、beam-specific RACH configurations。还提出研究可与中间睡眠机会捆绑的 RO configuration framework，以及缓解 RA overload 的方法，包括动态切换 Random Access resource set 和调整 PRACH、MsgA PUSCH resources。
 
 ```text
 Study RACH designs that enable more efficient use of resources, e.g. dynamic or on-demand allocation of RACH resources, beam-specific RACH configurations, etc.
@@ -436,6 +522,8 @@ R2-2603016	Random Access in 6G	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+为高效利用多个 random access resource sets 配置的资源，UE 发起 random access procedure 时，可以先指示将使用的 random access resource set，再使用所选集合执行该过程。
+
 ```text
 For efficient utilization of resources configured by multiple random access resource sets, when the UE initiates random access procedure, UE can first indicate the random access resource set UE is going to use and then perform random access procedure using the selected random access resource set.
 ```
@@ -443,12 +531,16 @@ For efficient utilization of resources configured by multiple random access reso
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+6G 支持在 random access procedure 期间，在一组稀疏配置的 random access occasions 与一组密集配置的 random access occasions 之间动态切换。
+
 ```text
 Dynamic switch between a set of sparsely configured random access occasions and a set of densely configured random access occasions during the random access procedure is supported in 6G.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p008`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+当网络进入 network energy saving mode 时，对于该模式期间发起的 random access procedure，多个 RACH configurations 中仅考虑一个处于 active 状态。讨论意见提到 idle mode 下设计需谨慎；对于是否需要动态握手以及是否应避免 RACH partitioning，意见存在分歧。
 
 ```text
 When the network enters network energy saving mode, only one of the multiple RACH configurations is considered active for the random access procedure initiated during the network energy saving mode.
@@ -461,12 +553,16 @@ Noted
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+讨论了 2-step RA 中 UE 已有 TA 时是否仍需发送 preamble；相关公司确认可在讨论 2-step procedures 时研究。还提出先明确仅发送 PUSCH 而不发送 preamble 的适用场景，并指出这可能改变 gNB behavior，且 preamble 可能有利于 fallback 和可靠性。
+
 ```text
 -	Ericsson ask whether to transmit preamble when transmit preamble when UE has TA for 2 step RA is still in scope.  Companies confirm that it can be discussed when we discuss 2step procedures.  ZTE thinks that we should include the question to RAN1.   Huawei thinks that we first discuss under what scenario we should not transmit preamble but only PUSCH, the question is not clear.    Lenovo agrees haven’t really discussed this as it would change gNB behavior.   Interdigital asks what is the benefit of just transmitting PUSCH, transmitting the preamble may be beneficial for fallback and it is more reliable.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+邮件讨论范围包括向 RAN1 发送 LS，以及讨论 2-step 和 4-step RA procedure 的新问题、待定事项和两种过程潜在的统一。
 
 ```text
 Scope of the email disc: (a) LS to RAN1; and (b) discuss on the new issues and the FFSs for 2-step and 4-step RA procedure and potential unification of the two procedures.
@@ -477,6 +573,8 @@ R2-2603049	Functionality for upper user plane	ZTE Corporation, Sanechips	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p011`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+研究通过支持 UL CCCH channel segmentation，在不影响覆盖的情况下支持更大的 UL CCCH message size。提出研究 UL CCCH message segmentation 的可行性；原文指出，分段传输 MSG3 中的 CCCH payload 可避免过度依赖 GroupA/GroupB preamble partitioning，并支持在初始接入过程中携带多个 early indications。
 
 ```text
 Study solutions to enable larger UL CCCH message size without impacting coverage, by supporting segmentation for UL CCCH channel
@@ -491,6 +589,8 @@ R2-2603039	Discussion on other MAC functionalities	Xiaomi	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p012`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+为支持灵活的 Msg3/MsgA 大小，采用与 NR 相同的 preamble partition，而非 CCCH segmentation。CCCH 大小需求将在 6G 工作后期明确前，暂不讨论此项。
 
 ```text
 To support flexible Msg3/MsgA size (e.g., 56bits and 72bits), preamble partition as in NR is used instead of CCCH segmentation.
@@ -508,6 +608,8 @@ R2-2603620	Other MAC functionalities: CG and Random-access	Sony	discussion	Rel-2
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p013`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+达成一致：UE 可配置一个或多个 CG configurations；每个配置至少可通过 RRC 和/或 DCI signaling 进行激活/去激活。可以同时激活多个 CG，但每个 cell 同一时刻 UE 仅在一个 CG 上发送，更多细节可在 stage 3 讨论。
 
 ```text
 From RAN2 perspective, support a single CG resource that can adapt/adjust parameters (e.g. MCS, TBS) for data variability, channel variability and data reliability, and can handle different traffic types/services.
@@ -530,6 +632,8 @@ R2-2603464	Other MAC functionalities	Nokia	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+RAN2 将研究 UE 如何指示已使用或未使用的 CG PUSCH resources，以提高 spectral efficiency。6G 不需要采用与 5G NR 相同格式的 UTO-UCI。
+
 ```text
 RAN2 to study ways for UE to indicate used/unused CG PUSCH resources for the purpose of increased spectral efficiency. UTO-UCI in the same format as 5G NR is not needed in 6G.
 Noted
@@ -539,6 +643,8 @@ R2-2602949	Considerations on 6GR Random Access and Configured Grant	vivo	discuss
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+为提高 resource efficiency，RAN2 将研究由 UE 发起 advance indication，通知 aNB 即将发生的 CG utilization。
+
 ```text
 For the sake of higher resource efficiency, RAN2 to study UE initiating the advance indication to inform aNB about the upcoming CG utilization.
 Noted
@@ -547,6 +653,8 @@ R2-2603039	Discussion on other MAC functionalities	Xiaomi	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.1.3.2-p016`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+关于以 NR UTO-UCI 作为提升 resource efficiency 的基线，讨论中存在不同意见；记录指出 RAN2 不预期在这些方面提交贡献。已批准向 RAN1 发送 LS，要求其考虑 RAN2 协议，并研究支持 dynamic grant、configured grant、CG 资源立即激活、动态激活/去激活、资源分配动态调整及更高资源效率的 L1 scheduling。
 
 ```text
 6G CG supports NR UTO-UCI (unused transmission occasion) to improve resource efficiency as a baseline.
@@ -605,6 +713,8 @@ R2-2604066	Views on Random Access and Configured grants	1Finity	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+资源效率 KPI 至少包括 UL PRB utilization。
+
 ```text
 The KPI for resource efficiency at least includes UL PRB utilization.
 ```
@@ -612,12 +722,16 @@ The KPI for resource efficiency at least includes UL PRB utilization.
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+Latency KPI 包括 data burst latency 和/或 BSR latency。
+
 ```text
 The KPIs for latency include data burst latency and/or BSR latency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.1-p002`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
+
+评估中应考虑 collision ratio。
 
 ```text
 Collision ratio should be considered in the evaluation.
@@ -627,12 +741,16 @@ Scenario
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+TN scenario 被视为评估的起始场景。
+
 ```text
 The TN scenario is considered as the starting point for evaluation.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.1-p004`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
+
+评估的 traffic models 不受限制，例如 FTP3、XR 和 bursty eMBB。
 
 ```text
 No restriction on the traffic models (e.g. FTP3, XR and bursty eMBB) for the evaluation.
@@ -642,6 +760,8 @@ CB-PUSCH assumption
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+为与 legacy SR-BSR 比较，CB-PUSCH 评估从 CB-PUSCH 用于传输 BSR 的用例开始。
+
 ```text
 To compared with the legacy SR-BSR, the evaluation for the CB-PUSCH starts from the use case that CB-PUSCH is used for the transmission of BSR.
 ```
@@ -649,12 +769,16 @@ To compared with the legacy SR-BSR, the evaluation for the CB-PUSCH starts from 
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 认为，aNB 共享资源的 blind decoding complexity（例如 DMRS 和 scrambling sequence）应由 RAN1 分析。
+
 ```text
 RAN2 considers that the blind decoding complexity (e.g. DMRS and scrambling sequence) for the shared resource at the aNB should be analyzed by RAN1.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.1-p007`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
+
+对于 CB-PUSCH BSR 的 RAN2 评估，配置假设包括 dedicated 或 shared DMRS、C-RNTI 或 common RNTI，以及典型 Msg3 配置（1 或 2 PRBs、QPSK）；beam information 的使用不受限制，且 CB-PUSCH payload 包含 UE ID。若 CB-UL transmission 后 timer 内收到 positive NW response，则 contention resolution 视为成功；失败时 UE 重试 CB-UL，且不使用 HARQ retransmission，而是在 contention resolution failure 后使用 HARQ new transmission。
 
 ```text
 For the RAN2 evaluation purpose for CB PUSCH of BSR, the followings are assumed for the CB PUSCH configuration:
@@ -672,6 +796,8 @@ Question for RAN1
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+提出向 RAN1 询问如何在相同 time-frequency resources 上复用多个 UE 的 PUSCH，包括采用 UE-dedicated 或 shared DMRS、UE-dedicated RNTI 或 common RNTI，以及其他评估假设。
+
 ```text
 Provide the following question to RAN1:
 Regarding how to multiplex the PUSCHs from multiple UEs on the same time-frequency resources:
@@ -682,6 +808,8 @@ Other evaluation assumption
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.1-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
+
+RAN2 评估不要求 False positive SR。已同意以 CB-PUSCH 共享资源承载多个 UE 的 BSR 作为评估起点，并规定相关评估假设；同时将评估假设作为参考发送给 RAN1，并询问发生时频资源碰撞时网络能否区分 UE 并解码 payload。
 
 ```text
 False positive SR is not mandated in the RAN2 evaluation.
@@ -722,6 +850,8 @@ R2-2601501	Discussion on scheduling	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 将沿用 legacy per-LCG scheduling information reporting 作为基线。
+
 ```text
 RAN2 to reuse the legacy per-LCG scheduling information reporting as the baseline.
 R2-2601660	Uplink scheduling in 6G	Samsung	discussion	Rel-20	FS_6G_Radio
@@ -729,6 +859,8 @@ R2-2601660	Uplink scheduling in 6G	Samsung	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.1-p011`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
+
+RAN2 将考虑在 6G 中使用 BSR 指示待发送的 MAC CE(s) 及其潜在大小。
 
 ```text
 RAN2 to consider using BSR to indicate the pending MAC CE(s) and their potential size in 6G.
@@ -738,6 +870,8 @@ R2-2601804	Consideration on Scheduling and uplink scheduling information in 6G	L
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+研究具有更细粒度的 UL grant 增强，例如 per-LCG UL grant 和 per-LCH UL grant。
+
 ```text
 Study UL grant enhancement with finer granularity, e.g., per-LCG UL grant, per-LCH UL grant.
 R2-2601972	Discussion on 6G scheduling	China Telecom	discussion	Rel-20	FS_6G_Radio
@@ -746,6 +880,8 @@ R2-2601972	Discussion on 6G scheduling	China Telecom	discussion	Rel-20	FS_6G_Rad
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
 
+RAN2 将研究支持动态调整 LCP parameters 的新 LCP design。
+
 ```text
 RAN2 to study the new LCP design that supports dynamic adjustment of LCP parameters.
 R2-2601465	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
@@ -753,6 +889,8 @@ R2-2601465	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.1-p014`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.1 Scheduling
+
+研究新的 LCP designs，使其能够以统一方式支持多个 performance objectives（例如 throughput 与 delay）。这些设计还应比 NR 更具适应性，以支持 application context awareness 和 dynamic QoS 等新用例。
 
 ```text
 Study new LCP designs that
@@ -788,6 +926,8 @@ R2-2602607	Views on BSR trigger	NTT DOCOMO INC..	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.1.3.2 Other MAC functionalities
 
+RAN2 采用两项原则：Msg1 indication 仅用于影响 msg1 transmission、RAR、Msg3 scheduling 或相关流程的用例；Msg3 early indication 仅用于影响 Msg4 scheduling 或相关流程的用例。哪些情况需要 msg1 indication 仍待根据 RAN1/RAN2 设计进展进一步研究。
+
 ```text
 From RAN2 point of view, at least the following principles are used:
 1	The Msg1 indication is only applied to use cases which affect msg1 transmission/RAR/Msg3 scheduling and/or related procedures.
@@ -799,12 +939,16 @@ R2-2601502	Discussion on other MAC functionalities	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+RA design 需要考虑基本的 NR RA-triggering events，包括 connection management、UL synchronization、resource request、cell switch、system information request 和 BFR。
+
 ```text
 The RA design needs to consider basic NR RA-triggering events (e.g., connection management, UL synchronization, resource request, cell switch, system information request, BFR).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o001`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+2-step RA 在快速接入和 UE energy efficiency 方面有优势；4-step RA 则提供更广覆盖和更高可靠性。
 
 ```text
 2-step RA offers benefits in fast access and UE energy efficiency, while 4-step RA provides wider coverage and higher reliability.
@@ -813,12 +957,16 @@ The RA design needs to consider basic NR RA-triggering events (e.g., connection 
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+CBRA 支持高效率的大规模接入；CFRA 用于避免碰撞，面向低时延和高可靠场景。
+
 ```text
 CBRA supports massive access with high efficiency, while CFRA avoids collisions for latency-sensitive and high-reliability scenarios.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o003`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+MsgA/Msg3 可承载初始 RRC signaling 和 uplink data。Proposal 1 提议研究 6G Day 1 的多种 RACH 触发事件、2-step/4-step RACH、CBRA/CFRA，以及经 MsgA/Msg3 承载 RRC signaling 和 uplink data；该提议标记为 Noted。
 
 ```text
 MsgA/Msg3 in random access can carry initial RRC signaling and uplink data.
@@ -834,12 +982,16 @@ R2-2601624	Discussion on other MAC  functionalities	Huawei, HiSilicon	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+NR 为 4-step RACH 的 RAR 和 2-step RACH 的 MsgB 定义了不同的 DL response，并使用不同 RNTI 调度，以区分两种 RACH 类型。这样会降低 multiplexing flexibility，并增加 RNTI spaces 的消耗。
+
 ```text
 In NR, separate DL responses are defined for 4-step RACH (RAR) and 2-step RACH (MsgB). Although RAR and MsgB (e.g., fallbackRAR in MsgB) share similarities, they must be separately scheduled using different RNTIs. This ensures UE differentiation between the two RACH types but at a cost of reduced multiplexing flexibility and increased consumption of RNTI spaces.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o005`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+NR UE 仅在达到配置的失败次数后执行 RACH fallback，并严格遵循预定义顺序。该机制忽略 UE 侧 radio link quality 的动态变化，可能增加 fallback latency，并阻止 UE 选择更合适的 RACH resources。
 
 ```text
 In NR, the UE performs RACH fallback only after a configured number of failed attempts and strictly follows a predefined order. The mechanism disregards dynamic change of radio link quality at UE side, which may increase fallback latency and prevents the UE from selecting more suitable RACH resources.
@@ -848,12 +1000,16 @@ In NR, the UE performs RACH fallback only after a configured number of failed at
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+NR RACH 在初始化时选择 UL carrier 和 BWP，之后保持不变，因此无法适应小区内动态负载变化。
+
 ```text
 In NR RACH, the UL carrier and BWP are selected during RACH initialization and remain unchanged thereafter, which cannot adapt to dynamic intra-cell load variations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o007`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+通过灵活传输 preamble 和 MSG3/MSGA payload parts，6G 可采用统一框架支持 4-step RACH、2-step RACH 和 CB-PUSCH。
 
 ```text
 By enabling flexible transmission of the preamble, MSG3/MSGA payload parts, 6G can support 4-step RACH, 2-step RACH and CB-PUSCH using a unified framework for all these features
@@ -862,12 +1018,16 @@ By enabling flexible transmission of the preamble, MSG3/MSGA payload parts, 6G c
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+NR 中 RedCap、eRedCap、SDT 和 network slicing 的 RACH partitioning 不要求采用根本不同的 RA response message 或 Msg3 format。因此，只要网络能在随机接入期间或之前通过其他机制识别 UE feature，6G 就不必为这些特性专门进行 RACH partitioning。
+
 ```text
 In NR, RACH partitioning for RedCap, eRedCap, SDT, and network slicing does not impose requirements on a fundamentally different RA response message or Msg3 format. Therefore, dedicated RACH partitioning for these features is not an absolute requirement in 6G, provided that the network can identify the UE's feature through alternative mechanisms at or prior to the random access procedure.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o009`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+只有在 response handling 存在根本差异的特性（如 OD-SIB1）中，才需要在 PRACH detection 阶段提前识别；缺少指示会导致错误的 monitoring 或 response procedures。对于 SBFD、IAB-MT、preamble Group A/B 和 OD-SIs 等功能兼容 common configuration 的特性，单独的 RACH resource partitioning 并非严格必需，额外机制仅用于优化。
 
 ```text
 Early identification at PRACH detection is required only for features with fundamental differences in response handling (e.g., OD-SIB1), where lack of such indication leads to incorrect monitoring or response procedures. For other features (e.g., SBFD, IAB-MT, preamble Group A/B, OD-SIs), separate RACH resource partitioning is not strictly required as the procedures remain functionally compatible with a common configuration, with any additional mechanisms providing optimization rather than necessity.
@@ -876,12 +1036,16 @@ Early identification at PRACH detection is required only for features with funda
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+NR 支持的特性中，有些必须通过 Msg1 指示，有些可以等到 Msg3，还有一些需要 RAN1 讨论。
+
 ```text
 Among all these features supported by NR, some are necessary to be indicated via Msg1, some can wait for Msg3 and some require RAN1 discussion.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o011`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+NR 中支持特性及其组合会显著增加 RACH resource set selection procedure 的复杂度，尤其是在多个资源仅支持触发该 RACH procedure 的部分特性时。
 
 ```text
 In NR, support of feature/feature combinations introduces significant complexity on RACH resource set selection procedure, especially when there are multiple resources supporting a subset of all features triggering this RACH procedure.
@@ -890,6 +1054,8 @@ In NR, support of feature/feature combinations introduces significant complexity
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+在 NR 中，RACH resources 难以适应接入负载的短期变化，常导致高争用和接入失败。
+
 ```text
 In NR, RACH resources do not adapt well to short-term variations in access load, often resulting in high level of contention and access failures.
 ```
@@ -897,12 +1063,16 @@ In NR, RACH resources do not adapt well to short-term variations in access load,
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+原文指出，NR 中的 RACH resource allocation mechanism and procedure 效率不高。
+
 ```text
 RACH resource allocation mechanism and procedure in NR are not efficient.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o014`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
+
+原文提出允许 CCCH channel segmentation，以灵活调整 MSG3 payload size、避免为 MSG3/MSGA payload size indication 进行 preamble partitioning。此举还可让可延迟到 MSG3 的功能（如 early UE type、slice indication）改用 MSG3 based indication，而非 MSG1 based indication。
 
 ```text
 Allowing segmentation for CCCH channel can enable the following:
@@ -913,6 +1083,8 @@ Enable more features that can wait till MSG3 (e.g. early UE type, slice indicati
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+原文预计 6G 中的 MAC CEs 将用于发送更多样的消息，其中一些可能要求更高的 reliability。
+
 ```text
 MAC CEs in 6G are expected to be used to send more diverse types of messages, some of which may demand higher reliability.
 ```
@@ -920,12 +1092,16 @@ MAC CEs in 6G are expected to be used to send more diverse types of messages, so
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.1.3.2 Other MAC functionalities
 
+6G 中的 MAC CEs 可以采用更结构化的设计，以实现高效处理并满足预期更严格的 6G timing requirements。
+
 ```text
 MAC CEs in 6G can be designed in a more structured way to enable efficient processing and meet the stricter timing requirements expected in 6G.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-o017`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+记录的内容为：4-step contention-based Random-Access procedure 作为 baseline 得到支持。
 
 ```text
 4-step contention-based Random-Access procedure is supported as the baseline.
@@ -936,6 +1112,8 @@ R2-2601502	Discussion on other MAC functionalities	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+记录的内容为：6G baseline 应支持 4-step RACH 和 2-step RACH。
+
 ```text
 In 6G, both 4-step RACH and 2-step RACH should be supported as a baseline.
 Noted
@@ -944,6 +1122,8 @@ R2-2601560	Discussion on RACH and configured grant	OPPO	discussion	Rel-20	FS_6G_
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p002`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+记录的内容为：RAN2 研究 6G RACH 是否以及如何解决 5G RACH 中识别的问题，包括不同 RA types 的 RA responses 复用受限、fallback 未考虑动态 radio link quality change，以及动态 load distribution 灵活性不足。
 
 ```text
 For 6G RACH, RAN2 to study whether and how to solve the following problems identified from 5G RACH:
@@ -957,6 +1137,8 @@ R2-2601778	Random Access and other MAC enhancements	ZTE Corporation, Sanechips	d
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+记录的提议为：6GR 支持 unified RACH framework，允许 UE 仅发送 preamble 并等待 RAR 后在 MSG3 发送 payload、同时发送 preamble 与 payload，或在 valid TA 时仅通过 contention based PUSCH transmission 发送 RACH payload。
+
 ```text
 6GR should support a unified framework for RACH where the UE may transmit:
 Only preamble and wait for RAR before transmitting the payload part in MSG3 (similar to 4-step RACH in NR)
@@ -968,6 +1150,8 @@ R2-2602128	Discussion of other MAC functionalities	Lenovo	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p004`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+记录的协议事项为：研究 “2step” 和 “4step” RA，了解其功能后进一步研究随机接入流程能否以及如何 unified/simplified；CB-PUSCH 是否纳入 unification discussion 留待进一步进展后讨论。另记录 CBRA 和 CFRA random access procedures 均获支持。
 
 ```text
 RAN2 to study a unified Random-Access procedure incorporating 2-step RACH and 4-step RACH types at least for contention-based RA procedure, e.g., Common RACH resource configuration for 2-step RACH and 4-step RACH is applied.
@@ -998,6 +1182,8 @@ R2-2601735	Other MAC Functionalities		Nokia 	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+记录的提议为：6G 的 RACH partitioning 应限于需要在 PRACH detection 时 early identification 以确保 procedure 正确执行的功能（如 OD-SIB1）。对于 RedCap、eRedCap、SDT、network slicing、SBFD、IAB-MT、OD-SIs 和 preamble Group A/B，应支持 common RACH configuration，因为这些功能不需要不同的 RA response 或 Msg3 formats。
+
 ```text
 In 6G, RACH partitioning should be limited to features that require early identification at PRACH detection to ensure correct procedure execution (e.g., OD-SIB1). For other features such as RedCap, eRedCap, SDT, network slicing, SBFD, IAB-MT, OD-SIs and preamble Group A/B, a common RACH configuration should be supported, as they do not require distinct RA response or Msg3 formats.
 Noted
@@ -1007,6 +1193,8 @@ R2-2601994	Other MAC functions	InterDigital	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+记录的规则为：Msg1 indication 仅适用于会影响 RAR/Msg3 scheduling 和/或相关 procedures 的 use cases。关于其是否也可用于 msg1 retransmission，原文记录了相关提问及回应：此情形未被排除，因为它会影响 RAR。
+
 ```text
 The Msg1 indication is only applied to use cases which affect RAR/Msg3 scheduling and/or related procedures.
 -	Vivo can this also be used for msg1 retransmission.   Interidigtal explains it is not excluded as anyways it impacts RAR.
@@ -1014,6 +1202,8 @@ The Msg1 indication is only applied to use cases which affect RAR/Msg3 schedulin
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p007`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+Msg3 indication 仅适用于影响 Msg4 scheduling 和/或相关 procedures 的用例。相关原则已 noted。
 
 ```text
 The Msg3 indication is only applied to use cases which affect Msg4 scheduling and/or related procedures.
@@ -1024,6 +1214,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p008`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+RAN2 将推迟讨论哪些 feature 必须使用 msg1 indication、哪些可等待 msg3，直到明确支持哪些 feature 且 RAN1 确定相关 physical layer design。该提议已 noted。
 
 ```text
 RAN2 to postpone the discussion on what feature absolutely needs msg1 indication and what can wait for msg3, until it is clear about which feature will be supported as well as physical layer design related to the features are determined in RAN1.
@@ -1036,6 +1228,8 @@ Observation 2-1:	Additional RACH resource could be introduced in addition to RAC
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+确认从 RAN2 角度，RACH partitioning 可避免不同 features 的 RACH configuration 参数重复，并便于 features 组合的共同配置，例如 SDT+ RedCap。
+
 ```text
 Confirm the following benefits of using RACH partitioning for RACH configuration from RAN2 point of view:
 Avoid duplicated parameters of RACH configuration for different features
@@ -1045,12 +1239,16 @@ Ease of co-configuration for features combination (e.g., SDT+ RedCap)
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+若 6G day1 的 system information 除 initial access 外还需要为多个 features 配置 RACH resources，则支持通过 RACH partitioning 配置 RACH。
+
 ```text
 If RACH resources for multiple features are needed in system information in addition to RACH resource for initial access in 6G day1, support RACH configuration by RACH partitioning.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p011`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+若 6G Day1 支持 RACH partition configuration，则研究简化 RACH resource set selection 的方法，例如简化 CBRA 的 priority-based fallback。
 
 ```text
 If RACH partition configuration is supported in 6G Day1, study how to simplify the procedure of RACH resource set selection, e.g., by simplifying the priority-based fallback for CBRA.
@@ -1062,6 +1260,8 @@ R2-2601466	Discussion on other MAC functionalities	Qualcomm Incorporated	discuss
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+研究提升资源使用效率的 RACH designs，例如 dynamic 或 on-demand allocation of RACH resources，以及 beam-specific RACH configurations。
+
 ```text
 Study RACH designs that enable more efficient use of resources, e.g. dynamic or on-demand allocation of RACH resources, beam-specific RACH configurations, etc.
 R2-2601518	Random Access in 6G	Samsung	discussion	Rel-20
@@ -1070,12 +1270,16 @@ R2-2601518	Random Access in 6G	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+为高效利用多个 random access resource sets 配置的资源，UE 发起 random access procedure 时可先指示将使用的 resource set，再使用所选集合执行该过程。
+
 ```text
 For efficient utilization of resources configured by multiple random access resource sets, when the UE initiates random access procedure, UE can first indicate the random access resource set UE is going to use and then perform random access procedure using the selected random access resource set.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p014`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+6G 支持在 random access procedure 期间，在一组 sparsely configured random access occasions 与一组 densely configured random access occasions 之间 dynamic switch。
 
 ```text
 Dynamic switch between a set of sparsely configured random access occasions and a set of densely configured random access occasions during the random access procedure is supported in 6G.
@@ -1084,6 +1288,8 @@ R2-2602092	Discussion on MAC functionalities in 6G	Spreadtrum, UNISOC	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p015`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+RAN2 将研究 dynamic 或 hybrid RACH resource allocation mechanism 和 procedure。
 
 ```text
 RAN2 to study dynamic or hybrid RACH resource allocation mechanism and procedure.
@@ -1094,6 +1300,8 @@ R2-2601778	Random Access and other MAC enhancements	ZTE Corporation, Sanechips	d
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p016`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+研究 CCCH channel segmentation 的两种选项：Hard segmentation 要求网络收到所有 segments 后才能解码 Msg3；Soft segmentation 将 Msg3 定义为携带不同自包含信息片段、可独立解码的多条消息。
 
 ```text
 Study the following options for segmentation of CCCH channel.
@@ -1119,6 +1327,8 @@ R2-2601502	Discussion on other MAC functionalities	Xiaomi	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+6G CG 配置应支持可立即用于 delay critical service 的 CG resource、动态激活/去激活、动态调整 CG size、适应 jitter，以及灵活的资源共享/回收。该提议被记为 Noted。
+
 ```text
 6G CG configuration should be able to allow:
 - CG resource immediately usable for delay critical service;
@@ -1132,6 +1342,8 @@ R2-2601994	Other MAC functions	InterDigital	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p018`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+协议记录了研究 6G CG 的共识，至少支持配置后立即激活 CG resource、动态激活/去激活、动态调整 resource allocation，以及支持不同 traffic types 和更高 resource efficiency。另有意见提出应将这些 dynamic CG 选项与 dynamic grant 进行 benchmark；该意见标记为 Not treated。
 
 ```text
 Configured Grants for 6GR support:
@@ -1150,6 +1362,8 @@ R2-2601447	Considerations on 6GR CG and Random Access	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+提出研究 CG recycling mechanism：由 UE 发起 advance indication，通知 aNB 即将使用 CG。
+
 ```text
 RAN2 to study CG recycling mechanism on UE initiating the advance indication to inform aNB about the upcoming CG utilization.
 R2-2601832	Views on 6G User Plane: Miscellaneous MAC Mechanisms	Apple	discussion	Rel-20	FS_6G_Radio
@@ -1157,6 +1371,8 @@ R2-2601832	Views on 6G User Plane: Miscellaneous MAC Mechanisms	Apple	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p020`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+为提高 CG resource efficiency，UE 可在进行 CG PUSCH transmission 前，先指示其使用特定 CG resources 的意图。
 
 ```text
 To improve resource efficiency of CG, the UE may first indicate its intention to use particular CG resources, before performing CG PUSCH transmission.
@@ -1166,12 +1382,16 @@ R2-2601807	Discussion on Configured Grants	Philips International B.V.	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+提出由 RAN2 研究如何动态更新 CG configuration。
+
 ```text
 RAN2 to study how to perform dynamic updates of the CG configuration.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p022`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+提出由 RAN2 研究 UE 请求网络更改 CG configuration 的流程。材料还指出，固定长度 MAC CE 的 MAC subheader 不含 L field 只节省少量 bit overhead，却显著增加处理和实现复杂度；5G LCID design 缺乏 forward scalability，导致后续修补增加 overhead 和复杂度。
 
 ```text
 RAN2 to study procedures for the UE to request a change of CG configuration to the network.
@@ -1184,6 +1404,8 @@ Observation 6-2:	The 5G LCID design lacked forward scalability, forcing incremen
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
 
+提出由 RAN2 研究 MAC PDU format 的潜在增强，例如 L field 和 LCID design。
+
 ```text
 RAN2 to study the potential enhancements for MAC PDU format, e.g., for the L field and LCID design.
 R2-2601466	Discussion on other MAC functionalities	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
@@ -1191,6 +1413,8 @@ R2-2601466	Discussion on other MAC functionalities	Qualcomm Incorporated	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.1.3.2-p024`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.1.3.2 Other MAC functionalities
+
+提出将 MAC CEs 设计为适用于多种用途的 versatile format，同时易于处理和组装。
 
 ```text
 Design MAC CEs to have a versatile format suitable for multiple purposes, while easy to process and assemble.
@@ -1212,6 +1436,8 @@ R2-2602596	MAC processing for high data rates	Fraunhofer IIS, Fraunhofer HHI	dis
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.1.3 Scheduling
 
+RAN2 继续研究并牵头评估 CB based schemes，确定高层评估假设并识别所需的 RAN1 输入；评估需考虑 LTE 和 NTN simulations，并与 RAN1、RAN2 方案进行比较。Dedicated SR mechanism 被假定为请求 UL resource 的基线机制（若 RAN1 已定义），其他待比较方案仍待讨论。
+
 ```text
 RAN2 continues study.  RAN2 will lead the evaluation of the CB based schemes.   Determine some high level evaluation assumptions.  Identify the inputs needed from RAN1.      NOTE: check and consider LTE simulations and NTN simulations to determine what will need to be simulated.   NTN should also be taken into account.
 Intention is to compare and take into account solutions with RAN1 and RAN2 solutions.   FFS which other solutions we will continue evaluating for comparison purposes (still to discuss in this meeting…)
@@ -1230,6 +1456,8 @@ R2-2600377	On scheduling and latency reduction	Nokia	discussion	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.1.3 Scheduling
 
+将支持 buffer status 和 delay status information；是否支持其他信息仍待确定。信息细节及其格式统一方式可在整体功能取得进展后讨论。
+
 ```text
 Buffer status and delay status information will be supported.   FFS any other information
 Details of buffer status and delay status information and how they are formatted/unified can be discussed after some progress on overall functionality.
@@ -1239,6 +1467,8 @@ R2-2600077	Discussion on 6GR scheduling	vivo	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-a002`
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.1.3 Scheduling
+
+研究用于 UL scheduling 的信息 early reporting，具体信息仍待确定。
 
 ```text
 Study early reporting of information useful for UL scheduling purposes. FFS details of the information.
@@ -1250,12 +1480,16 @@ R2-2600289	Scheduling Aspects for 6GR	SHARP Corporation	discussion
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
 
+Contention-based UL transmission 的 upper-layer design 有若干方面取决于 physical layer designs。
+
 ```text
 Several aspects in the upper-layer design for contention-based UL transmission depend on physical layer designs.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-o001`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
+
+缺少 CB PUSCH 专用统计信息（如 average collision ratio）时，难以准确评估其性能或配置最优性。
 
 ```text
 Without CB PUSCH-specific statistics like average collision ratio, it is challenging to accurately evaluate its performance or configuration optimality.
@@ -1264,12 +1498,16 @@ Without CB PUSCH-specific statistics like average collision ratio, it is challen
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
 
+不同 traffic models 对 CB PUSCH collision rates 的影响不同，因此模拟需要采用多种模型。
+
 ```text
 Traffic models will affect CB PUSCH collision rates differently, reinforcing the need for diverse models in simulations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-o003`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
+
+UE 数量与 CB-PUSCH resource pool 大小共同直接影响 CB-PUSCH 资源上的碰撞率。
 
 ```text
 The number of UEs, together with the CB-PUSCH resource pool size, directly affects the collision ratio on CB-PUSCH resources.
@@ -1278,12 +1516,16 @@ The number of UEs, together with the CB-PUSCH resource pool size, directly affec
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
 
+单个 UL data burst 中，UE 可发送多次 SR 和 BSR 报告以指示 data SDU 到达；这会增加 signaling overhead 和 scheduling delay。
+
 ```text
 The UE can transmit multiple SR and BSR reports to indicate data SDU arrivals within a single UL data burst, resulting in increased signaling overhead and scheduling delay.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-o005`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
+
+具有不同 service requirements 的 flows 可通过不同的 HARQ transmission parameters 获得更好的服务，例如 MCS 和重传次数。
 
 ```text
 Flows with different service requirements can be better served with different HARQ transmission parameters (e.g. MCS, number of retransmissions)
@@ -1292,12 +1534,16 @@ Flows with different service requirements can be better served with different HA
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
 
+由于 XR 和 mobile AI 等 delay sensitive traffic 增多，NR 中的 LCP procedure 可能不足以支持 6G 中更多样化的 traffic。
+
 ```text
 The LCP procedure in NR may not be sufficient in supporting more diverse traffic in 6G, due to increased presence of delay sensitive traffic such as XR and mobile AI.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-o007`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
+
+application context awareness 和 adaptive QoS 等新的 6G use cases 要求 LCP 比 NR 更具适应性。
 
 ```text
 New 6G use cases such as application context awareness and adaptive QoS require LCP to be more adaptive than NR.
@@ -1306,6 +1552,8 @@ New 6G use cases such as application context awareness and adaptive QoS require 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
 
+5G 的“two-phase” LCP process 具有明确结构：第一阶段确保 mandatory 和 deterministic QoS，第二阶段处理 best-effort resource optimization。
+
 ```text
 The 5G "two-phase" LCP process provides a clear structure: the first phase ensures mandatory and deterministic QoS, and the second phase handles best-effort resource optimization.
 ```
@@ -1313,12 +1561,16 @@ The 5G "two-phase" LCP process provides a clear structure: the first phase ensur
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.1.3 Scheduling
 
+依赖 static priority 和 PBR configurations 的 legacy LCP mechanism，在处理动态 traffic profiles 和 context-aware QoS requirements 时不够灵活。
+
 ```text
 The legacy LCP mechanism, relying on static priority and PBR configurations, leads to inflexibility in handling dynamic traffic profiles and context-aware QoS requirements.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-o010`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+提议向 RAN1 征询 contention-based UL transmission 的物理层问题，包括冲突时 UE 的识别、冲突后的重传处理及 payload size 范围。讨论中对仿真范围和职责有不同意见，并提及资源效率、blind decoding complexity、端到端时延以及 SR 作为评估基线或回退机制等事项。
 
 ```text
 Ask input from RAN1 on the following physical-layer aspects of contention-based UL transmission:
@@ -1350,6 +1602,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+初始 CB-PUSCH 研究范围限定为 RRC connected mode，以及 BSR/DSR messages。
+
 ```text
 Focus the initial study of CB-PUSCH exclusively on RRC connected mode and BSR/DSR messages.
 R2-2600289	Scheduling Aspects for 6GR	SHARP Corporation	discussion
@@ -1357,6 +1611,8 @@ R2-2600289	Scheduling Aspects for 6GR	SHARP Corporation	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p002`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+RAN2 将研究供 BSR 和 small data transmissions 共享的 contention-based UL resources。评估假设包括每次传输由 BSR 触发、禁用 HARQ、未在规定时间内收到响应时重试 BSR；传输包含用于 contention resolution 的 UE ID，并与 DMRS sequence 复用，部分细节仍待研究。
 
 ```text
 RAN2 to study contention-based UL resources shared for both BSR and small data transmissions.
@@ -1382,12 +1638,16 @@ R2-2600773	Discussion on scheduling enhancements for 6G	Panasonic	discussion	Rel
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+对于 contention-based uplink resources 上的 contention resolution，UE 不必显式向网络指示 UE-ID。
+
 ```text
 For contention resolution with contention-based uplink resources, the UE need not explicitly indicate UE-ID to the network.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p004`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+RAN2 将考虑基于 DMRS detection 的反馈方案，包括 Dedicated DMRS、Shared DMRS，以及在两者之间进行 Network Configuration。
 
 ```text
 RAN2 to consider feedback based on DMRS detection with the following options:
@@ -1400,6 +1660,8 @@ R2-2600620	Discussion on 6G scheduling	NTT DOCOMO INC..	discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+RAN2 应与 RAN1 协调研究 UE identification。相关议题包括 Contention resolution。
+
 ```text
 RAN2 should study UE identification in coordination with RAN1.
 Contention resolution
@@ -1409,6 +1671,8 @@ R2-2600377	On scheduling and latency reduction	Nokia	discussion	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+仿真结果应包含平均碰撞比等统计数据，并说明 UE multiplexing、CB PUSCH resource size 和 traffic models 的假设。
+
 ```text
 Simulation results should include statistics, such as the average collision ratio, alongside assumptions for UE multiplexing, CB PUSCH resource size, and traffic models.
 R2-2600620	Discussion on 6G scheduling	NTT DOCOMO INC.	discussion
@@ -1416,6 +1680,8 @@ R2-2600620	Discussion on 6G scheduling	NTT DOCOMO INC.	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p007`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+对于 CB-PUSCH 的 contention resolution，基线考虑 UE 在网络分配 UL grant 时判定成功，在 timer 到期时判定失败。
 
 ```text
 On contention resolution for CB-PUSCH, the followings are considered as a baseline.
@@ -1425,6 +1691,8 @@ On contention resolution for CB-PUSCH, the followings are considered as a baseli
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p008`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+RAN2 将从 collision tolerance、coverage、latency 和 resource efficiency 方面评估 CB scheme。原文指出，CB-PUSCH 在 UE 数量较少时 latency 较低；UE 数量增长时，SR 的 latency 更低且更稳定，并提议进一步研究 UE population 对 CB-PUSCH 与 SR 的 latency 和 resource usage 表现的影响。
 
 ```text
 RAN2 to evaluate CB scheme from collision tolerance and coverage aspects as well as latency and resource efficiency.
@@ -1437,6 +1705,8 @@ R2-2600245	Discussion on Scheduling	CATT	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+UL latency reduction solutions 可从 PUSCH resource configuration、collision probability 和 contention resolution 角度进行比较。
+
 ```text
 The UL latency reduction solutions can be compared from the following perspectives: PUSCH resource configuration, collision probability and contention resolution.
 Other
@@ -1446,6 +1716,8 @@ R2-2600403	Contention-based BSR reporting	MediaTek Inc.	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+RAN2 将研究 contention-based uplink resource pool 的配置或向 UE(s) 指示的机制。
+
 ```text
 RAN2 to study the mechanism that how the contention-based uplink resource pool is configured or indicated to UE(s).
 R2-2600059	Scheduling in 6G	Samsung	discussion	Rel-20
@@ -1454,6 +1726,8 @@ R2-2600059	Scheduling in 6G	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+支持使用周期性 UL grants（即 configured grants）进行快速 BSR delivery。
+
 ```text
 Periodic UL grants (i.e. configured grants) for fast BSR delivery is supported.
 ```
@@ -1461,12 +1735,16 @@ Periodic UL grants (i.e. configured grants) for fast BSR delivery is supported.
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+可选配置 PUCCH resource，用于指示 UL grants 是否用于 BSR。
+
 ```text
 PUCCH resource to indicate usage of UL grants for BSR can be optionally configured.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p013`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+对于 contention based BSR，将配置专用于 BSR 的 2 step RACH configuration，并由多个 UE 共享。可选择为共享该配置的 UE 分别分配 preambles。
 
 ```text
 For contention based BSR, 2 step RACH configuration dedicated for BSR purpose is configured. The 2 step RACH configuration is shared with multiple UEs. Preambles can be optionally assigned separately to UEs sharing the 2 step RACH configuration.
@@ -1478,6 +1756,8 @@ R2-2600377	On scheduling and latency reduction	Nokia	discussion	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+支持在 6G 中使用 Dedicated SR 请求 UL resource，无论是否引入 CB-PUSCH。
+
 ```text
 Dedicated SR to request UL resource is to be supported for 6G, regardless of whether CB-PUSCH would be introduced.
 [2 mins]
@@ -1487,6 +1767,8 @@ R2-2600289	Scheduling Aspects for 6GR	SHARP Corporation	discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+RAN2 将研究更细粒度的 SR，以支持无需单独发送 BSR 即可直接分配 UL resource。
+
 ```text
 RAN2 to study finer granularity of SR to enable direct UL resource allocation without separate BSR transmission.
 [2 mins]
@@ -1495,6 +1777,8 @@ R2-2600449	Views on 6G User Plane: Scheduling	Apple	discussion	Rel-20	FS_6G_Radi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p016`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+为降低 SR/BSR latency，可考虑用 SR configuration ID 表示部分 buffer status 信息，例如 buffer size 或是否存在 delay-critical data。这样即使没有 BSR，网络也能及时分配更合适的 UL resource。
 
 ```text
 To reduce SR/BSR latency, RAN2 can consider using SR configuration ID to represent certain information related to the buffer status (e.g. buffer size, or presence of delay-critical data), such that network can timely allocate more appropriate UL resource even without BSR.
@@ -1507,6 +1791,8 @@ R2-2600077	Discussion on 6GR scheduling	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+RAN2 应研究统一 BSR 和 DSR framework，包括基于 data arrival 和/或 remaining time 的协调触发机制，以及同时包含 delay status 和 buffer status 的集成报告格式。该提议标记为 Noted。
+
 ```text
 For a unified BSR and DSR framework in 6GR, RAN2 should study the following aspects:
 -	Harmonized triggering mechanisms based on joint consideration of data arrival and/or remaining time;
@@ -1517,6 +1803,8 @@ R2-2600427	Discussion on UL scheduling aspects in 6G	Lenovo	discussion	Rel-20	FS
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p018`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+RAN2 将研究统一的 UL data-related status reporting procedure，报告 data/buffer status、data 的 delay status 及潜在的其他信息（例如 data importance）。讨论中对 DSR 是否总是包含、触发条件是否相同，以及分别定义 BSR、DSR 和两者组合等问题提出了不同观点。
 
 ```text
 RAN2 to study a unified UL data-related status reporting procedure in 6G which includes information on the data/buffer status as well as the delay status of the data and potential further information, e.g. importance of the data.
@@ -1531,6 +1819,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+6GR 将研究基于预计 burst arrival 信息（例如 burst arrival time、burst size）并具备 service-awareness 的 early uplink radio resource request triggering mechanism。该提议标记为 Noted。
+
 ```text
 6GR to study early uplink radio resource request triggering mechanism based on the estimated burst arrival information (e.g., burst arrival time, burst size) with service-awareness.
 [3 mins]
@@ -1541,6 +1831,8 @@ R2-2600737	L2 scheduling framework for 6GR	InterDigital	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+支持报告 UL data burst 的 anticipated data arrival，并可报告 burst delay、data packet units 数量和 packet size；报告须遵守 data burst 和 network configuration 设定的约束。该提议标记为 Noted。
+
 ```text
 Reporting anticipated data arrival for an UL data burst is supported (burst metrics: burst delay, number of data packet units, packet size), within the constraints set by the data burst and network configuration.
 [2 mins]
@@ -1550,6 +1842,8 @@ R2-2600151	Discussion on scheduling and scheduling information reporting	Huawei,
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p021`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+RAN2 将研究通过在数据到达 AS buffer 前提前触发 SR 来降低 dynamic scheduling 的 UL resource request latency。讨论涉及提前报告 SR 和 BSR、traffic characteristics 以及 burst characteristics。
 
 ```text
 RAN2 to study latency reduction of UL resource request for the dynamic scheduling by the early triggering of SR before data arriving at the AS buffer.
@@ -1564,6 +1858,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+Buffer status 按 LCG 指示。
+
 ```text
 The buffer status is indicated per LCG.
 R2-2600523	Consideration on Scheduling and uplink scheduling information in 6G	LG Electronics Inc.	discussion	Rel-20	FS_6G_Radio
@@ -1571,6 +1867,8 @@ R2-2600523	Consideration on Scheduling and uplink scheduling information in 6G	L
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p023`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+将研究 6G BDR scheduling information 的增强，包括更细粒度的信息（例如 per-QoS flow、per-LCH 或 per-importance level），以及 pending MAC CE 的 expected size。
 
 ```text
 Study following enhancements for scheduling information in 6G BDR:
@@ -1582,6 +1880,8 @@ R2-2600141	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+支持更细粒度的 HARQ，并允许网络通过不同 HARQ processes 调度不同 logical channels。
+
 ```text
 Support finer granularity for HARQ and allow network to schedule different logical channels by separate HARQ processes.
 Data/Logical Channel Prioritization (if time allows)
@@ -1591,6 +1891,8 @@ R2-2600484	Discussion on scheduling in 6GR	China Telecom	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+RAN2 研究支持动态调整 LCP 参数的新设计。
+
 ```text
 RAN2 to study the new LCP design that supports dynamic adjustment of LCP parameters.
 R2-2600077	Discussion on 6GR scheduling	vivo	discussion	Rel-20
@@ -1599,6 +1901,8 @@ R2-2600077	Discussion on 6GR scheduling	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
 
+RAN2 进一步研究 LCP 增强，考虑流量特性变化，包括 delay、importance 以及 inter-QoS flow/packet dependency。
+
 ```text
 RAN2 to further study LCP enhancements considering the varying traffic characteristics, e.g., delay, importance, inter-QoS flow/packet dependency.
 R2-2600141	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	Rel-20	FS_6G_Radio
@@ -1606,6 +1910,8 @@ R2-2600141	Discussion on scheduling procedures	Qualcomm Incorporated	discussion	
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p027`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+研究新的 LCP 设计，以统一支持多种性能目标、直接处理拥塞，并更灵活地支持 application context awareness 和 adaptive QoS 等新用例。
 
 ```text
 Study new LCP designs that
@@ -1617,6 +1923,8 @@ R2-2600099	Consideration on 6G UP Scheduling and retransmission	Xiaomi	discussio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.1.3-p028`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.1.3 Scheduling
+
+建议研究面向 6G 的增强 LCP framework，保留并澄清定义明确的 two-phase LCP process。该框架包括动态调整 LCP 参数，例如 logical channel priority、Prioritized Bit Rate (PBR) 和 token bucket state (Bj)。
 
 ```text
 RAN2 is recommended to study an enhanced LCP framework for 6G, which includes:
@@ -1648,6 +1956,8 @@ R2-2601108	Discussion on 6GR Scheduling 	Rakuten Mobile, Inc	discussion
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+RAN2 将研究提升 scheduling（包括 contention based schemes）时延和 UL resource efficiency 的方案。CB UL 研究以至少现有 normal SR/BSR functionality 为比较基线，并可说明方案与 5G 机制的异同；进一步假设取决于已识别方案，仍待讨论。
+
 ```text
 1	RAN2 will study solutions on how to improve latency and UL resource efficiency of scheduling (including contention based schemes).
 2	RAN2 study on CB UL will assume the following:
@@ -1661,6 +1971,8 @@ R2-2508310	UP functionalities and requirements	Nokia, Nokia Shanghai Bell	discus
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+为支持 voice 等周期性业务，基线支持 DL SPS。UL 继续研究 CG like mechanisms，以适配 voice、bursty traffic 和其他周期性业务。
+
 ```text
 To support periodic traffic like voice, as a baseline support DL SPS
 For UL, continue to study CG like mechanisms to address different types of traffic, including voice, bursty traffic, other periodic traffic etc.
@@ -1670,6 +1982,8 @@ R2-2508408	Scheduling and Retransmission Aspects	SHARP Corporation	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-a002`
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+研究提供 scheduling information 的机制，至少包括 buffer status reporting 和 delay status reporting；是否需要其他信息取决于 traffic/services，仍待确定。详细功能取得进展后，目标是在可能时统一 framework。
 
 ```text
 Study mechanisms to provide scheduling information (including at least buffer status reporting, delay status reporting).   FFS other scheduling information needed depending on traffic/services.   Aim to unify the framework if possible, after some progress on the detailed functionalities.
@@ -1681,12 +1995,16 @@ R2-2508034	Discussion on scheduling in 6G	Qualcomm Incorporated	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+依赖 HARQ coordination 可能加快 RLC recovery loop。RLC Sequence Number-window based mechanism 可保证最终纠正所有 HARQ errors，且使 NW 能在 latency、spectral efficiency、power、overhead 和 processing 等 design KPIs 之间权衡。
+
 ```text
 Reliance on HARQ coordination may speed up the RLC recovery loop. However, the RLC Sequence Number-window based mechanism guarantees that eventually all HARQ errors are corrected independent of HARQ degradation, and gives NW flexibility to trade off different design KPIs (latency, spectral efficiency, power, overhead, processing, etc.)
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-o001`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+如果 UE 获得 UL transmissions 的 HARQ feedback，UL data 就可以可靠传输。
 
 ```text
 UL data can be reliably transmitted if the UE gets HARQ feedback for UL transmissions.
@@ -1695,12 +2013,16 @@ UL data can be reliably transmitted if the UE gets HARQ feedback for UL transmis
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+在 NR 中，发送 BSR/DSR MAC CE 前需通过 SR 或 RACH 经历多个步骤和信令交互以获取 UL grant。这会增加 UL transmission latency。
+
 ```text
 In NR, several steps/signalling interactions are required to acquire the UL grant for BSR/DSR MAC CE transmission, i.e., via SR or RACH, which increases UL transmission latency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-o003`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+Contention-based UL transmissions 不应成为发送 SR/BSR 的唯一选项，因为其时延不确定，并可能取决于 transmission occasions 的周期性、contention levels 等因素。
 
 ```text
 Contention-based UL transmissions should not be the only option for sending SR/BSR, as its latency is not deterministic and can depend on several factors, such as periodicity of transmissions occasions, contention levels, etc.
@@ -1709,12 +2031,16 @@ Contention-based UL transmissions should not be the only option for sending SR/B
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+BSR 和 DSR 存在重复，导致 signalling overhead，甚至造成 inefficiency。
+
 ```text
 BSR and DSR have duplication which results in signalling overhead or even inefficiency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-o005`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+application context awareness 和 adaptive QoS 等新的 6G use cases 要求 LCP 比 NR 更具适应性。
 
 ```text
 New 6G use cases such as application context awareness and adaptive QoS require LCP to be more adaptive than NR.
@@ -1723,12 +2049,16 @@ New 6G use cases such as application context awareness and adaptive QoS require 
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+legacy LCP procedure 会导致 LCH starvation、resource inefficiency，以及处理动态 traffic requirements 时缺乏灵活性，尤其影响 delay-sensitive applications。
+
 ```text
 The legacy LCP procedure leads to LCH starvation, resource inefficiency, and inflexibility in handling dynamic traffic requirements—particularly for delay-sensitive applications.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-o007`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+Sequence number-based L2 recovery mechanism 是 ARQ 的基线；ARQ 保留独立于 HARQ、实现最高 100% reliability 的要求。讨论指出，即使禁用 HARQ，ARQ 仍可启动。
 
 ```text
 Sequence number-based L2 recovery mechanism is the baseline for ARQ. ARQ to retain the requirement to achieve up to 100% reliability independent of HARQ.
@@ -1740,6 +2070,8 @@ R2-2508107	Discussion on 6G scheduling and (re-)transmission schemes	OPPO	discus
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+支持基于 STATUS reporting 的 ARQ retransmission。
+
 ```text
 ARQ retransmission based on STATUS reporting is supported.
 Noted
@@ -1749,12 +2081,16 @@ R2-2508567	Discussion UL scheduling and Retransmission protocols	Lenovo	discussi
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+RAN2 将研究由 HARQ status 和 feedback 在 transmitter side 本地触发 ARQ retransmissions 的机制。
+
 ```text
 RAN2 to study mechanisms for locally triggered ARQ retransmissions at the transmitter side based on HARQ status and feedback.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p003`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+RAN2 将研究基于 HARQ status 或 feedback 触发更快 RLC retransmission 的机制，包括 transmitter side 本地触发 ARQ retransmissions，以及由 network indications 显式启动本地 NACK procedures。
 
 ```text
 RAN2 to study mechanisms enabling faster RLC retransmission triggered based on HARQ status or feedback, including locally triggered ARQ retransmissions at the transmitter side and explicit network indications to initiate local NACK procedures.
@@ -1766,6 +2102,8 @@ R2-2508319	Scheduling and retransmission enhancements for 6G	ZTE Corporation, Sa
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+建议 RAN2 研究 UL fast ARQ mechanism，由 lower layer signalling（例如 DCI）触发，使 upper layers 能立即进行类似 ARQ 的 retransmission。并建议通知 RAN1 支持 DCI signalling。
+
 ```text
 RAN2 should study a fast ARQ mechanism for UL where the ARQ is triggered by lower layer signalling (e.g. in DCI) to enable an immediate ARQ like retransmission from upper layers – inform RAN1 to enable the DCI signalling for this
 Noted
@@ -1775,12 +2113,16 @@ R2-2508126	On latency reduction mechanisms for 6G eMBB traffic	MediaTek UK	discu
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+UE 获得显式 HARQ feedback，以指示 UL transmissions 的 decoding result。
+
 ```text
 The UE is provided with explicit HARQ feedback that indicates the decoding result of UL transmissions.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p006`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+一致认为 ARQ 支持 sequence number-based L2 recovery，并研究基于 HARQ process status、由 transmitter side 更快触发 ARQ retransmissions 的机制，先从 UL 开始，也可考虑 DL。RAN2 认为 gNB 提供显式 UL HARQ process status 有益，其具体细节待进一步研究。
 
 ```text
 Send an LS to RAN1 to take the following design requirements into consideration:
@@ -1808,6 +2150,8 @@ R2-2508107	Discussion on 6G scheduling and (re-)transmission schemes	OPPO	discus
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+为降低 UL latency，RAN2 将支持 contention-based CG resources，至少用于直接传输 BSR/DSR MAC CE。
+
 ```text
 To reduce UL latency, RAN2 to support contention-based CG resources at least for direct BSR/DSR MAC CE transmission.
 -	Xiaomi would like to understand the difference between the current shared resource and DMRS based resolution and this proposal.   Oppo considers that the 6G solution can perform more, as NR is NW implementation.   LG explains that in legacy the UE doesn’t know if it is shared or not so doesn’t need to be involved in contention resolution phase.
@@ -1820,6 +2164,8 @@ R2-2508034	Discussion on scheduling in 6G	Qualcomm Incorporated	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+SR/BSR 使用哪类 UL resources（例如 CBUL、CG 或 PUCCH）可由 network configuration 决定。将研究降低不同 UL resources 上 SR transmission latency 的技术。
+
 ```text
 Which type of UL resources (e.g. CBUL vs CG vs PUCCH) should be used to for transmitting SR/BSR can be left to network configuration. Study techniques that can reduce transmission latency of SR over different types of UL resources.
 Noted
@@ -1828,6 +2174,8 @@ R2-2508126	On latency reduction mechanisms for 6G eMBB traffic	MediaTek UK	discu
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p009`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+建议将 contention-based UL PUSCH resource 用于 early BSR reporting，并通知 RAN1 考虑该设计要求；讨论支持研究和比较方案，同时指出需评估相对现有方案的收益及碰撞概率。讨论还提出 UE ID、DMRS 是否专用或共享，以及 CB 是否仅限 BSR 等待研究的问题。
 
 ```text
 Send an LS to RAN1 to take the following design requirements into consideration:
@@ -1862,6 +2210,8 @@ After offline the following were brought up
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+6G 应支持 dedicated SR，用于请求 UL resource，并支持类似 BSR/DSR 的机制报告 buffer status 和 delay information；无论是否引入 CB-PUSCH。
+
 ```text
 For scheduling information, dedicated SR to request UL resource as well as BSR/DSR like mechanism to report buffer status and delay information are to be supported for 6G, regardless of whether CB-PUSCH would be introduced.
 From 10.3.1.1
@@ -1871,6 +2221,8 @@ R2-2508138	Discussion on scheduling, retransmissions and uplink scheduling infor
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p011`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+当 UE 没有可用于向 RAN 发送 scheduling information 的 UL-SCH resource 时，UE 向 RAN 发送 scheduling request，以请求用于发送该信息的 UL-SCH resource。
 
 ```text
 When there is no UL-SCH resource for the UE to send the scheduling information to RAN, UE sends scheduling request to the RAN for UL-SCH resource for sending such scheduling information.
@@ -1884,6 +2236,8 @@ R2-2508049	Discussion on 6GR scheduling and retransmission	vivo	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+以 5G 中 Type 1/2 configured grant 为起点，进一步研究 6GR 的 resource efficiency enhancements，用于低时延上行资源分配。
+
 ```text
 Both Type 1/2 configured grant in 5G are supported as the starting point, and 6GR further study the related resource efficiency enhancements, for low latency uplink resource allocation.
 Noted
@@ -1893,6 +2247,8 @@ R2-2508848	Considerations on scheduling and retransmisson for 6GR UP	CMCC	discus
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+RAN2 应研究 CG 的 radio resource configuration 和 adjustment enhancement，以支持突发流量业务。
+
 ```text
 RAN2 should study radio resource configuration and adjustment enhancement for CG to adopt service with bursty traffic.
 Not treated
@@ -1901,6 +2257,8 @@ R2-2508127	On scheduling, retransmissions and uplink scheduling information	Noki
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p014`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+提出研究统一的 CG framework，至少满足 RRC-based configuration、Flexible CG activation，以及使用 DCI 进行 Flexible modification。讨论中对是否统一 Type 1/2 CG、采用何种基线及如何适配 bursty traffic 存在不同意见。
 
 ```text
 Study a unified CG framework that satisfies at least the following requirements: 1) RRC-based configuration, 2) Flexible CG activation, 3) Flexible modification using DCI
@@ -1925,6 +2283,8 @@ Discussions
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+RAN2 应研究统一的 buffer status reporting，报告 total buffered data volume 和 buffered data 的 delay status。
+
 ```text
 RAN2 to study a unified buffer status reporting including total buffered data volume and delay status of the buffered data.
 Noted
@@ -1933,6 +2293,8 @@ R2-2508127	On scheduling, retransmissions and uplink scheduling information	Noki
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p016`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+提出为 6G 定义统一的 buffer status 和 delay status reporting procedure，并覆盖新类型数据的报告。讨论涉及是否采用统一 DSR/BSR、统一 signaling 或 procedure，以及报告内容、触发条件和格式。
 
 ```text
 For scheduling information report, we aim at defining unified procedure for buffer status and delay status reporting, covering also the report of new types of data for 6G.
@@ -1953,6 +2315,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+提出研究新的 LCP designs，以 cohesive 方式支持多个 performance objectives（如 throughput 与 delay），并增强对 application context awareness 和 adaptive QoS 等新用例的适应性。
+
 ```text
 Study new LCP designs that can support multiple performance objectives (e.g. throughput vs delay) in a cohesive way and be more adaptive than NR to support new use cases such as application context awareness and adaptive QoS.
 R2-2508094	Consideration on 6G UP Scheduling and retransmission	Xiaomi	discussion	Rel-20
@@ -1961,6 +2325,8 @@ R2-2508094	Consideration on 6G UP Scheduling and retransmission	Xiaomi	discussio
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
 
+提出研究增强型 LCP mechanism，使 LCP parameters 能够动态调整。
+
 ```text
 Study enhanced LCP mechanism allowing dynamic adjusting of LCP parameters.
 R2-2508049	Discussion on 6GR scheduling and retransmission	vivo	discussion	Rel-20
@@ -1968,6 +2334,8 @@ R2-2508049	Discussion on 6GR scheduling and retransmission	vivo	discussion	Rel-2
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.1.3-p019`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.1.3 Scheduling, retransmissions and uplink scheduling information
+
+以 5G 的 LCP design 为起点，RAN2 进一步研究 LCP enhancements，并考虑 delay、importance 及 inter-QoS flow/packet correlation 等 traffic characteristics。
 
 ```text
 LCP design in 5G is taken as a starting point, RAN2 further study LCP enhancements considering the traffic characteristics, e.g. delay, importance, inter-QoS flow/packet correlation.

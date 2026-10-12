@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from collections import defaultdict
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from ngr.config import load_features, load_sources
@@ -19,6 +19,7 @@ from ngr.fetch.runner import fetch_meeting
 from ngr.mapping.runner import map_meeting, merge_events, write_state
 from ngr.ops.alerts import RunRecord, append_run, build_banner, load_runs
 from ngr.ops.gitio import build_commit_message, commit_outputs, has_manual_changes
+from ngr.ops.lock import ExclusiveRunLock
 from ngr.parse.runner import parse_meeting, write_parsed
 from ngr.paths import P
 from ngr.render.runner import render_all
@@ -63,12 +64,19 @@ def _write_state(events, features, feature_state, result, stats, started):
     append_run(P.state / "run_history.json", record)
 
 
-def _enrich(events, features, state, cfg, result):
+def _enrich(events, features, state, cfg, result, *, checkpoint=None):
     if cfg.backend != "codex":
         return state
     budget, cache = Budget(cfg.max_calls_per_run), LlmCache(P.state / "llm_cache")
     factory = lambda model, effort: CodexExec(model, effort)
-    summary = extract_all(events, cfg, cli_factory=factory, cache=cache, budget=budget)
+    summary = extract_all(events, cfg, cli_factory=factory, cache=cache, budget=budget,
+                          checkpoint=checkpoint)
+    # 逐条摘要通道已无响应时，不能再进入会使用同一 CLI 的特性综述阶段；
+    # 否则一次超时会被放大为几十次额外调用，既无产出又长期占锁。
+    if summary.timed_out:
+        result.alerts.append("ChatGPT/Codex 调用超时，已暂停本轮并保留待处理事件")
+        result.exit_code = max(result.exit_code, EXIT_LLM)
+        return state
     state = digest_features(features, events, state, cfg, cli_factory=factory, cache=cache, budget=budget)
     budget.log(P.state / "usage_log.jsonl")
     result.llm_calls = budget.calls
@@ -166,12 +174,26 @@ def run_pipeline_remap() -> PipelineResult:
     return result
 
 
-def run_pipeline_enrich() -> PipelineResult:
+def run_pipeline_enrich(*, max_calls: int | None = None,
+                        batch_size: int | None = None) -> PipelineResult:
     started, result, cfg, features = time.time(), PipelineResult(), load_sources(), load_features()
-    events, state = _load(P.state / "events.json", []), _load(P.state / "features_state.json", {})
-    state = _enrich(events, features, state, cfg.extract, result)
-    _write_state(events, features, state, result, defaultdict(dict), started)
-    return result
+    lock = ExclusiveRunLock(P.state / "enrich.lock")
+    if not lock.acquire():
+        result.alerts.append("已有摘要任务在运行，已跳过本次以避免覆盖状态")
+        return result
+    try:
+        extract_cfg = replace(
+            cfg.extract,
+            max_calls_per_run=max_calls if max_calls is not None else cfg.extract.max_calls_per_run,
+            batch_size=batch_size if batch_size is not None else cfg.extract.batch_size,
+        )
+        events, state = _load(P.state / "events.json", []), _load(P.state / "features_state.json", {})
+        state = _enrich(events, features, state, extract_cfg, result,
+                        checkpoint=lambda: write_state(events, P.state / "events.json"))
+        _write_state(events, features, state, result, defaultdict(dict), started)
+        return result
+    finally:
+        lock.release()
 
 def run_fetch_docs(*, wg, meeting, agenda):
     from ngr.fetch.docs import fetch_docs

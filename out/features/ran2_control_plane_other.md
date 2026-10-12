@@ -1,12 +1,23 @@
 # 6GR 控制面其他议题
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：讨论中
 
-_尚无综述_
+RAN2 已确认 6G 多载波部署中聚合 always-on common signalling、支持 cross-CC initial access，并以 5G CA 为 CONNECTED 态频谱聚合基线；非连接态 UE 无需在多个载波监听寻呼。研究重点正收敛到 FR1-FR2 同步非共址部署，回传时延上限为 10 ms，并需评估调度架构、协议影响和性能可行性。RAN2 也在梳理 cell、primary/secondary serving cell 的概念与功能，并研究灵活聚合所需的测量、快速切换和故障恢复能力。多项关键选择仍待跨工作组讨论或可行性评估，整体尚处于讨论阶段。
+
+**未决问题**
+
+- Cross-CC initial access 是否使用与驻留相同的载波仍为 FFS，后续研究依赖 RAN1 进展。
+- cell 与物理载波的映射、RRC_CONNECTED 中 cell 的用途，以及 primary/secondary serving cell 的定义和术语仍待确定。
+- 非共址聚合的集中式或分布式调度、HARQ 与 PDCP/RLC 影响、节点间接口需求，以及最高 10 ms 回传带来的用户面时延是否可接受，仍需评估。
+- NR-DC framework 能否支持目标非共址部署，以及所需规范影响和对现有 5G DC 设计的简化范围尚未确定。
+- 统一 carrier-level aggregation 方案纳入哪些增强仍待研究；cross-carrier HARQ 属于 RAN1 讨论范围。
+- SCell 支持更多功能及 PCell failure recovery、RLF 韧性工具和相关测量方法仍处于研究或提案讨论中。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.5 Others
+
+RAN2 将研究起点聚焦于 FR1-FR2 synchronous non-collocated deployments，latency 上限为 10ms。研究应考虑 single 或 dual scheduler、调度器可协调或不可协调的情况，以及 PUCCH 假设、回传时延对 UP protocol 的影响、性能和可行性。
 
 ```text
 RAN2 to focus the study as a starting point FR1-FR2 synchronous non-collocated deployments with up to 10ms latency.
@@ -18,12 +29,16 @@ R2-2601476	Discussion on 6G spectrum aggregation	ZTE Corporation, Sanechips	disc
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.2.5 Others
 
+原文将 cell 描述为一种 logical concept，用于让 network 管理 physical end points、其资源，并按所需 service quality 配置硬件。需要澄清 6G 中 cell 的定义，以明确 primary 和 secondary serving cells 概念，同时纳入 RAN1/RAN2 和 RAN4 中的 UE requirements。
+
 ```text
 The cell is a logical concept that allows network to manage physical end points (for security, data and signalling exchanges), its resources and dimension the required hardware to the desired service quality. The definition for a cell in 6G is required to be clarified so that the primary and secondary serving cells concepts are clear while capturing UE requirements in RAN1/RAN2 and RAN4.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-o001`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+在 RRC_CONNECTED 多载波操作中，6GR UE 可配置不同载波上的多个“serving cells”，RAN2 聚焦其 L2/L3 功能。采用“per cell per carrier”还是“single cell multiple carrier”建模，待 RAN1/4 进一步讨论。
 
 ```text
 For multi-carrier operation in RRC_CONNECTED, an RRC_CONNECTED UE in 6GR can be configured with multiple "serving cells" on different carriers. RAN2 discussion should focus on L2/L3 functionalities of the "serving cell". For the "serving cell", RAN2 waits for further RAN1/4 progress on whether to adopt "per cell per carrier" modelling as in 4G/5G or "single cell multiple carrier" modelling (similar to "Gothia cell" in RAN1).
@@ -36,6 +51,8 @@ R2-2601806	Discussion on multi-carrier and other control plane issues	Huawei, Hi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p001`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+6G 支持 carrier aggregation，primary cell 至少用于 system information reception、RLM 等。RAN2 将研究需关联到特定 serving cell 的功能及 primary/secondary serving cells 功能不同的原因，并识别 5G carrier aggregation framework 的待改进之处；6G 术语待 RRC 结构确定后再定。
 
 ```text
 Carrier aggregation is supported in 6G. The primary cell is supported in CA at least for system information reception, RLM, etc.
@@ -59,6 +76,8 @@ R2-2601476	Discussion on 6G spectrum aggregation	ZTE Corporation, Sanechips	disc
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
 
+提出支持单一 MAC entity 的 spectrum aggregation，并包含 multiple TAGs、无需 RRC 参与的 component carrier 动态激活/去激活、基于 CA 的 duplication 与 LCH 和 carrier 的灵活映射，以及 early measurement reporting。
+
 ```text
 Spectrum aggregation with a single MAC entity should be supported with following features:
 	Multiple TAGs   (aim to support the aggregation of carriers with non-collocated TRPs)
@@ -70,6 +89,8 @@ R2-2601985	Discussion on spectrum aggregation in 6GR	China Telecom	discussion	Re
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p003`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+多载波连接模式下，可考虑增强 fast cell change 和 RLF handling 相关流程。另有提案建议 6G 在 RLF detection 和 RRC re-establishment 之外提供韧性工具，包括额外触发条件及新的 UE 动作。
 
 ```text
 Regarding multicarrier operation in connected mode, further enhancements on the procedures related to fast cell change and RLF handling could be considered in 6GR.
@@ -83,12 +104,16 @@ R2-2602199	Spectrum Aggregation for 6GR	InterDigital, Inc.	discussion	Rel-20	FS_
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
 
+6G 支持 UE 从 IDLE/INACTIVE 转换时，更快重定向到合适的 carrier(s)/cell(s)，并在 RRC_CONNECTED 中建立 aggregation。
+
 ```text
 6G supports faster redirection to the appropriate carrier(s)/cell(s) and setup of aggregation in RRC_CONNECTED when moving from IDLE/INACTIVE.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p005`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+RAN2 研究支持 flexible aggregation 所需的 RRM measurement architecture。
 
 ```text
 RAN2 studies the RRM measurement architecture required to support flexible aggregation.
@@ -100,6 +125,8 @@ R2-2601806	Discussion on multi-carrier and other control plane issues	Huawei, Hi
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
 
+Cell 被定义为管理 physical carrier resources 的逻辑术语。cell 与 physical carrier(s) 的映射取决于 RAN1 讨论，例如 Gothia cells。
+
 ```text
 Cell is defined as a logical term to manage physical carrier resources. The mapping between cell and physical carrier(s) depends on the RAN1 discussion, e.g. on Gothia cells.
 R2-2601845	Discussion on spectrum aggregation in 6G	Nokia	discussion	Rel-20	FS_6G_Radio
@@ -107,6 +134,8 @@ R2-2601845	Discussion on spectrum aggregation in 6G	Nokia	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p007`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+提议 RAN2 将 cell 定义为可由 RRC signalling 关联的 downlink 和/或 uplink resources 组合。cell signalling 还应明确区分 schedulable PRBs 和 RF bandwidth。
 
 ```text
 RAN2 to define a cell as a combination of downlink and/or uplink resources that may be linked together by RRC signalling. The cell signalling shall also unambiguously distinguish the schedulable PRBs and the RF bandwidth.
@@ -116,12 +145,16 @@ R2-2601476	Discussion on 6G spectrum aggregation	ZTE Corporation, Sanechips	disc
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
 
+预计 RAN2 在 system information、IDLE mobility、connected mobility 及 RRM 中使用“cell”术语。cell 是否仍用于 connected mode 下 UE 的 radio resource configuration 尚待确定。
+
 ```text
 The terminology “cell” is expected to be used in the following aspects in RAN2: System information (e.g. NCGI), Mobility in IDLE (i.e. cell (re-)selection) and in Connected(e.g. target aNB/cell identification during Handover), RRM(L3/L2 Measurement, RLM, BFM). It is FFS whether the cell is still be used for radio resource configuration of UE in connected mode.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+Cell 可包含 downlink、uplink 或两者资源，对应由单一 aNB 控制的一个或多个 TRPs，并关联一个 CD-SSB 和一个 PCI。每个 cell 可为 TDD 或 FDD；“Gothia cell”讨论留待 RAN1。
 
 ```text
 The cell has following characteristic:
@@ -137,6 +170,8 @@ R2-2602048	6G-6G spectrum aggregation for non-collocated FR1-FR2 scenario 	Veriz
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p010`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+RAN2 将考虑 6G FR1-FR2 非共址频谱聚合的要求，包括支持单向 10 ms 或更高的站间时延、吞吐量和覆盖优于 5G FR1-FR2 部署，以及便于从 5G NR-DC 部署迁移。还要求支持非共址节点间跨厂商频谱聚合的标准化接口，并兼容已部署的 RAN 架构。
 
 ```text
 RAN2 shall consider the following requirements for 6G FR1-FR2 non-collocated spectrum aggregation scenario:
@@ -163,6 +198,8 @@ R2-2601842	Views on Non-collocated deployments in 6G	Apple	discussion	Rel-20	FS_
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
 
+为简化规范和实现，考虑异步操作及 FR1-FR1 非共址部署前，应先证明其实用部署或用例。RAN2 将聚焦 FR1-FR2 和 FR1-FR3 同步部署；针对约 10 ms 回传时延的 FR1-FR2 非共址场景，RAN2 研究应聚焦 UL/DL 解耦。
+
 ```text
 To simplify the specification and implementation efforts, practical deployment/use-cases for asynchronous operation and FR1-FR1 non-collocated deployment operations should be justified before being considered. RAN2 to focus on FR1-FR2 and FR1-FR3 synchronous deployments.
 Noted
@@ -175,6 +212,8 @@ R2-2601441	Cell Model Spectrum Aggregation and Non-collocated CA	CATT	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p012`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+针对回传时延最高 10 ms 的非共址 inter-aNB CA，需讨论网络侧采用集中式还是分布式 MAC scheduler、调度与 HARQ 的影响、PDCP/RLC 的影响，以及是否需要规定节点间接口交换的信息。讨论还提出研究单一和分布式 scheduler 的利弊，并考虑 UL/DL decoupling。
 
 ```text
 For non-collocated inter-aNB CA assuming backhaul latency up to 10ms, at least the following issues should be discussed:
@@ -203,6 +242,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
 
+RAN2 受请评估：非理想回传（最高 10 ms）造成的额外 UP 时延，对于带非理想回传的频谱聚合是否可接受。
+
 ```text
 RAN2 is kindly asked to check whether the additional UP latency caused by non-ideal backhaul (up to 10 ms) is acceptable for spectrum aggregation with non-ideal backhaul.
 Noted
@@ -211,6 +252,8 @@ R2-2601453	Discussion on 6G-6G spectrum aggregation for non-collocated deploymen
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.2.5-p014`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.2.5 Others
+
+RAN2 需就使用 NR-DC framework 支持回传时延最高 10 ms 的 6G FR1-FR2 非共址频谱聚合进行评估，涵盖 intra-aNB/inter-aNB 及 intra-vendor/inter-vendor 部署的可行性。原文提出现有 NR-DC 复杂，需结合 6GR 设计讨论规范影响及对 5G DC 设计的简化，例如 CP 和 UP 的 PDCP anchor 均仅位于 FR1 站点、无 SRB3、单一 RLM。
 
 ```text
 RAN2 to agree the following evaluation for using NR-DC framework to support 6G FR1-FR2 non-collocated spectrum aggregation with up to 10ms backhaul latency:
@@ -244,12 +287,16 @@ R2-2602588	Discussion on multicarrier in connected mode for 6GR	TCL	discussion	R
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.5 Others
 
+UE 在一个 carrier 上驻留并在同一 carrier 上发起 RA，不存在 capacity issue。
+
 ```text
 There is no capacity issue for UE camping on one carrier and initiating RA on the same carrier.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.5-o001`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.5 Others
+
+在 multiple CC deployment 中，从网络和 UE 角度看，期望 IDLE/INACTIVE 状态的 UE 驻留在 coverage layer，并在 capacity layer 上进行 UE dedicated data transmission。
 
 ```text
 In the multiple CC deployment, from both NW and UE perspective, it is desirable for UE in IDLE/INACTIVE state to camp on the coverage layer and to perform the UE dedicated data transmission on the capacity layer.
@@ -258,12 +305,16 @@ In the multiple CC deployment, from both NW and UE perspective, it is desirable 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.5 Others
 
+原文指出，若 IDLE/INACTIVE UE 均驻留在 coverage layer，并在进入 CONNECTED 后切换到 capacity layer 进行专用传输，会造成 coverage layer 初始接入拥塞，以及切换延迟长、信令开销高。
+
 ```text
 According to NR design, if all UEs in IDLE/INACTIVE state camp on coverage layer and then switches to capacity layer for UE dedicated transmission after entering the CONNECTED state, it will cause the following two issues: 1) initial access congestion on coverage layer, and 2) long delay and high signaling overhead to switch UE to capacity layer.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.5-o003`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.5 Others
+
+在 MRSS 和 CA 部署中，若 PCell 位于 coverage layer，UE 连接和数据传输主要在 SCell 上。原文提出应考虑将 NR 中部分 PCell 功能卸载到 SCell，例如用于 SR 的 RACH。
 
 ```text
 In MRSS and CA deployment, if PCell is on coverage layer, the UE connection and data transmission is mainly on SCell and some PCell function in NR should be considered offloading to SCell, e.g. RACH for SR purpose.
@@ -272,6 +323,8 @@ In MRSS and CA deployment, if PCell is on coverage layer, the UE connection and 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.2.5 Others
 
+在 MRSS 和 CA 部署中，若 PCell 位于 capacity layer，由于覆盖问题，恢复场景会比 NR 更频繁。原文提出应考虑通过 coverage layer（SCell）进行 PCell recovery。
+
 ```text
 In MRSS and CA deployment, if PCell is on capacity layer, due to coverage issues, recovery scenarios are more frequent than NR, and the PCell recovery over coverage layer (SCell) should be considered.
 ```
@@ -279,12 +332,16 @@ In MRSS and CA deployment, if PCell is on capacity layer, due to coverage issues
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
 
+原文提出，对于 IDLE/INACTIVE UE，没有必要驻留在一个载波的同时在另一个载波执行 RA。
+
 ```text
 For IDLE/INACTIVE UE, it is unnecessary for UE camping on one carrier while performing RA on another carrier.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.5-p001`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
+
+原文提出 IDLE/INACTIVE UE 不需要支持 multi-carrier operation。所列 5G NR 经验指出，多载波部署中各 serving cell 均需发送自身的 SSB/SIB1，可能导致 always-on common signalling 的能耗和系统开销、UE 额外功耗及碎片频谱聚合支持不足。
 
 ```text
 IDLE/INACTIVE UE does not need to support multi-carrier operation.
@@ -299,6 +356,8 @@ Observation 1 [Lessons learnt from 5G]: In 5G NR, each serving cell for IDLE/INA
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
 
+RAN2 确认 6GR multi-carrier deployment 中 always-on common signalling aggregation mechanism 的收益，例如网络能耗和 UE 功耗节省。该机制由 reference carrier frequency 广播 SSB/SIB1，并为其他载波提供同步参考和初始接入相关配置，例如 PRACH config、CSS。
+
 ```text
 For multi-carrier deployment in 6GR, RAN2 confirms the benefit (e.g. NW energy/UE power saving, etc.) of the "always-on" common signalling aggregation mechanism that the "always-on" signalling (SSB/SIB1) is broadcast only by a reference carrier frequency which provides the synchronization reference and the initial access related configuration (e.g. PRACH config, CSS, etc.) for all the other carriers.
 Noted
@@ -307,6 +366,8 @@ R2-2600458	Views on 6G spectrum aggregation	Apple	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.5-p003`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
+
+RAN2 6G study 应支持 cross-CC initial access procedure，并研究 UE 和网络在三个阶段的操作：初始接入前驻留 coverage layer、执行 cross-CC initial access，以及进入 CONNECTED 后在 capacity layer 保持连接。非连接态方面已同意 UE 无需在多个载波监测 paging；初始接入是否使用与驻留载波相同或不同的载波仍为 FFS，后续研究等待 RAN1 进展。
 
 ```text
 RAN2 6G study should support the cross-CC initial access procedure, and study the UE and network operation in three phases:
@@ -348,12 +409,16 @@ R2-2600199	Discussion on multi carrier operation in 6G	ZTE Corporation, Sanechip
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
 
+对于 CONNECTED mode 的 spectrum aggregation，RAN2 目标是形成统一的 carrier level resource aggregation 方案，并以 5G CA 为基线。可继承的 5G CA 增强包括 Early measurement report、Dormancy SCell、Fast SCell activation、Fast SCell beam recovery 和 CA with Tx switching。
+
 ```text
 For spectrum aggregation in connected mode, RAN2 aim to have a unified solution for the carrier level resource aggregation, and 5G CA should be considered as baseline. Enhancements developed in 5G CA can be inherited, including Early measurement report, Dormancy SCell, Fast SCell activation, Fast SCell beam recovery, CA with Tx switching.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.5-p005`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
+
+原文提出在 6G 进一步研究 CA 增强：UL/DL decoupling、PCell 与 SCell 间快速角色变更（也旨在改善 inter-frequency handover），以及 cross-carrier HARQ operation。讨论指出，统一方案不意味着必须纳入所有功能，且 cross-carrier HARQ 属于 RAN1 讨论范围。
 
 ```text
 The following enhancements for CA should be further studied in 6G
@@ -369,6 +434,8 @@ R2-2600458	Views on 6G spectrum aggregation	Apple	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.2.5-p006`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.2.5 Others
+
+RAN2 6G CA study 应考虑在 SCell 支持更多功能（例如 RLM、RA-SR），以及通过 SCell 进行 PCell failure recovery。讨论中有观点认为，监测 SCell 并报告可避免完整重建；相关提案及测量方法列为讨论内容。
 
 ```text
 RAN2 study on 6G CA should consider the following two directions:

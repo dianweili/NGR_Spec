@@ -1,12 +1,22 @@
 # 6GR UE 能力框架
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+RAN2#132至#134已识别6GR UE能力框架的主要问题，包括信令量大、过滤粒度不足、能力结构重复或耦合、可选特性过多，以及动态能力变化与网络处理不匹配。讨论已形成若干研究方向：建立最低能力基线和按设备类型划分的能力集，支持模块化、差异化及压缩信令，并优化按band combination筛选和能力复用。动态能力更新研究已聚焦过热、功耗限制和MUSIM等用例，并同意仅报告相关能力，但请求、响应、计时器、重配置与回退行为尚未统一。整体仍处于研究和方案评估阶段，部分事项留待后续会议、WI阶段或其他工作组协同处理。
+
+**未决问题**
+
+- 动态能力更新的触发条件、请求内容、响应消息与时限，以及无响应、拒绝或配置不匹配时的UE行为仍待确定。
+- 能力更新应采用完整container、变更参数或delta signaling，以及Idle/Inactive状态和移动性期间的处理仍待研究。
+- 能力信令的模块化、基线与设备类型能力集、压缩和渐进式查询等方案尚需评估；RACS与RAN-based ID的取舍及标识符用法未定。
+- coarse granularity、band combination优化及可复用FeatureSet结构需结合后续RAN1/RAN4 feature list和实际容器评估。
+- 商业化与IODT相关根因、mandatory feature支持的跟踪方式及跨工作组职责仍有未决事项。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.2.1 UE capability framework
+
+UE capability change message 在 RRC connected mode 发送给 network，并预期在 mobility 时转发给 target aNB；UE 进入 Idle/Inactive 后如何处理以及是否存储最新信息仍待讨论。下次会议前鼓励各公司线下形成对流程的整体看法，且只预期 co-sourced contributions。
 
 ```text
 -	UE capability change message is sent to the network in RRC connected mode and this information is expected to be forwarded to the target aNB in case of mobility.   FFS what happens when the UE goes to Idle/Inactive and if it is expected that the latest information is stored.
@@ -18,12 +28,16 @@ R2-2603344	Views on dynamic capability change	NTT DOCOMO	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
 
+网络实现或 operational policies 可能不处理其未考虑的 use cases 的 capability change requests，也可能不处理 capability change 影响不显著的请求。
+
 ```text
 There may exist network implementations or operational policies that do not consider capability change requests for use cases that are not considered by the network and/or for use cases where the impact of the capability change is not significant.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-o001`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
+
+收到 UE capability change indication 后，network 可影响 UE 对 problematic situation 的响应；若未收到 indication，network 只能面对 UE 自主恢复行为带来的影响。
 
 ```text
 A network that receives an indication of UE capability change has the opportunity to influence how the UE behaves in response to a problematic situation; a network that does not receive such an indication has no choice but to face the effects of the UE’s autonomous recovery behaviours, whatever they are.
@@ -32,12 +46,16 @@ A network that receives an indication of UE capability change has the opportunit
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
 
+与 capability updates 相关的 network KPIs 有害影响，主要来自 network 未能或无法更新配置时被迫依赖 autonomous solutions 的 UE。
+
 ```text
 The harmful impact to network KPIs related to capability updates comes primarily from UEs forced to rely on autonomous solutions when the network does not or cannot update the configuration.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-o003`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
+
+发生 capability change 时，UE 已有必须解决的问题，network 此时无法阻止问题发生，只能选择不予理会。
 
 ```text
 By the time of capability change, the UE already has a problem that must be solved, and the network cannot at this stage prevent the problem from occurring; it can only refuse to notice.
@@ -46,6 +64,8 @@ By the time of capability change, the UE already has a problem that must be solv
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
 
+capability update 若报告整个 capability container，会阻止 network 执行 delta configuration，并需要 full configuration，造成 service interruption，违背在 RRC_CONNECTED 引入 capability update 的目的。
+
 ```text
 Reporting the entire capability container for capability update prevents the network from performing delta configuration and necessitates full configuration, which causes service interruption and defeats the purpose of introducing capability update in RRC_CONNECTED.
 ```
@@ -53,12 +73,16 @@ Reporting the entire capability container for capability update prevents the net
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
 
+报告完整的 capability container 来进行能力更新会引入不必要的大量信令开销，并降低资源效率，从而打消运营商部署该功能的意愿。
+
 ```text
 Reporting the entire capability container for capability updates introduces unnecessary large signaling overhead and degrades resource efficiency, thus discouraging operators from deploying the feature.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-o006`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
+
+Proposal 2提出：UE在能力变更请求发送后启动的定时器到期时执行能力变更，并评估最新的 L12 setting 和 RRC (re)configuration 是否满足请求。若不满足，UE应用 default/SIB1 configuration，并在该事件发生时向网络报告。
 
 ```text
 Response from network can essentially be L12 setting and/or RRC Reconfiguration
@@ -69,12 +93,16 @@ R2-2602944	Further discussion on dynamic UE capability change	vivo	discussion	Re
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
 
+RAN2无需进一步讨论 RACS ID（即 CN based ID，与 5G 相同，定义为表示完整 UE capabilities 的 ID）；其协调挑战和网络维护负担（存储问题）明显，后续讨论交由 SA2。
+
 ```text
 There is no need to discuss further on RACS ID (i.e. CN based ID, same as 5G, ID is defined to represent full set of UE capabilities) in RAN2, which has obvious coordination challenges and network maintenance burden (i.e., storage issue) and is up to SA2 to further discuss.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-o008`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.1 UE capability framework
+
+在 5G 中，UE capabilities 采用紧密耦合、深层嵌套的结构（如 per-band 和 per-band-combination capabilities），限制了通用 capability information 的复用，并导致不同频段和组合重复传送相同值。
 
 ```text
 In 5G, UE capabilities were signalled using tightly coupled and deeply nested structures (e.g. per-band, per-band-combination capabilities), which limited reuse of common capability information and caused repeated signalling of identical values across bands and combinations.
@@ -83,12 +111,16 @@ In 5G, UE capabilities were signalled using tightly coupled and deeply nested st
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+允许在未事先进行 network reconfiguration 时报告能力更新的机制，仅适用于独立于网络实现且对性能有显著影响的用例。
+
 ```text
 The mechanism that allows reporting of capability updates without prior network reconfiguration shall be applied only to use cases that are independent of network implementation and have a significant impact on performance.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+UE因 overheating 和/或 power saving 时，允许在没有事先 network configuration 的情况下报告能力更新。该提案被记为 Noted。
 
 ```text
 The UE is allowed to report capability updates without prior network
@@ -100,6 +132,8 @@ R2-2603257	Capability update mechanism	MediaTek Inc.	discussion	Rel-20	FS_6G_Rad
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+进一步讨论 UE 更新网络不支持的 capability field 的可能性，目的是了解如何避免此类问题。
+
 ```text
 Further discuss the possibility of the UE updating a capability field that the network does not support, with an aim to understand how such a problem can be avoided.
 ```
@@ -107,12 +141,16 @@ Further discuss the possibility of the UE updating a capability field that the n
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+需确认：若由网络控制 UE 是否可调用 capability update mechanism，发生问题且更新未获允许时，UE 将必然在没有任何指示的情况下应用 autonomous fallback mechanisms。
+
 ```text
 Confirm that if the network controls whether the UE can invoke the capability update mechanism, the UE will necessarily apply autonomous fallback mechanisms without any indication when a problem occurs and the update is not permitted.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p004`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+提案允许 UE 在所有用例中无需事先网络许可即可指示能力更新，相关参数（如 timers）的网络配置可另行讨论；提案被记为 Noted。讨论指出更新频率需谨慎考虑，不同用例不应一概而论，且网络响应、UE 实现及能力变化原因也受到关注。
 
 ```text
 Allow the UE to indicate a capability update without prior network permission (i.e., without the equivalent of OtherConfig in 5G) for all use cases.  Network configuration of related parameters such as timers can be discussed.
@@ -129,6 +167,8 @@ R2-2603402	Dynamic UE capability change in connected mode	Qualcomm Incorporated	
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+提议将 UE 在 connected mode 下进行 dynamic UE capability change 时报告完整 UE radio capability 作为 baseline solution；该提案被记为 Noted。
+
 ```text
 RAN2 to agree on the baseline solution where the UE reports the entire UE radio capability for dynamic UE capability change in connected mode
 Noted
@@ -137,6 +177,8 @@ R2-2604146	Consideration on the Dynamic Capability Update	ZTE Corporation, Sanec
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p006`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+提议 dynamic capability reporting 允许 UE 针对不同情形报告不同能力，且每种情形仅报告关键参数而非完整能力集合。power saving 和 overheating 情形保留 envelope capability reporting mechanism；该提案被记为 Noted。
 
 ```text
 For dynamic capability reporting, the UE shall be allowed to report different capabilities for different cases:
@@ -149,12 +191,16 @@ R2-2603769	UE capability framework for 6G	Samsung	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+RAN2 同意，动态 UE capability reporting 仅考虑相关的 UE capabilities。
+
 ```text
 RAN2 agree that only relevant UE capabilities will be considered for dynamic UE capability reporting.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p008`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+RAN2 将进一步研究不同 capability container，以及采用 delta signaling 的相同 capability container，并依据 signaling overhead 和 future extensibility 进行评估。
 
 ```text
 RAN2 further study both different capability container and same capability container with delta signaling, evaluating them based on signaling overhead and future extensibility.
@@ -165,12 +211,16 @@ R2-2604157	Discussion on UE capability update	Huawei, HiSilicon	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+各 use case 的标准将定义可更新的 capability parameters。6G capability update study 将复用 5G 中定义的参数。
+
 ```text
 The capability parameters which can be updated are defined in standards for each use case. The parameters defined in 5G are reused in 6G capability update study.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+为指明变更的 capability information 以支持网络执行 delta reconfiguration，并降低 capability update 的 signaling overhead，仅报告已变更的 capability parameters。讨论意见涉及参数范围、container、使用场景及连接状态等方面。
 
 ```text
 To clearly indicate the changed capability information for network to perform delta reconfiguration, and to reduce signalling overhead for capability update, only the changed capability parameters are reported.
@@ -190,6 +240,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+aNB 收到 capability update request 后，应向 UE 发送 RRC reconfiguration message 或包含 reject cause 的 reject message。
+
 ```text
 The aNB, upon receiving a capability update request, shall send either an RRC reconfiguration message or a reject message including the reject cause to the UE.
 R2-2603002	Discussion on 6G Dynamic Capability Update	OPPO	discussion	Rel-20	FS_6G_Radio
@@ -201,12 +253,16 @@ R2-2603257	Capability update mechanism	MediaTek Inc.	discussion	Rel-20	FS_6G_Rad
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+网络响应消息不提供网络拒绝 capability update 的选项。
+
 ```text
 The network response message does not provide an option for the network to reject the capability update.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p013`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+supervisory timer 规定 UE 可预期收到 capability update 网络响应的时间；timer 是否由网络配置仍需进一步讨论。
 
 ```text
 A supervisory timer governs when the UE can expect a network response to a capability update.  Further discuss if the timer is network-configured.
@@ -217,6 +273,8 @@ R2-2603340	Discussion on dynamic capability update	LG Electronics France	discuss
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+fallback timer 到期后，UE 基线行为是执行 RRC re-establishment procedure。
+
 ```text
 Upon the fallback timer expiry, the UE performs the RRC re-establishment procedure as a baseline.
 R2-2603002	Discussion on 6G Dynamic Capability Update	OPPO	discussion	Rel-20	FS_6G_Radio
@@ -224,6 +282,8 @@ R2-2603002	Discussion on 6G Dynamic Capability Update	OPPO	discussion	Rel-20	FS_
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p015`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+wait timer 到期后，针对更新后的 capability 与 RRC configuration 不匹配，RAN2 将讨论两种方案：参考 MUSIM，将如何应用 RRC configuration 留给 UE 实现；或等待 RRC reconfiguration failure 处理方案结论，并在可行时复用该方案。
 
 ```text
 Regarding how to handle the mismatch between the updated capability and the RRC configuration after the wait timer expires, RAN2 to discuss the following two options:
@@ -234,6 +294,8 @@ R2-2603728	Dynamic UE capability update in 6G	Apple	discussion	Rel-20	FS_6G_Radi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p016`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+以下情况的 UE behavior 应统一：规定时限内未收到网络响应、收到 NACK response，以及收到 ACK response 但规定时限内未获得适当处理。
 
 ```text
 The UE behavior should be unified for the following cases:
@@ -247,6 +309,8 @@ R2-2603287	Discussion on UE Capability Framework	Futurewei Technologies	discussi
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+将 UE internal resource availability 纳入 dynamic capability update study 的用例，包括 computational power/APU、memory 和 storage。
+
 ```text
 RAN2 to include UE internal resource availability (including computational power/APU, memory, and storage) as a use case for the dynamic capability update study
 R2-2603617	Discussion on 6GR UE capability	Sony	discussion	Rel-20	FS_6G_Radio
@@ -254,6 +318,8 @@ R2-2603617	Discussion on 6GR UE capability	Sony	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p018`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+研究 dynamic capability，以覆盖更广泛的用例，包括 UE battery level；另列有“Other – if time allows”。
 
 ```text
 RAN2 to study dynamic capability to cater for wider use cases including UE battery level.
@@ -264,12 +330,16 @@ R2-2603873 Considerations on UE capability framework for 6GR CMCC discussion Rel
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+提议研究 modular UE Capability signaling，以减小 signaling size。
+
 ```text
 It is proposed to study modular UE Capability signaling to reduce signaling size.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p020`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+对于 RAN based ID，可考虑预定义一些 basic/mandatory UE capability sets，其中包含 static RAN related capability parameters，例如 band/radio related parameters。
 
 ```text
 For RAN based ID, pre-defining some basic/mandatory UE capability sets including static RAN related capability parameters (e.g. band/radio related parameters) could be considered.
@@ -279,6 +349,8 @@ R2-2603663	Design of 6GR UE capabilities	InterDigital, Inc.	discussion	Rel-20	FS
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+支持基于 module 的 capability reporting 和 configuration procedures，使用 delta 和 reference profiles，使 capability IDs 能表示可复用的 partial capability sets，并与 Direction 2 对齐。
+
 ```text
 Support module-based capability reporting and configuration procedures using delta and reference profiles, enabling capability IDs to represent reusable partial capability sets (aligned with Direction 2).
 R2-2603325	Discussion on 6GR capability framework	Nokia	discussion	Rel-20	FS_6G_Radio
@@ -287,12 +359,16 @@ R2-2603325	Discussion on 6GR capability framework	Nokia	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+RAN-centric capability ID procedure 的研究可聚焦于 identifier assignment，以及 UE 和 network 如何使用 identifiers 引用 capability sets。
+
 ```text
 The study on the RAN-centric capability ID procedure can focus on identifier assignment and how identifiers may be used by the UE and network to reference capability sets.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p023`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+研究可扩展的 UE capability signalling 设计，目标是确保 UE capability container 不分段。
 
 ```text
 Study scalable design for UE capability signalling with the objective of ensuring the UE capability container is unsegmented.
@@ -301,12 +377,16 @@ Study scalable design for UE capability signalling with the objective of ensurin
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
 
+研究 progressive 或 iterative capability enquiries，使 UE capability information 能通过多个 self-decodable UL RRC messages 上报。
+
 ```text
 Study the use of progressive or iterative capability enquiries that enable the UE capability information to be reported across multiple self-decodable UL RRC messages.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p025`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.2.1 UE capability framework
+
+研究如何在一份 technical specification 中涵盖所有 capability aspects，以简化 6GR UE capabilities 的 specification、maintenance 和 implementation。
 
 ```text
 Study how to capture all capability aspects in one technical specification to simplify specification, maintenance, and implementation of the 6GR UE capabilities.
@@ -330,6 +410,8 @@ R2-2604166	Discussion on Early Implementations	MediaTek Inc., Ericsson, Nokia	di
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.2.1-p026`
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.2.1 UE capability framework
+
+FeatureSet ID大小和FSC List保留两种候选方案：缩小FeatureSetDownlink/UplinkID，或采用short/long可变长度；细节留待WI stage-3决定，RAN2 SI阶段不再讨论。RAN2还将基于真实NR capability container比较Category 1/3/8方案的收益与限制，并研究Category 6 compression的收益；RACS ID是否继续使用尚无共识，RAN based ID可进一步研究。
 
 ```text
 1   For Size of FeatureSet ID and FSC List capture the following two solutions as candidate options in TR, the details will be decided in WI stage-3. No further discussion on this topic in RAN2 SI phase:
@@ -396,6 +478,8 @@ R2-2602809	Report of [AT133bis][003][6G] UE capabilities (Xiaomi)	Xiaomi	report	
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.2.1 UE capability framework
 
+TR将记录Solution 4（Coarse granularity）和Solution 5（Band combination signalling optimization）。Solution 4针对重复信令的能力，涉及per BC、per band pair per BC、per FSPC及per FS粒度；Solution 5包括移除BW classes的冗余BC，并假设仍需信令BW class。
+
 ```text
 Capture the following Solution 4 and 5 in the TR
 Solution 4: Coarse granularity
@@ -415,6 +499,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-a002`
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.2.1 UE capability framework
+
+确认现有 NR UAI 机制在所有用例中的问题，包括网络可能不支持或未启用该功能、UE 无法获知网络是否及如何处理请求，以及网络不了解 UE 未指定的自主行为。研究允许部分用例在无网络预配置时触发 capability update、更新内容、响应消息与响应时限；power saving、foldable phones 和 IDC 列为补充用例。
 
 ```text
 Do not capture a distinction between “families” of capability change use cases for now.
@@ -456,6 +542,8 @@ R2-2602550	Discussion on capability update mechanism	LG Electronics France	discu
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
 
+RAN2 将根据 Category 1-3/8 capability signalling design 的结果，研究 Category 6 compression solution 的收益。讨论认为压缩收益取决于最终结构，相关分析可待结构确定后进行，并记录了最高约 50% 收益的观点。
+
 ```text
 RAN2 to study the benefit of compression solution (i.e., Category 6) based on outcome of capability signalling design of Category 1-3/8.
 CATEGORY 6: Compression
@@ -471,6 +559,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
 
+将 Solution 4/5 及其受影响的 capabilities 纳入 TR，并在 WI 阶段根据 6G 的 RAN1/4 feature list 重新评估是否考虑 coarse granularity。
+
 ```text
 Capture Solution 4/5 and impacted capabilities in the TR and revisit in WI phase the need of considering the coarse granularity based on RAN1/4 feature list in 6G.
 Noted
@@ -479,6 +569,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
 
+目标是统一 UE capability change signalling procedure，以支持报告 UE envelope capabilities 变化及特定 RF-或 hardware-related capabilities 变化。该目标不意味着所有用例影响相同的 capability fields。
+
 ```text
 Aim for a unified signalling procedure for change of UE capabilities that can accommodate indications of both a change in UE envelope capabilities and a change in specific RF- or hardware-related capabilities.  This does not imply that all use cases will affect the same capability fields.
 -	Huawei thinks it is not clear what is unified and we shouldn’t rush.   Xiaomi explains that this is just for reporting and UE behaviour.   Ericsson is also not clear what is the gain for this unified behaviour.
@@ -486,6 +578,8 @@ Aim for a unified signalling procedure for change of UE capabilities that can ac
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-p003`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
+
+确认现有 NR UAI 机制的两个问题：网络可能不支持或未为 UE 启用 UAI，且没有网络直接响应，UE 无法确定网络是否会处理其变更请求。讨论中还提出，UE 自主 fallback 可能让 UE 行为不可预测。
 
 ```text
 Confirm for all use cases the following pain points of the existing UAI mechanism in NR:
@@ -496,6 +590,8 @@ There is no direct response from the network and no certainty that the network w
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-p004`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
+
+提出所有用例中的 UE 均可在无网络预配置时触发 capability update，但网络如何处理该更新未作规定。讨论意见涉及网络性能与控制、网络不支持时的开销、适用用例范围，以及避免 UE 在发送指示前进行自主行为。
 
 ```text
 The UE is allowed for all use cases to invoke the capability update mechanism without prior network configuration.  This proposal does not imply what the network will do with the update (see P8).
@@ -518,6 +614,8 @@ The UE is allowed for all use cases to invoke the capability update mechanism wi
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
 
+讨论将更新后的完整 capability container 作为请求 capability update 的指示方式。部分公司支持该方式，另有意见指出完整上报会占用容量并带来开销，并提出 UE 也可提供 preferred configuration。
+
 ```text
 Discuss whether sending an updated version of the complete capability container is an agreeable approach to indicating the need for a capability update.
 -	Qualcomm and LG agrees with this approach.
@@ -527,6 +625,8 @@ Discuss whether sending an updated version of the complete capability container 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-p006`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
+
+提出为所有用例定义 capability update 的 response message，具体使用何种消息仍待讨论。意见包括网络可指示是否会处理请求，以及避免使用 reject。
 
 ```text
 A response message to the capability update is defined for all use cases.  FFS what message is used.
@@ -540,12 +640,16 @@ A response message to the capability update is defined for all use cases.  FFS w
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
 
+将 power saving 列为 capability update 的补充用例。
+
 ```text
 Power saving is considered as an additional use case for capability update.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-p008`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
+
+将 IDC 列为 capability update 的补充用例；讨论提到可为 IDC 使用标准化方案。
 
 ```text
 IDC is considered as an additional use case for capability update.
@@ -554,6 +658,8 @@ IDC is considered as an additional use case for capability update.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
+
+尚在讨论折叠手机是否需要 capability update，以便正确处理。Samsung 认为应按其他用例处理；Oppo 认为这是瞬时变化，可作为 MIMO change 处理；Xiaomi 认为网络应知道这是 UE capability change 所致。
 
 ```text
 Further discuss whether capability update is needed for proper handling of foldable phones.
@@ -564,12 +670,16 @@ Further discuss whether capability update is needed for proper handling of folda
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.2.1 UE capability framework
 
+未来可在其他用例的需求明确后讨论这些用例。capability change framework 应力求对这些用例保持 forward compatibility。
+
 ```text
 Additional use cases can be discussed in the future as their requirements become clear, and the capability change framework should strive for forward compatibility for such use cases.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.2.1-p011`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.2.1 UE capability framework
+
+Dynamic capability应避免因重新生成 supported BC list 而增加开销，并通过报告实际状态的 UE capability 兼顾 UE 与网络利益；网络可根据 UE capability 变化决定配置，也可考虑同时指示变化根因。
 
 ```text
 Dynamic capability 1) will not increase overhead caused by re-generation of the supported BC list, 2) can reach mutual interests of both UEs and networks by reporting state-of-fact UE capability, the configuration(s) can be up to network implementation by respecting to the change of UE capability, 3) can consider to indicate the root cause of capability change together with the changed capability.
@@ -578,12 +688,16 @@ Dynamic capability 1) will not increase overhead caused by re-generation of the 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.2.1 UE capability framework
 
+将 capabilities 分散在多个规范中被认为费力，并导致差异，进而造成产品实现错误。
+
 ```text
 Spreading capabilities across multiple specifications has shown to be laborious and resulted in discrepancies that led to incorrect product implementations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-o002`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.2.1 UE capability framework
+
+UE radio capabilities 可能非常庞大，超过单条 UL RRC message 的允许大小。
 
 ```text
 UE radio capabilities can be very large and can exceed the allowable size of a single UL RRC message size.
@@ -592,12 +706,16 @@ UE radio capabilities can be very large and can exceed the allowable size of a s
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.2.1 UE capability framework
 
+在 5G 中，UE capabilities 以较为扁平且全面的集合上报，但没有所有设备共享的明确定义最低基线，导致市场碎片化和 IoT 测试过多。
+
 ```text
 In 5G, UE capabilities were reported as a largely flat and comprehensive set, without a clearly defined minimum baseline shared by all devices, leading to market fragmentation and excessive IoT testing.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-o004`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.2.1 UE capability framework
+
+在 5G 中，UE capability signalling 会报告完整 capability information，即使多数设备通常都支持大量相同特性。
 
 ```text
 In 5G, UE capability signalling reports the full capability information, even though a large number of features are commonly supported in most devices.
@@ -606,12 +724,16 @@ In 5G, UE capability signalling reports the full capability information, even th
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.2.1 UE capability framework
 
+在 5G 中，UE capabilities 采用紧密耦合、深层嵌套的结构（如 per-band 和 per-band-combination capabilities），限制了通用 capability information 的复用，并导致不同频段和组合重复传送相同值。
+
 ```text
 In 5G, UE capabilities were signalled using tightly coupled and deeply nested structures (e.g. per-band, per-band-combination capabilities), which limited reuse of common capability information and caused repeated signalling of identical values across bands and combinations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-o006`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+RAN2 同意已识别出可能造成 signalling overhead 和 complexity 的问题，包括 capability signalling size 大、network filtering 低效、RACS 不实用，以及大量未部署或未商业化的可选特性。
 
 ```text
 RAN2 agrees the following problems identified that can cause signalling overhead and complexity:
@@ -624,6 +746,8 @@ Problem 1
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p001`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+RAN2 同意 Problem 1（significant capability signalling size）的根因包括：不同频段或 band combinations 间重复或冗余上报、UL Tx switching capability reporting 的复杂度和开销，以及 FeatureSetCombination 复用不足。
 
 ```text
 RAN2 agrees the following root causes identified for Problem 1 ‘significant capability signalling size’:
@@ -638,6 +762,8 @@ RAN2 agrees the following root causes identified for Problem 1 ‘significant ca
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p002`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+针对 Problem 1，RAN2 同意研究跨频段或 band combinations 复用相同值、避免 UE envelop limitation 的 finer granularity 和过度分类、减少 xDD/FRx 差异能力的冗余上报，以及统一 spectrum aggregation capability framework。另同意研究可跨多个频段或组合复用的重复 FeatureSet 结构；DL/UL Decoupling 的能力信令讨论因无共识而延期。
 
 ```text
 For Problem 1, RAN2 agrees the following study areas in RAN2:
@@ -655,6 +781,8 @@ For Problem 1, RAN2 agrees the following study areas in RAN2:
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+RAN2 将研究 6G Day 1 是否支持 RACS 的收益及可行性；若支持，RACS-ID 应可灵活复用且不覆盖 UE 的全部 capabilities，RACS-like solution 应降低协调挑战和维护负担。研究内容包括 RACS ID 粒度、基于 RACS 的 capability 检索框架，并在需要时与 SA2 协调。
+
 ```text
 RAN2 to study the benefit and whether to support RACS in 6G Day 1 considering the followings:
 -	Design principle in 6G (if supported):
@@ -671,6 +799,8 @@ Problem 4
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+RAN2 同意，Problem 4“Massive optional features that are not deployed/commercialized”的根因是同一功能引入多个选项，且单个 feature/function 定义了过多 optional components。
+
 ```text
 RAN2 agrees the following root causes identified for Problem 4 ‘Massive optional features that are not deployed/commercialized’:
 	Root cause: Multiple options are introduced to the same functionality and too many optional components defined for single feature/function.
@@ -679,6 +809,8 @@ RAN2 agrees the following root causes identified for Problem 4 ‘Massive option
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+为解决 Problem 4，RAN1/RAN2/RAN4 应严格遵循 6G SID 中“minimizing the adoption of multiple options for the same functionality”的原则。
+
 ```text
 To solve problem 4, RAN1/RAN2/RAN4 should strictly follow ‘minimizing the adoption of multiple options for the same functionality’ as in 6G SID.
 Problem 5
@@ -686,6 +818,8 @@ Problem 5
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p006`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+RAN2 对 commercialization challenges 提出两种后续路径：发送 LS 向 RAN 汇报进展，或不再继续该议题并交由 RAN 讨论。Mandatory feature 未要求网络实现、导致难以跟踪 3GPP ecosystem 支持的 features 并保证 forward compatibility 的根因，以及等待“slowest” network vendor 后再部署的根因，留待 RAN 讨论；两项其他根因不予考虑，且 Root cause 3 是否纳入尚无共识。
 
 ```text
 RAN2 to down-selects from the following way-forwards for commercialization challenges:
@@ -786,12 +920,16 @@ R2-2600119	Necessity of Dynamic Capability Reporting	Xiaomi, Sharp, Ofinno, Appl
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+Dynamic capability 支持因 overheating、power consumption constraints 和 hardware requirements 变化（例如 MUSIM、IDC、AI/ML processing unit）而改变 UE capabilities；Table 1 作为 RAN2 讨论和识别 6G capability change justification 与 requirements 的起点，其他 use case 尚待研究。
+
 ```text
 Dynamic capability supports changes of UE’s capabilities for the use cases associated to overheating, power consumption constrains, and changes on the hardware requirements (e.g., MUSIM, IDC, AI/ML processing unit, etc). If so, Table 1 is used as starting point (baseline) for RAN2 to discuss/identify justification and requirements for capability change in 6G. FFS on other dynamic capability use case.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p008`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+RAN2 确认 UAI 不足以报告 UE capability change：UE 上报受网络配置控制，网络收到 UAI 后应有的行为未明确，UAI 报告的是 RRC configuration preferences 而非 capability change，且按 feature 上报。
 
 ```text
 RAN2 confirms UAI is not sufficient for UE’s capability change reporting considering the following pain points:
@@ -803,6 +941,8 @@ RAN2 confirms UAI is not sufficient for UE’s capability change reporting consi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p009`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+Dynamic capability update 需要考虑 network control 与 UE constraints/implications 的权衡，并通过四项研究领域定义网络和 UE 行为：网络依据更新能力重新配置或取消配置及未遵循更新的后果、是否向 RAN 和/或 CN 上报、handover 与 cell-reselection 时的流程和 retrieval framework，以及上报格式。RAN2 同意至少从 overheating 和 MUSIM 两类主要 use case 开始研究，但不排除其他 use case。
 
 ```text
 Dynamic capability update needs to 1) consider track-off between network control and UE’s constrains/implications and 2) define behaviour for both network and UE, by addressing the above Study Areas 1-4:
@@ -839,6 +979,8 @@ R2-2600924	Discussion on 6GR capability framework	Nokia	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+研究如何在一份 technical specification 中涵盖所有 capability aspects，以简化 6GR UE capabilities 的规范、维护和实现。
+
 ```text
 Study how to capture all capability aspects in one technical specification to simplify specification, maintenance, and implementation of the 6GR UE capabilities.
 Signalling structure  (if time allows)
@@ -848,6 +990,8 @@ R2-2600924	Discussion on 6GR capability framework	Nokia	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+研究可扩展的 UE capability signalling 设计，目标是使 UE capability container 能装入单个 UL RRC message。
+
 ```text
 Study scalable design for UE capability signalling with the objective of ensuring the UE capability container fits into a single UL RRC message.
 R2-2600263	On compact capability signaling design and reporting	MediaTek Inc.	discussion	Rel-20	FS_6G_Radio
@@ -855,6 +999,8 @@ R2-2600263	On compact capability signaling design and reporting	MediaTek Inc.	di
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p012`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+RAN2 研究灵活的 signaling design：UE 以 coarse granularity 报告 typical/common capability，并通过 optional signaling 以 finer granularity 表示相对于 common baseline 的差异。
 
 ```text
 RAN2 to study the flexible signaling design allowing the UE to report the typical/common capability in coarse granularity while using the optional signaling in finer granularity to indicate the differentiation (out of the common baseline).
@@ -864,6 +1010,8 @@ R2-2600190	Considerations on 6GR UE Capability	CATT	discussion	Rel-20	FS_6G_Radi
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+RAN2 研究通过 UE capability message compression 降低 capability signaling overhead。
+
 ```text
 RAN2 to study reducing the overhead of capability signaling via UE capability message compression.
 R2-2600776	Design of 6GR UE capabilities	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
@@ -872,6 +1020,8 @@ R2-2600776	Design of 6GR UE capabilities	InterDigital, Inc.	discussion	Rel-20	FS
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+6GR UE capability 设计应包含所有 UE 支持的 minimum baseline capability set，以及按 device type 区分的 mandatory capability sets。
+
 ```text
 6GR UE capability design should include a minimum baseline capability set supported by all UEs, and device-type specific mandatory capability sets.
 ```
@@ -879,12 +1029,16 @@ R2-2600776	Design of 6GR UE capabilities	InterDigital, Inc.	discussion	Rel-20	FS
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
 
+可使用 optional feature indicators，相对于 baseline device-type capability set 指示差异（“delta”）。
+
 ```text
 Optional feature indicators can be used to signal differences (“delta”) relative to the baseline device-type capability set.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.2.1-p016`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.2.1 UE capability framework
+
+支持基于 delta 和 reference profiles 的 module-based capability reporting and configuration procedures。
 
 ```text
 Support module-based capability reporting and configuration procedures using delta and reference profiles.
@@ -917,6 +1071,8 @@ R2-2601032	Consideration on 6G UE Capability	ZTE Corporation	discussion	Rel-20	F
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+Band 和 BCs 是 UE capability signaling size 增加的关键因素；在 RAN1/RAN4 讨论基础上，6G 新概念或特性（如 band group、single cell with multiple carrier）可能改变 band 和 BCs 的定义。
+
 ```text
 band and BCs are key factors in the increased UE capability signaling size, however the definition of band and BCs may be changed by new concept/feature in 6G (i.e., band group and single cell with multiple carrier) depending on discussion in RAN1/RAN4.
 ```
@@ -924,12 +1080,16 @@ band and BCs are key factors in the increased UE capability signaling size, howe
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+FS、FSPC 和 FSC 可用于高效指示 band/BC dependent capabilities，但无法覆盖 5G 中所有 baseband dependent capabilities。
+
 ```text
 FS, FSPC and FSC are used to efficiently indicate band/BC dependent capabilities but couldn’t cover all baseband dependent capabilities in 5G.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o002`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
+
+每个 release/version 中，尤其是 BC 内的 optional capabilities 会增加 UE capability signaling overhead；若考虑 feature level differentiation 或 WGs 提出的 feature groups 间依赖关系，可能有空间减少 optional capabilities。
 
 ```text
 optional capabilities especially in BC in each release/version increases UE capability signaling overhead. There might be room to reduce optional capabilities if we can consider differentiation per feature level or dependency between feature groups from WGs.
@@ -942,12 +1102,16 @@ R2-2509032	Discussion on UE capability framework	Deutsche Telekom AG	discussion
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+CA/DC 的 Band combination capability information 占 capability information size 的主要部分，但现有 RAT/band/cell-group filtering 粒度过粗。提出需要 Per-BC filtering，以避免为当前 serving cell 组合未使用的 BCs。
+
 ```text
 Band combination capability information for CA/DC dominates capability information size, but current filtering (RAT/band/cell-group) are too coarse. Per-BC filtering is needed to avoid composing unused BCs on the current serving cell.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o004`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
+
+能力查询包含此前要求的 same band filtering 时，UE 应重新组合相同的 band/feature-set 信息，因为 feature set IDs 和 feature set combination IDs 的作用范围是单次报告。
 
 ```text
 When capability enquiries including same band filtering which was required before, the UEs should re-compose identical band/feature-set information because feature set IDs and feature set combination IDs are report-instance scoped.
@@ -956,12 +1120,16 @@ When capability enquiries including same band filtering which was required befor
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+网络可以预先请求宽范围的 BC capability information，以支持未来 CA/DC 配置；但其中许多信息在已存储能力被丢弃前从未使用。
+
 ```text
 The network may request wide BC capability information upfront for future CA/DC configuration, but much of it is never used before the stored capability is discarded.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o006`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
+
+连接状态下支持 dynamic UE capability updates 有多种不同动机，应通过对能力变化原因分类来分别研究。
 
 ```text
 There are multiple different motivations to support dynamic UE capability updates during the connected state, and these should be studied separately by categorizing the reasons for capability changes.
@@ -970,12 +1138,16 @@ There are multiple different motivations to support dynamic UE capability update
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+RAN2 需要确保对“dynamic UE Capabilities changes”的解释一致：它指 UE 无法按已应用配置执行，还是指偏离此前声明的能力。
+
 ```text
 RAN2 needs to ensure consistent interpretation of “dynamic UE Capabilities changes”: whether it relates to UE (in)ability to perform according to the applied configuration or previously declared capabilities.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o008`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
+
+即使未因 UAI 触发 RRC Reconfiguration，也不排除网络采取响应行为或在 lower layers 进行适配。
 
 ```text
 The absence of RRC Reconfiguration in response to UAI does not preclude responsive network behaviour or adaptation at lower layers.
@@ -984,6 +1156,8 @@ The absence of RRC Reconfiguration in response to UAI does not preclude responsi
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+与 UAI 相关的用例仅涉及 RAN 中配置的临时修改，不影响 CN。
+
 ```text
 The use cases associated with UAI involve only temporary modification of the configuration in RAN without impacting CN.
 ```
@@ -991,12 +1165,16 @@ The use cases associated with UAI involve only temporary modification of the con
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+NR 已支持在 lower layers 处理 form factor changes（例如折叠手机），无需改变 UE capabilities。
+
 ```text
 NR already supports form factor changes (e.g. folding phones) at lower layers without change of UE capabilities.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o011`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
+
+基于 UE Assistance Information (UAI) 的能力限制或更新在 5G 商业化未成功。原文列出的原因包括未考虑 UE 与网络双方利益、难以验证 UE 请求限制能力的真实原因而可能导致不当降能，以及能力限制或更新可能显著影响通信性能并使部分场景难以满足 QoS 要求。
 
 ```text
 The commercialization of capability restriction/updates based on UE Assistance Information (UAI) was not successful in 5G, due to the following issues:
@@ -1008,12 +1186,16 @@ The commercialization of capability restriction/updates based on UE Assistance I
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+CMCC 已支持在 UE/chipset 于运营商部署网络中激活功能前，与指定厂商通过 IODT test 验证功能。
+
 ```text
 Per the current implementation, to verify the features through IODT test with some given vendors before the UE/chipset activate the features in operator’s deployed network is already supported in CMCC.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o013`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
+
+商业环境中存在仅在特定 UE 型号和特定 UE 软件版本上出现的问题。
 
 ```text
 In commercial environments, problems exist that only occur on specific UE models and specific UE software versions.
@@ -1022,12 +1204,16 @@ In commercial environments, problems exist that only occur on specific UE models
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.2.1 UE capability framework
 
+原文指出，由于这些特定问题，其他用户可能失去质量改进的机会。
+
 ```text
 Due to these specific problems, other users may be deprived of opportunities for quality improvement.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-o015`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+提出制定全球统一且规范化的程序，以跟踪网络和 UE 对功能的部署，并以具约束力的程序确保功能不只是被声明为 mandatory。记录指出，如何定义 binding、跟踪方式及 RAN2 与其他工作组的职责仍需讨论。
 
 ```text
 A globally aligned and normatively specified procedure should ensure features are not just declared as mandatory, but deployment of these (and other features) is tracked in 3GPP with a binding procedure for both the network and the user equipment.
@@ -1040,6 +1226,8 @@ A globally aligned and normatively specified procedure should ensure features ar
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p001`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+提出定义 basic feature groups，将大量功能作为单个组的组件进行实现、认证和部署，并形成运营商全球统一的最低有意义功能集。对基本组的判定标准及是否会导致大量 mandatory features 存在讨论。
 
 ```text
 Basic feature groups should be defined to ensure implementation, certification, and deployment of large numbers of features as components of a single feature group, rather than specifying a myriad of individual feature groups for a small number, and often a single component. These basic feature groups together define a meaningful, minimum set of features that are globally aligned among operators.
@@ -1054,6 +1242,8 @@ R2-2508076	UE Capability pain points and considerations	Xiaomi	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p002`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+列出了 5G UE capability framework 的痛点，包括 capability signalling size、非对称 UL/DL capability、非前向兼容的 signalling structure、重复的检索框架、RACS ID 不实用，以及 UE 与网络支持或配置不匹配。
 
 ```text
 RAN2 to study solutions for the following pain points of 5G UE capability framework:
@@ -1078,6 +1268,8 @@ RAN2 to study solutions for the following pain points of 5G UE capability framew
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p003`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+记录提出识别并整理 UE capability 痛点及根因，明确 RAN2 可处理的事项和影响其他工作组的事项，并寻找示例来展示问题。关于向 RAN1/RAN4 发送 LS 仍待下次会议讨论，且需进一步识别 overhead/complexity 的主要来源。
 
 ```text
 For pain point 1-4, RAN2 sends LS to RAN1/RAN4 and ask RAN1/4 to consider pain point 1-3 and root causes in 6G system design requirement for capability signaling size reduction. RAN2 to discuss capability signalling structure simplification in later phase of SI based on feedback from RAN1/4.
@@ -1108,12 +1300,16 @@ R2-2508876	UE capability framework for 6G	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+提出 RAN2 与 RAN1/RAN4 确认 CA、band 和 BC structures 的总体时间安排，以便规划 UE capability signalling structure 的增强。
+
 ```text
 RAN2 check with RAN1/RAN4 on general timeline for CA/band/BC structures in order for RAN2 to plan for the enhancement of UE capability signaling structure.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p005`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+提出 RAN2 在 6G 研究期间讨论 band 与 BC dependent capabilities（如 FS、FSPC、FSC）的总体结构，并与 RAN1/RAN4 分享以征求反馈。
 
 ```text
 RAN2 discuss a general structure for band + BC dependent capabilities (e.g. FS, FSPC, FSC, etc.) for 6G and share with RAN1/RAN4 to get their feedback during study item.
@@ -1122,6 +1318,8 @@ RAN2 discuss a general structure for band + BC dependent capabilities (e.g. FS, 
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+提出 RAN2 讨论定义单个 feature 的多个 UE capabilities 的总体指导，以避免可选 UE capabilities 过多。
+
 ```text
 RAN2 discuss a general guidance in defining multiple UE capabilities for a feature in order to avoid too many optional UE capabilities.
 ```
@@ -1129,12 +1327,16 @@ RAN2 discuss a general guidance in defining multiple UE capabilities for a featu
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+提出 RAN2 应通过避免重复、合并子变体及组合相互依赖的功能等方式，尽量减少选项和功能数量。
+
 ```text
 RAN2 should work on minimizing the number of options/features by avoiding duplications, merging subvariants, joining dependent features, etc.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p008`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+提出 RAN2 评估 RACS 方案及 mobility 场景下可能需要的增强，包括将类似 UCMF 的功能转移到 Base Station。相关讨论指出，capability filters 宜限于会显著增加 signalling overhead、可能被许多 UE 支持但仅被部分 PLMN 使用的功能；RACS ID 对减少查询的影响应与其他方案一并评估。
 
 ```text
 RAN2 should evaluate RACS solution and possible enhancements required for mobility case (i.e., shift of the “UCMF-like” functionalities to the Base Station).
@@ -1151,12 +1353,16 @@ R2-2508509	Consideration on 6G UE Capability	ZTE Corporation, Sanechips	discussi
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+保留基于网络请求的基本 UE capability reporting procedure。RAN2 研究优化 filtering mechanism，以支持更细粒度的 UE capabilities 筛选。
+
 ```text
 The basic UE capability reporting procedure can be retained from 4G/5G, where the UE reports capabilities based on a network request. But RAN2 to study how to optimize the filtering mechanism to enable additional granularity for the filtering of UE capabilities.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p010`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+除显式 UE Capability report 外，还支持基于 UE Capability ID 的报告。RAN2 研究其优化方案，例如通过定义 UE capability sets 部分内容的模板来增强 RACS mechanism。
 
 ```text
 In addition to the explicit UE Capability report, RAN2 should also support UE Capability ID based reporting and should study optimizations for the UE capability ID based reporting (e.g. enhanced RACS mechanism by defining templates for parts of UE capability sets).
@@ -1167,6 +1373,8 @@ R2-2508610	6G UE Capability Framework	LG Electronics Inc.	discussion	Rel-20	FS_6
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+RAN2 研究按 band combination 进行 UE capability retrieval 筛选，只获取特定 band combination 的 capabilities，以减少与 band combination 相关的数据量。
+
 ```text
 RAN2 to study defining per band combination filtering for UE capability retrieval including only particular band combination capabilities to reduce band combination related size.
 ```
@@ -1174,12 +1382,16 @@ RAN2 to study defining per band combination filtering for UE capability retrieva
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+RAN2 研究针对已报告 feature set information 的 index-based linkage 和 delta reporting，以避免重复并支持增量更新。UE 可在编制 UE capability reports 时复用 feature set IDs 和 feature set combination IDs，并将其用于其他 bands。
+
 ```text
 RAN2 to study an index-based linkage and delta reporting for previously reported feature set information to avoid duplication and support incremental updates. This allows the UE to reuse the reported feature set IDs and feature set combination IDs not only for identical band, but also for other bands when composing UE capability reports.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p013`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+RAN2 研究 UE 发起的 band combination reporting mechanism，无需显式 network enquiry。该机制由网络预先提供的条件启用。
 
 ```text
 RAN2 to study a UE initiated band combination reporting mechanism without explicit network enquiry, enabled by the network pre-provided conditions.
@@ -1192,12 +1404,16 @@ Dynamic capability change
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+针对对用户体验有重大影响的原因（例如 overheating 和 power saving），研究 UE capability updates framework。UE 可不受 network configuration 限制地报告更新，网络需遵循这些报告，同时尽量减少对 network operation 的影响。
+
 ```text
 For reasons which have a significant impact on user experience (e.g., overheating and power saving), study the framework of UE capability updates in which the UE can report it regardless of network configuration, and the network is required to respect those reports, while impact on network operation is minimized.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p015`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+针对 overheating 或 power saving 以外原因触发的 capability updates，研究重点是尽量减少 CN involvement 并降低对其他 procedures 的影响。
 
 ```text
 For capability updates triggered by reasons other than overheating or power saving, we study them with a focus on minimizing CN involvement and reducing the impact on other procedures.
@@ -1217,12 +1433,16 @@ R2-2508322	6GR UE capability framework	Nokia	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+将已商用的 5G UAI 问题（例如 overheating）作为首个用例进行研究。研究包括明确变化生效时间、变化是否永久以及 configuration handling 等具体要求。
+
 ```text
 Study commercialized 5G UAI issues (e.g. overheating) as the first use case, including identification of the specific requirements (e.g. when the changes need to take effect, permanency of the change, configuration handling).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p017`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+分析“dynamic capability”用例时，还应考虑 RRC configuration handling 或 lower layers 等其他 procedures 是否能充分满足需求。
 
 ```text
 Analysis of “dynamic capability” use cases shall also consider whether other procedures, e.g. handling by RRC configuration or lower layers, can adequately meet the requirements.
@@ -1234,6 +1454,8 @@ UE capability update
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p018`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+当前阶段的 UE capability 研究应优先识别问题，而非讨论解决方案或增强措施；RAN2 初期聚焦于识别 NR UE capabilities 中观察到的问题。待 6G feature studies 取得足够进展后，再讨论 capability enhancements。
 
 ```text
 For UE capability study at current stage, problems/issues identification are more important than debating on solutions/enhancements:
@@ -1247,6 +1469,8 @@ R2-2508445	Considerations on UE capability framework in 6G	Apple	discussion	Rel-
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+动态 UE capability update 从 NR UAI 和 RRCReconfigurationComplete (NeedForGap) 已支持的用例开始。也可考虑获得广泛支持的其他用例。
+
 ```text
 For dynamic UE capability update, starting with the use cases supported by NR UAI and RRCReconfigurationComplete (NeedForGap). Other use cases identified with wide support can be considered as well.
 ```
@@ -1254,12 +1478,16 @@ For dynamic UE capability update, starting with the use cases supported by NR UA
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+预期网络在定义的时间范围内妥善处理 UE 的 UE capability update 请求。这样可确保 transition period 期间网络与 UE 的配置保持同步。
+
 ```text
 It is expected that network properly handles UE request on UE capability update within a defined timeline, to make sure that network and UE are synchronized in terms of the configuration during the transition period.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p021`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+若 UE 未在规定时间范围内收到更新配置，其行为仍可进一步讨论。下一次会议将识别动态 capability change 的重要用例及其需求（包括理由），并分析 UAI 的痛点；框架应聚焦 RAN capability，不影响 NAS capability。
 
 ```text
 If UE does not receive an updated configuration from the NW within the timeline, it could be further discussed what the UE behavior is.
@@ -1283,6 +1511,8 @@ R2-2508044	Discussion on 6GR UE capability framework	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+为避免跨不同地区和 PLMN 的潜在 IODT 问题，6G 保留“mandatory with capability signalling”这一 feature 类型。
+
 ```text
 To avoid the potential IODT issues crossing different regions and PLMNs, maintain the type of feature ‘mandatory with capability signalling’ in 6G.
 ```
@@ -1290,12 +1520,16 @@ To avoid the potential IODT issues crossing different regions and PLMNs, maintai
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+研究如何确保网络与 UE 对 mandatory features 的支持一致。一个例子是将网络的 mandatory features 纳入规范，并在 IODT 中将其作为 mandatory items 处理。
+
 ```text
 Study how to ensure alignment between network and UE support for mandatory features, e.g., include mandatory features of network in the specification, which should be treated as mandatory items in IODT.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p024`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+如果 RAN2 就涉及其他工作组（如 RAN4、RAN5）的 IODT 问题达成共识，且该问题需由 3GPP 处理，RAN2 应在 RANP 中启动相应讨论。
 
 ```text
 If RAN2 reaches a consensus on any IODT issue related to other WGs (e.g., RAN4, RAN5) to be addressed by 3GPP, RAN2 should trigger corresponding discussions within RANP.
@@ -1307,6 +1541,8 @@ R2-2508868	Considerations on UE capability framework in 6G	Qualcomm Incorporated
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+为解决“IODT issue”，应避免向网络提供 UE 厂商名称或 ID 的方案。
+
 ```text
 To address the “IODT issue”, solution where the network is provided with the served UE vendor name/ID should be avoided.
 ```
@@ -1314,12 +1550,16 @@ To address the “IODT issue”, solution where the network is provided with the
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+RAN2 研究向 UE 提供 serving network 厂商名称或 ID 的方案。
+
 ```text
 RAN2 to study solutions where the UE is provided with the serving network vendor name/ID.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p027`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+RAN2 研究让 UE 在 UE radio capability 中按 main feature 上报“IOT-ed”的网络厂商名称或 ID 的方案。讨论指出，厂商 ID 上报的处理及 mobility 期间的处理仍有待解决。
 
 ```text
 RAN2 to study solutions where the UE reports “IOT-ed” network vendor names / IDs per main feature, within the UE radio capability.
@@ -1333,12 +1573,16 @@ R2-2508839	Considerations on UE capability framework for 6GR	CMCC	discussion	Rel
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+关于 IODT issue，不需要进一步增强。
+
 ```text
 Regarding the IODT issue, further enhancements are not needed.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p029`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+UE capabilities 与 network 需求之间的不一致问题（例如 RF capabilities 不符合 3GPP specification）仍需进一步讨论。该条目记录为 Noted。
 
 ```text
 Inconsistency issue (e.g. RF capabilities do not match the 3GPP specification, etc.) between UE capabilities and the network needs further discussion.
@@ -1351,12 +1595,16 @@ Discussion
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
 
+6G 应研究使 network 能够识别 UE 的 model 和/或 software version。
+
 ```text
 6G should study enabling the network to identify the UE's model and/or software version.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.2.1-p031`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.2.1 UE capability framework
+
+6G 应研究根据 UE 的 model 和/或 software version 控制某项 function 的适用性（enable/disable）。讨论涉及 IODT 问题、厂商和软件版本识别、移动性处理及实现方式等；该条目记录为 Noted，且 Not treated。
 
 ```text
 6G should study enabling the network to control the applicability of a function (i.e., enable/disable) based on the UE's model and/or software version.

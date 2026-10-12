@@ -1,12 +1,23 @@
 # 6GR 移动性
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+6GR 移动性已形成以 NR cell reselection 为基线、面向各类切换方案建立统一框架的方向，并明确无预配置移动性为 TN 基线，同时研究可选的候选配置与快速 RRC 处理。RAN2 已推进统一测量框架、按切换场景定义处理时延、缩减切换命令、早期上下行同步及资源共享或动态分配等工作，但多项方案仍在研究或等待 RAN1、RAN4、RAN3 和 SA2 协调。NTN 方面已纳入 TN–NTN 与 NTN–NTN 移动性、多轨道、位置或时间触发及 GNSS-free 操作等研究，并将低中断、低信令开销和减少 GNSS 依赖列为目标。整体方向已有若干基线和研究共识，但方案取舍、适用条件和具体程序尚未定稿。
+
+**未决问题**
+
+- 统一移动性框架如何整合 L3 HO、CHO、LTM 及网络触发和 UE 触发流程，仍有信令与程序设计分歧。
+- 统一测量框架的具体范围、报告机制及 L1/L3、cell/beam 测量支持细节仍待推进。
+- 候选配置、条件移动性及后续移动性的资源预留效率和具体支持方式仍未解决。
+- 早期上下行同步、早期下行同步及早期 CSI 的可行性、触发方式和复杂度或功耗权衡仍待研究。
+- 切换命令处理、目标配置应用、数据转发和 path switch 对整体时延的影响，以及不同切换场景的时延要求仍待协调。
+- NTN 的多轨道与 TN–NTN 移动性、GNSS-free 操作及不同网络集成模式下的具体机制仍待研究。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.4 Mobility
+
+除 CFRA baseline 外，RAN2 研究 UE 使用预配置 preamble 的 CBRA-based early UL synchronization 的可行性；支持 NW-triggered early UL synchronization，并进一步研究 UE-triggered 的潜在收益和可行性。NW-triggered baseline procedure 包括 source cell 向 UE 发命令、UE 向 target cell 发 RACH preamble、target cell 计算并传送 TA 给 source cell、source cell 将 TA 交付 UE，之后 UE 使用有效 TA 执行 RACH-less mobility；还考虑 network-triggered mobility 中 target cell initial access resources 在 cell switch command 前提供或随命令提供的两种情形。
 
 ```text
 1	In addition to CFRA baseline for early UL synchronization in 6G mobility, RAN2 studies also the feasibility of UE using CBRA based early UL synchronization.  For CBRA-based the assumption is that the UE still is configured with a preamble to use for this purpose.
@@ -27,12 +38,16 @@ R2-2603672	6GR mobility designs	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.4 Mobility
 
+UE 处理时间（Tprocessing，RAN4 定义）主要取决于 UE 收到 HO command 后需要执行的实际操作。它与 HO 期间变更的 IE/参数数量或 HO command 的大小没有直接相关性。
+
 ```text
 The factor which contributes majorly to the UE processing time (i.e., Tprocessing defined by RAN4), depends on the actual actions UE need to take after receiving the HO command and is not directly correlated to the number of IEs/parameters that change during HO or the "size of the HO command”.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-o001`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.4 Mobility
+
+RAN2 认可，在某些痛点场景中，legacy handover mechanisms 可能有较高概率发生非预期事件。例如，快速 RSRP 下降时 measurement event 未能正确触发。
 
 ```text
 RAN2 recognize that legacy handover mechanisms might show high probability of unintended events (e.g., measurement event is not properly triggered when fast RSRP degradation) in some pain point scenario (e.g., some trajectory in urban grid scenario defined in TR 38.914).
@@ -41,12 +56,16 @@ RAN2 recognize that legacy handover mechanisms might show high probability of un
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.4 Mobility
 
+UL-based mobility measurement 可在网络侧执行：UE 向潜在目标小区发送上行信号（如 PRACH preamble/SRS），目标小区再基于这些信号进行测量。
+
 ```text
 UL-based measurement for mobility can be performed at the network side where the UE transmits uplink signals (e.g., PRACH preamble/SRS) to the potential target cells, and then these target cells perform measurements based on the uplink signals.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-o003`
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.4 Mobility
+
+降低 interruption time 是 mobility 的 KPI 之一。因此，UL-based mobility 可与 candidate configurations、DL sync、UL signal transmission 和 RACH-less HO 等预配置技术集成。
 
 ```text
 One of the KPIs of mobility is to reduce interruption time, therefore UL-based mobility can be integrated with pre-configured techniques such as candidate configurations, DL sync, UL signal transmission and RACH-less HO.
@@ -55,12 +74,16 @@ One of the KPIs of mobility is to reduce interruption time, therefore UL-based m
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.4 Mobility
 
+UL-based mobility 可减少访问目标小区的资源消耗：只有接受 UE 的候选小区才指示资源分配（如 CG、CB-PUSCH）。它也可改善上行服务质量，例如 uplink-heavy interactive AI applications。
+
 ```text
 Other advantages of UL-based mobility are: to minimize resource consumption for accessing the target cells as only the candidate cell that accepts the UE provides the indication of resource allocation (e.g., CG, CB-PUSCH), and to improve UL service quality such as uplink-heavy interactive AI applications.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-o005`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+应用目标小区参数时的关键时延包括：Physical layer configuration 的 RF retuning 和 BWP switching，MAC configuration 的 MAC reset，RLC configuration 的 RLC entity re-establishment，以及 PDCP configuration 的 PDCP entity re-establishment 和 security update。
 
 ```text
 The key delays incurred by applying target cell parameters are as follows:
@@ -72,6 +95,8 @@ The key delays incurred by applying target cell parameters are as follows:
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p001`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+不同 handover 场景中持续变化的配置范围不同：Intra-DU/Intra-CU 涉及 physical layer configuration；Inter-DU/Intra-CU 涉及 physical layer、MAC 和 RLC configuration；Inter-CU 还涉及 PDCP configuration 和 security。条目还提出请 RAN4 研究两类场景是否可定义更低的 interruption requirements：无 RF 和 baseband change configuration update 的同频 mobility，以及基于 multi-carrier configuration 的异频 mobility。
 
 ```text
 The always changing parameters in each handover scenario are as follows:
@@ -92,6 +117,8 @@ R2-2603084	Views on Mobility for 6G	Qualcomm Incorporated	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+RAN2 应由 RAN4 为不同 HO 场景定义适当的 UE processing time（Tprocessing）要求，不应按 HO 期间配置变更的多少区分要求。会议同意向 RAN4 发 LS，说明已识别的无 RF 和 baseband configuration change 的同频 mobility 场景，并询问该场景是否可降低 UE processing delay。
 
 ```text
 RAN2 should leave it upto RAN4 to define appropriate UE processing time (Tprocessing) requirements for different HO scenarios and not request to define different requirements based on “how much” the configuration changes during a HO.
@@ -114,6 +141,8 @@ R2-2603312	Key considerations for mobility in 6G	Ofinno	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+RAN2 将研究一种 small-size HO command 方案，该命令仅包含源小区与目标小区之间发生变化的参数。该方案主要适用于 RF/BB-impacting parameters 不变的场景。
+
 ```text
 RAN2 to study an option for a small-size HO command that includes only the parameters that change between source and target cells. This option is primarily applicable in scenarios where the RF/BB-impacting parameters do not change.
 ```
@@ -121,12 +150,16 @@ RAN2 to study an option for a small-size HO command that includes only the param
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+RAN2 将向 RAN4 发送 LS，询问对于 RF/BB-impacting parameters 不变的 HO 场景，能否定义更低的 RRC procedure delay（T_RRC）和 UE processing time（T_processing）要求。
+
 ```text
 RAN2 to send an LS to RAN4 asking whether reduced RRC procedure delay (T_RRC) and UE processing time (T_processing) requirements can be defined for HO scenarios where no RF/BB-impacting parameters change.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p005`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+RAN2 将研究减少 HO command 处理时间和数据中断的机制，包括 RF/BB 参数不变时使用 small-size HO command、在 target configuration 应用前继续与 source cell 通信，以及结合使用 pre-configuration 和 fast RRC processing。该议题先在线下会议讨论。
 
 ```text
 RAN2 to study mechanisms to reduce HO command processing time and data interruption, including: a) small-size HO command for scenarios where RF/BB parameters do not change (per Proposal 1); b) continued source cell communication until a time at which the target configuration is applied, distinct from NR DAPS; and c) combined use of pre-configuration with fast RRC processing.
@@ -137,6 +170,8 @@ R2-2604208	Report from [AT134][008] Early UL Synchronization and Resource Reserv
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+支持 NW-triggered early UL synchronization；进一步研究 UE-triggered early UL synchronization 和 UE-based TA acquisition 的潜在收益与可行性。
+
 ```text
 NW-triggered early UL synchronization is supported. Study further the potential benefits and feasibility of UE-triggered early UL synchronization and UE-based TA acquisition.
 -	Ericsson, ZTE and Nokia points out the UE-based TA acquisition is purely a RAN4.  Vivo thinks that we studied in RAN2 but many think that RAN4.
@@ -145,6 +180,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p007`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+在采用 pre-configuration 的 mobility 中，source cell 可在 cell switch command 中指示 initial access 资源，例如 CFRA、CG 或用于 RACH-less 的 SR，前提是已与 target cell 协调。协调可在 cell switch 前进行，也可更早进行，由 source cell 决定。
 
 ```text
 For mobility with pre-configuration:
@@ -155,6 +192,8 @@ It is up to the source cell whether to perform such coordination just before the
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+在采用 pre-configuration 的 mobility 中，source cell 与 target cell 协调 initial access 资源时，target cell 可为 UE 提供新配置，而不使用预存配置；source cell 可触发 normal L3 handover。
+
 ```text
 For mobility with pre-configuration, when the source cell coordinates with the target cell for resources for initial access, the target cell can provide a new configuration for the UE (i.e., not using the pre-stored configuration) and the source cell can trigger a normal L3 handover.
 R2-2603142	Discussion on 6G Mobility	OPPO	discussion	Rel-20	FS_6G_Radio
@@ -163,12 +202,16 @@ R2-2603142	Discussion on 6G Mobility	OPPO	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+为提高 6G mobility 的 resource reservation efficiency，可使用 shared resource pool 避免为 UE 预留专用资源，例如 contention based PUSCH transmission 或 shared CFRA/SR resource pool。
+
 ```text
 To improve the resource reservation efficiency for 6G mobility, shared resource pool can be used to avoid UE dedicated resource reservation, e.g., contention based PUSCH transmission, shared CFRA/SR resource pool.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+为提高 6G mobility 的 resource reservation efficiency，采用 dynamic resource allocation/activation 以避免长期资源预留；例如基于 NW coordination 或 UE assistance info 分配/激活 CG、CFRA 或 SR 资源。该议题先在线下会议讨论。
 
 ```text
 To improve the resource reservation efficiency for 6G mobility, dynamic resource allocation/activation is used to avoid long term resource reservation, e.g., NW coordination-based CG/CFRA/SR resource allocation/activation, or UE assistance info-based CG/CFRA/SR resource allocation/activation.
@@ -179,6 +222,8 @@ R2-2604175	Solutions for mobility shortcomings	Ericsson, T-Mobile USA, Deutsche 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p011`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+6G Early UL synchronization 的基线为 network-controlled：网络向 UE 发送命令，UE 向指示的 target cell 发送 RACH preamble，target cell 计算 TA 并发送给 source cell，再由 source cell 将 TA 交付 UE。获得有效 TA 后，UE 执行 RACH-less mobility procedure。
 
 ```text
 The Early UL synchronization procedure in 6G is network-controlled as baseline and comprises the following baseline steps (FFS on additional enhancements):
@@ -193,6 +238,8 @@ R2-2603984	Discussion on Mobility management for 6GR	HONOR	discussion	Rel-20	FS_
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+RAN2 将同时考虑 NW-triggered 和 UE-triggered early UL synchronization。
+
 ```text
 RAN2 to consider both NW-triggered and UE-triggered early UL synchronization.
 R2-2604072	Discussion on 6G mobility	NTT DOCOMO	discussion	Rel-20
@@ -201,6 +248,8 @@ R2-2604072	Discussion on 6G mobility	NTT DOCOMO	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+对于 early UL sync，RAN2 将研究使用 CFRA resource 和 CBRA resource。
+
 ```text
 For early UL sync, RAN2 to study not only using CFRA resource but also CBRA resource.
 R2-2603086	Considerations on 6G mobility	LG Electronics Inc.	discussion	Rel-20	FS_6G_Radio
@@ -208,6 +257,8 @@ R2-2603086	Considerations on 6G mobility	LG Electronics Inc.	discussion	Rel-20	F
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p014`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+Early UL synchronization 将研究两种方向：对 RA-based early UL sync，通过优化 early measurement reporting 的 event configurations（例如 MR 的 event thresholds）减少不必要的同步；对 UE-based TA measurement，研究将其扩展到 asynchronous network 场景，包括向 UE 提供 source/target cell 的 reference timing difference 或可用于计算 target cell propagation delay 的 assistance information。另有提案考虑 UE 在 RRC_CONNECTED 且无数据期间基于预配置自行切换小区、不报告测量结果或通知网络，并在离开预配置 cell-list 时通知网络；该提案被 noted。
 
 ```text
 Study the following approaches for early UL synchronization:
@@ -249,6 +300,8 @@ R2-2603870	Discussion on 6G mobility	CMCC	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+为降低 RRC connected mode 下 delay-sensitive、bursty traffic 的功耗，研究两项彼此独立且不捆绑的功能：基于 DL/UL (LP)WUS 的 wake-up mechanism，以及以 CLTM/CHO-like pre-configuration 为基线的 UE-based mobility，并进一步研究 measurement relaxation 和 measurement reporting reduction。
+
 ```text
 For further power saving in RRC connected mode for delay-sensitive and bursty traffic, the energy-saving gains are provided by two independent functionalities, which are studied separately and are not bundled:
 •	DL/UL (LP)WUS based wake-up mechanism;
@@ -257,6 +310,8 @@ For further power saving in RRC connected mode for delay-sensitive and bursty tr
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p016`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+UE 应在每次 cell switch 后通知 network，以便 network 维护 UE 的 cell-level location。这样可避免在所有 candidate cells 预留 UE-dedicated resources，以及向所有 candidate cells 发送 UE-dedicated WUS 所带来的 signaling overhead。
 
 ```text
 The UE should notify the network after each cell switch, so that the network maintains cell-level location of the UE. This avoids:
@@ -268,12 +323,16 @@ R2-2603086	Considerations on 6G mobility	LG Electronics Inc.	discussion	Rel-20	F
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+针对 delay-sensitive、bursty traffic，UE 应在每次 cell change 后通知 network，以维护有效的 TA 和 beam，并确保 UE context 已准备好，从而快速恢复 data transmission。
+
 ```text
 For delay-sensitive and bursty traffic, UE should notify the network upon every cell change to maintain a valid TA and beam, and to ensure UE context readiness for fast data transmission resumption.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p018`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+针对 RRC connected state 下与 mobility 和 connection management 相关的 UE power saving，重点研究降低 5G measurement 和 reporting overhead 的增强方案，包括 S-measure、dynamic measurement and report configuration Act/Deact、RLM/BFD relaxation，以及目前仅允许 RedCap 使用的 RRM relaxation。
 
 ```text
 For UE power saving related to mobility and connection management in RRC connected state, focus on studying enhancements of 5G measurement and reporting overhead reduction schemes e.g., S-measure, dynamic measurement and report configuration Act/Deact (being introduced in Rel-20 for LTM), RLM/BFD relaxation, and RRM relaxation currently allowed only for RedCap.
@@ -283,6 +342,8 @@ R2-2603645	Considerations on 6G Mobility	ZTE Corporation, Sanechips	discussion	R
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p019`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+支持 network-triggered early DL sync，并以 5G 中由 source cell 触发 candidate cell 的 TCI-state activation 机制为基线；进一步研究 UE-triggered early DL sync 的可行性。对于无 pre-configuration 的 mobility，支持仅预配置 DL RS 和 candidate cell(s) 的 TCI-state configuration，以触发 early DL sync。
 
 ```text
 Support network-triggered early DL sync in 6G, the 5G mechanism (i.e. source cell triggers TCI-state activation of candidate cell) is taken as a baseline, and
@@ -294,6 +355,8 @@ R2-2602970	Discussion on 6G mobility	Xiaomi	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+Early DL sync（TCI state activation）有益且可以支持；其可行性由 RAN1 负责。RAN2 角度关于简化方案的进一步讨论，可在 RAN1 取得更多进展后进行。
+
 ```text
 Early DL sync (TCI state activation) is beneficial and can be supported. Feasibility is up to RAN1 and any further discussions on simplifications from RAN2 perspective can be discussed after further RAN1 progress.
 Others
@@ -303,6 +366,8 @@ R2-2602960	Discussion on 6GR Mobility enhancement for pain point scenarios	vivo,
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
 
+RAN2 将研究 mobility enhancements，以解决真实网络部署特定“pain point”场景中已知的 mobility issues，例如 ping-pongs、unnecessary HOs 和 RLFs；场景示例包括 TR 38.914 定义的 urban grid scenario。
+
 ```text
 RAN2 to study mobility enhancements to address mobility issues (e.g., ping-pongs, unnecessary HOs, RLFs) known from specific “pain point” areas in real network deployments, such as urban grid scenario as defined in TR 38.914.
 R2-2603042	Consideration of Uplink-based Mobility for 6GR	Sony, KDDI, Turkcell, Charter Communications, Fraunhofer-IIS, Fraunhofer HHI	discussion	Rel-20	FS_6G_Radio
@@ -310,6 +375,8 @@ R2-2603042	Consideration of Uplink-based Mobility for 6GR	Sony, KDDI, Turkcell, 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.4-p022`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.4 Mobility
+
+RAN2 应研究 connected mode UE 的 UL-based mobility，以减少 UE 执行 DL measurements 和 reporting 的负担及功耗，并降低访问 target cells 的资源消耗：仅接受 UE 的 candidate cell 提供资源分配指示，例如 CG、CB-PUSCH。该研究还旨在改善 uplink-heavy interactive AI applications 等场景的 UL service quality。
 
 ```text
 RAN2 should study UL-based mobility for connected mode UEs to
@@ -358,6 +425,8 @@ R2-2604133	Discussion on mobility in 6G	Transsion Holdings	discussion
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.4 Mobility
 
+6G 可支持 candidate RRC configuration 的预配置，具体细节及如何解决资源效率问题仍待研究。若已向 UE 预配置 candidate RRC configuration，6G mobility procedure 应支持 fast RRC processing；该功能为可选，并非所有 UE 都需要支持。
+
 ```text
 Pre-configuration of candidate RRC configuration can be supported in 6G.   FFS details and how to address the resource efficiency identified issue.
 The concept of fast RRC processing should be supported in 6G mobility procedure if candidate RRC configuration is pre-configured to the UE.   Assumption is that the feature is optional (not all UEs need to support).
@@ -366,6 +435,8 @@ R2-2601531	Views on Mobility for 6G	Qualcomm Incorporated	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-a001`
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.4 Mobility
+
+研究基于位置和定时器的测量报告/触发及 UE 触发移动性条件，并考虑连接态与空闲/非激活态移动性。研究至少考虑 6G TN–5G NTN 的 inter-RAT 移动性，并研究 NTN 小区中的 TN 测量跳过/放宽、多轨道移动性和 GNSS-free/GNSS-less 操作对 NTN 设计的 RAN2 影响。
 
 ```text
 1	Study location-based conditions (at least for cases where UE have location information) and timer based conditions for measurement report/triggers and UE triggered mobility (e.g., cell switch and cell reselection) (with or without radio conditions).  Study can consider aspects of both connected and idle/inactive mode mobility.
@@ -381,12 +452,16 @@ R2-2602615	Discussion on prioritizing GNSS-free NTN operation for 6G	THALES, Eri
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+即使大幅缩短空口切换中断时间，整体数据转发时延仍会影响 L2 数据传输。
+
 ```text
 Even if the handover interruption time over air interface can be reduced greatly, the L2 data transmission will still be affected by the overall data forwarding latency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-o001`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
+
+Path switch 仍是端到端 UP DL 新数据传输时延中不可忽略的组成部分。当前流程设计基于基本的 L3 handover 机制。
 
 ```text
 The path switch remains a non-negligible component for the end-to-end UP DL new data transmission latency, and the current procedure design is based on the fundamental L3 handover mechanism.
@@ -395,12 +470,16 @@ The path switch remains a non-negligible component for the end-to-end UP DL new 
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+UE 应用目标小区配置的时间是空口时延的关键方面。5G LTM 支持快速 UE 处理，但仅适用于预配置 HO CMD 的场景，且 UE 收到 HO execution indication 后才应用完整配置，因此无法将该时间缩短至 0 ms。
+
 ```text
 The time for UE applying the target cell configuration is a crucial aspect of air interface latency. 5G LTM supports fast UE processing, but it only applies to the scenarios where HO CMD is pre-configured and it cannot be reduced to 0ms because the UE only applies the full set of configuration after receiving HO execution indication.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-o003`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
+
+通过 advanced delta configuration 缩减 HO command 大小的工作已在“RRC Structure and (re)configuration”议题中进行。RAN2 应避免在 mobility 议题下重复讨论，并等待该议题的结果。
 
 ```text
 Since HO command size reduction via advanced delta configuration is already being addressed in the "RRC Structure and (re)configuration" agenda item, RAN2 should avoid duplicating the discussion under the mobility agenda item and instead wait for its outcome.
@@ -409,12 +488,16 @@ Since HO command size reduction via advanced delta configuration is already bein
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+若 gNB 未有选择性或智能地进行 early CSI configuration，UE 可能需要测量多个“不必要”的候选小区/波束的 CSI-RS。这样会增加 UE 处理能力和测量模块的负担。
+
 ```text
 If early CSI configuration is not selectively/intelligently done by the gNB, UE might need to measure the CSI-RS of several “unnecessary” candidate cells/beams, adding burden to UE’s processing capability and measurement modules.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-o005`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
+
+TN-NTN 网络集成的商业部署模式可能不同，联合部署可为 inter-PLMN 或 intra PLMN，也可能由同一或不同运营商提供。这会直接影响 handover latency 等移动性性能指标，进而影响最终用户体验。
 
 ```text
 The commercial rollout model of TN-NTN network integration may vary. The resulting TN – NTN joint deployment of inter-PLMN or intra PLMN, could be of the same operator or different operator. This will directly impact on the mobility performance metrics, such as handover latency, and subsequently define the quality of the end-user experience.
@@ -423,12 +506,16 @@ The commercial rollout model of TN-NTN network integration may vary. The resulti
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+5G NTN 与 5G TN 商业部署进度可能分化，使 5G NTN 部署在首个 6G TN 商用网络可用时达到峰值。在这种情况下，稳定的 6G TN–5G NTN 移动性支持标准规范比 6G TN–6G NTN 移动性支持更重要。
+
 ```text
 Diverge trajectory of 5G NTN and 5G TN commercial roll-out will potentially create a situation where 5G NTN commercial rollout is at its peak when the first 6G TN commercial network is available. In this case stable standard specification for 6G TN – 5G NTN mobility support is more important compared to 6G TN – 6G NTN mobility support.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-o007`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
+
+TN-to-NTN 移动性挑战包括：使用准确的卫星辅助信息和适当的预补偿测量 NTN 小区，以及及时提供切换配置。
 
 ```text
 TN-to-NTN mobility challenges include the need to measure NTN cells with accurate satellite assistance information and proper pre-compensation as well as timely handover configuration.
@@ -437,12 +524,16 @@ TN-to-NTN mobility challenges include the need to measure NTN cells with accurat
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+NTN-to-TN 移动性挑战包括避免在特定区域进行不必要的测量，以及避免 pingpong。
+
 ```text
 NTN-to-TN challenges include preventing unnecessary measurements in specific areas and pingpong avoidance.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-o009`
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
+
+在 multi-orbit 场景中，UE 驻留于 GSO cells，并切换到不同 orbits 以满足不同 QoS requirements。该方式可帮助 UE 和 network 节能，UE 可避免频繁 cell reselection，network 可在无服务需求时关闭 NGSO beams。
 
 ```text
 For multi-orbit scenario, UEs camp on GSO cells and switch to different orbits to perform service with different QoS requirements, which can facilitate energy saving for both UE and the network, as UEs can avoid frequent cell reselection and the network can switch off NGSO beams when there is no service requirement.
@@ -451,6 +542,8 @@ For multi-orbit scenario, UEs camp on GSO cells and switch to different orbits t
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+仅依赖 UE-based switching approaches（例如 priority-based cell reselection mechanism）可能导致 access congestion 和 load imbalance。此类方式还可能使 network 无法按需调度 beams。
+
 ```text
 Regarding switching mechanisms between orbits, relying solely on UE-based approaches (e.g., priority-based cell reselection mechanism) may result in access congestion and load imbalance, and make it impossible for the network to schedule beams on demand.
 ```
@@ -458,12 +551,16 @@ Regarding switching mechanisms between orbits, relying solely on UE-based approa
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.4 Mobility
 
+Multi-orbit mobility 自 Release 17 起已支持于 5G NTN。
+
 ```text
 Multi-orbit mobility has been supported for 5G NTN since Release 17.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-o012`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+记录了 6G mobility latency 的计时范围：从 UE 收到 cell switch command 开始，到 RACH-based mobility 发送 PRAMBLE 或 RACH-less mobility 发送首个 uplink data 为止，并列出 command 处理、ASN.1 解码、目标小区参数应用、时间跟踪、SSB 处理及首个 UL 资源获取不确定性等组成部分。讨论指出可使用更一般的 mobility 术语，且 6G 中各组成部分的功能、术语及并行处理方式可能不同；该议题已 Noted。
 
 ```text
 The 6G mobility latency is counted from the time that UE receives cell switch command and ends at the time of UE starts to send PRAMBLE for RACH-based mobility or to send first uplink data for RACH-less mobility, including the following components:
@@ -485,6 +582,8 @@ R2-2602514	Discussions on 6G Mobility	Futurewei	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+记录了 6GR overall mobility latency 各组成部分的负责工作组：TRRC、TRRC-target、TRAR 由 RAN2 负责；TCSC、TDL-sync、TRA、Tfirst-data 由 RAN2 和 RAN1 负责。该事项已 Noted。
+
 ```text
 The responsible WGs for different components of overall mobility latency for 6GR are as follows:
 TRRC : RAN2
@@ -501,6 +600,8 @@ R2-2602002	Considerations on 6G Mobility	ZTE Corporation, Sanechips	discussion	R
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2 将与 RAN3 和 SA2 协调，研究如何降低 mobility 期间由 data forwarding 和 path switch 引起的 end-to-end UP data transmission latency，例子包括有无 pre-configuration 的 mobility。该事项已 Noted。
+
 ```text
 RAN2 coordinates with RAN3 and SA2 to study how to reduce the end-to-end UP data transmission latency during mobility caused by data forwarding and path switch, e.g. considering both mobility with pre-configuration and mobility without pre-configuration.
 -	Ericsson thinks that we send an LS to RAN3 if we need some help but we can avoid topics that have heavy RAN3 impact.
@@ -511,6 +612,8 @@ R2-2602002	Considerations on 6G Mobility	ZTE Corporation, Sanechips	discussion	R
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p003`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+提出定义一种 HO CMD，使 network 在 mobility 期间仅更改最少配置（例如 PCI、SR、SRS），并与 RAN4 协作制定较低的 TRRC-processing 和 TProcessing latency requirements；讨论目前主要针对 L3 HO。下次会议可提交始终变化的参数、适用场景及其延迟影响，以判断是否向 RAN4 询问未更改 RF parameters 时能否采用不同 requirements。
 
 ```text
 Define the HO CMD which allows the network to change only a minimum set of configurations (e.g. PCI, SR, SRS) during mobility, collaborate with RAN4 to define lower latency requirements (i.e. TRRC-processing and TProcessing) for this scenario.
@@ -533,6 +636,8 @@ R2-2602243	Further Views on 6G TN and NTN Mobility	Nokia	discussion	Rel-20	FS_6G
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2 将研究降低 handover command size 的方法，包括带 immediate execution command 的 pre-configuration、postponed handover execution，以及 enhanced delta-configuration for mobility。该事项已 Noted。
+
 ```text
 RAN2 to investigate approaches that may reduce the handover command size. The areas to study include pre-configuration with immediate execution command of smaller size, postponed handover execution or enhanced delta-configuration for mobility.
 Noted
@@ -541,6 +646,8 @@ R2-2601965	Discussion on mobility enhancements for 6G	LG Electronics Inc.	discus
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p005`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+HO command size reduction 中的 advanced delta configuration 将依赖 “RRC Structure and (re)configuration” 议程项的结果；其他方法（例如 CA-based handover）的必要性将在该结果可用后评估。
 
 ```text
 Rely on the outcome of the "RRC Structure and (re)configuration" agenda item for HO command size reduction via advanced delta configuration, and evaluate the necessity of other methods (e.g., CA-based handover) only after the outcome is available.
@@ -554,6 +661,8 @@ R2-2602521	Mobility for 6GR	MediaTek Inc.	discussion	R2-2600645
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+如果向 UE 提供 candidate RRC configuration，6G mobility procedure 应支持 fast RRC processing。讨论意见认为该功能不应是 mandatory；该事项已 Noted。
+
 ```text
 The concept of fast RRC processing should be supported in 6G mobility procedure if candidate RRC configuration is provided to the UE.
 -	Qualcomm is fine but it shouldn’t be mandatory.  Mediatek also thinks that it shouldn’t be mandatory.
@@ -562,6 +671,8 @@ Noted
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p007`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+研究减少中断时间时，RAN2同意由RAN4为不同HO场景定义合适的UE处理时间（Tprocessing）。RAN2应先研究HO command的内容及发送方式（例如RRC或MAC），再讨论“HO command processing”导致的中断。
 
 ```text
 For the study on reducing interruption time, RAN2 agrees to the following principles:
@@ -575,6 +686,8 @@ R2-2602600	Discussion on 6G Mobility	Turkcell, Deutsche Telekom, Ericsson, NTT D
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2应建立涵盖所有部署类型的6G mobility framework，纳入early UL synchronization，以实现无缝、低时延移动性且不增加cell overhead。
+
 ```text
 RAN2 should establish a 6G mobility framework that encompasses early UL synchronization across all deployment types to ensure seamless, low-latency mobility without increasing cell overhead
 Noted
@@ -583,6 +696,8 @@ R2-2601984	Discussion on mobility in 6GR	China Telecom	discussion	Rel-20	FS_6G_R
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+对于6G HO的early UL synchronization，可在RAN2研究network triggered early TA acquisition和UE-based TA measurement。已同意研究支持连接态移动性的early UL/DL synchronization，适用于有或没有candidate cell预配置的情形，也适用于spectrum aggregation scenarios。
 
 ```text
 Regarding early UL synchronization for HO in 6G, both network triggered early TA acquisition and UE-based TA measurement could be studied in RAN2.
@@ -601,6 +716,8 @@ R2-2602600	Discussion on 6G Mobility	Turkcell, Deutsche Telekom, Ericsson, NTT D
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2应研究缓解移动性期间throughput degradation的方法，利用Release 19的early CSI acquisition并探索6G新进展，同时不增加UE complexity。
+
 ```text
 RAN2 should research methods to mitigate throughput degradation during mobility, leveraging early CSI acquisition in Release 19 and exploring new 6G advancements without increasing UE complexity.
 -	Ericsson points out that we can try to find a way to make it simpler for the UE.
@@ -611,6 +728,8 @@ R2-2602134	Discussion on 6G Mobility for TN and NTN	Lenovo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+可支持early TCI state和early CSI acquisition，以避免移动性导致的throughput degradation。
+
 ```text
 Both early TCI state and early CSI acquisition can be supported for avoiding throughput degradation due to mobility.
 Noted
@@ -619,6 +738,8 @@ R2-2601531	Views on Mobility for 6G	Qualcomm Incorporated	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p012`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+RAN2同意early CSI acquisition有益且可支持，其可行性由RAN1负责。RAN2可在RAN1进一步推进后讨论简化方案，并将该共识告知RAN1、请其研究。
 
 ```text
 To address the 5G shortcomings of early CSI on “UE measurement complexity” and “unnecessary early CSI acqusition”, RAN2 should study mechanisms to enable the UE to perform CSI acquistion on the most appropriate candidate cells, considering UE preference/assistance into account.
@@ -634,6 +755,8 @@ R2-2602200	Connected Mode Mobility for 6GR	InterDigital, Inc.	discussion	Rel-20	
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p013`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+提出支持dynamic conditional mobility framework：预配置时不必为所有目标完整配置或预留资源，可先配置执行HO所需的关键部分，再在HO触发时、执行时或之后提供额外配置和资源。会议记录了将配置拆分为执行HO关键部分并延后提供资源的方向。
 
 ```text
 Support dynamic conditional mobility framework that does not rely on complete configuration/resource reservation for/at all the targets on pre-configuration (e.g., activation of static/essential configuration/resources to access target on pre-configuration, and dynamic configuration/activation during/after CHO triggering).
@@ -652,6 +775,8 @@ R2-2602168	6GR mobility aspects: issues and solutions	Sony	discussion	Rel-20	FS_
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p014`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+针对preconfigured mobility schemes的resource reservation问题，至少聚焦于导致预留问题的关键资源：HO执行及early RACH的CFRA resource、HO执行的Configured grant和SR resources。
 
 ```text
 For the resource reservation issues of the Preconfigured mobility schemes, consider the following solutions:
@@ -672,6 +797,8 @@ R2-2602284	6GR mobility designs	Huawei, HiSilicon	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+对于candidate target cell中预存UE配置的移动性，采用与任何RRC reconfiguration相同的delta-signalling procedure，且不针对后续移动性进行优化。该项未处理。
+
 ```text
 For mobility with pre-stored UE configuration in the candidate target cell, the same delta-signalling procedure like for any RRC reconfiguration is used, without any optimization for subsequent mobility.
 Noted
@@ -683,6 +810,8 @@ R2-2601458	Discussion on 6GR Mobility	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2考虑支持所有cell switch类型（L3 HO、CHO、LTM）使用预配置的candidate configuration进行cell switch。为处理不同cell switch间相似或重复的配置，将使用一份适用于所有类型且可用于后续cell switch的common pre-configured candidate configuration。
+
 ```text
 For pre-configuration, RAN2 considers to support cell switch with pre-configured candidate configuration for all cell switch types (i.e. L3 HO, CHO, LTM).
 In order to address the shortcoming of similar or duplicated configuration for separate cell switch, one common pre-configured candidate configuration is shared/applicable for all cell switch types, and can be used for subsequent cell switch.
@@ -692,12 +821,16 @@ R2-2601599	Discussion on 6GR Mobility	Sharp	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2 应支持用于带预配置 mobility schemes 的 common candidate RRC configuration。
+
 ```text
 RAN2 should support a common candidate RRC configuration for mobility schemes with pre-configuration.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p018`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+不带预配置的 mobility schemes 使用独立于 common candidate RRC configuration 的 RRC configuration。
 
 ```text
 The RRC configuration for mobility schemes without pre-configuration is separate from the common candidate RRC configuration.
@@ -706,6 +839,8 @@ R2-2601543	Discussion on 6G Mobility	CATT	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p019`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+RAN2 将研究设计适用于 6G Day1 所支持所有 handover schemes 的 6GR mobility framework，以解决 5G mobility 的 shortcomings a/b/c。该框架包含可选的 Pre-configuration 和 Early processing，以及 Cell switch triggering 和 Cell switch execution。
 
 ```text
 To address shortcomings a/b/c of mobility in 5G,RAN2 study to design a 6GR mobility framework applicable for all the supported handover schemes in 6G Day1. 6GR mobility framework is structured into the following steps:
@@ -720,12 +855,16 @@ R2-2602080	Discussion on measurement and mobility framework for NTN	HONOR	discus
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+对于 NTN，RAN2 将考虑用于 measurement report 和 UE triggered mobility（例如 cell switch 和 cell reselection）的 location-based conditions。
+
 ```text
 For NTN, RAN2 will consider location-based conditions for measurement report and UE triggered mobility (e.g., cell switch and cell reselection).
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p021`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+对于 NTN，RAN2 将考虑用于 measurement report 和 UE triggered mobility（例如 cell switch 和 cell reselection）的 time-based conditions。
 
 ```text
 For NTN, RAN2 will consider time-based conditions for measurement report and UE triggered mobility (e.g., cell switch and cell reselection).
@@ -736,6 +875,8 @@ R2-2602282	Discussion on 6G NTN mobility and multi-orbit coordination	Google	dis
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2 将研究并支持 RACH-less handover 在 6G NTN 中的适用性，包括其与 CHO mechanisms 的潜在组合，以尽量减少 service interruption time 和 signalling overhead。
+
 ```text
 RAN2 to study and support the applicability of RACH-less handover in 6G NTN, including its potential combination with CHO mechanisms, to minimize service interruption time and signalling overhead.
 Noted
@@ -744,6 +885,8 @@ R2-2601531	Views on Mobility for 6G	Qualcomm Incorporated	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p023`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+RAN2 应以 signalling efficiency、measurement 和 reporting procedures 的 energy efficiency 与 low complexity、减少 satellite switching interruption 和 signalling overhead，以及降低对 GNSS 的依赖为目标，支持 6G 中的 NTN 和 TN-NTN mobility/measurements。原文鼓励各公司牢记这些目标。
 
 ```text
 RAN2 should aim to support NTN and TN-NTN related mobility/measurements in 6G with the following design goals:
@@ -760,12 +903,16 @@ R2-2602365	Requirements for TN and NTN joint deployment: mobility and throughput
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+应支持 Intra-RAT（Intra-6G）NTN-TN 和 TN-NTN 在 IDLE、INACTIVE、CONNECTED 状态下的 mobility，且与 5G 中定义的能力相当。
+
 ```text
 Intra-RAT(Intra-6G) NTN-TN, TN-NTN mobility in IDLE, INACTIVE and CONNECTED – comparable to what was defined in 5G - shall be supported.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p025`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+6G NTN mobility study 应研究不同的 NTN-TN network integration models（例如 inter/intra PLMN、同一或不同运营商）对 handover latency 等方面的影响。
 
 ```text
 6G NTN mobility study shall address different models of NTN-TN network integration, e.g. inter/intra PLMN (same/different operator) impact to e.g., handover latency.
@@ -774,6 +921,8 @@ Intra-RAT(Intra-6G) NTN-TN, TN-NTN mobility in IDLE, INACTIVE and CONNECTED – 
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p026`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+应支持 6G TN 与 5G NTN 之间的 Inter-RAT mobility。6G NTN mobility study 应研究 TN 与 NTN 间 Inter-RAT mobility 的潜在问题（例如 handover latency）及解决方案。
 
 ```text
 Inter-RAT 6G TN – 5G NTN mobility support shall be supported. 6G NTN mobility study shall address potential issues (e.g. handover latency) and solution for inter-RAT mobility between TN and NTN.
@@ -784,6 +933,8 @@ R2-2602243	Further Views on 6G TN and NTN Mobility	Nokia	discussion	Rel-20	FS_6G
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p027`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+讨论在 6G 中提供 NTN cell 的 TN coverage information，以及 TN cell 中的 NTN assistance information（例如 ephemeris）。对 TN coverage signalling，讨论改进 NR 中以 reference point 和 radius 表示覆盖范围的方式；该条目记为 Noted、Not treated。
 
 ```text
 6G should be able to provide TN coverage related information in the NTN cell as well as to provide NTN assistance information in TN e.g. ephemeris in TN cell. For TN coverage signalling, RAN2 discusses the improvements to NR way of representing these (i.e. reference point and the radius).
@@ -796,6 +947,8 @@ R2-2601510	Discussion on 6G mobility	Xiaomi	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+提出研究 TN 与 NTN 间 mobility 的 handover，包括结合 NTN location 或 timing information 与 TN signal quality 的方案，以及 UE 在 TN 网络驻留时何时启用 GNSS 获取位置以执行向 NTN 的 handover。还提出研究 NTN multi-orbit scenarios。
+
 ```text
 The following aspects should be studied for the mobility between TN and NTN.
 Handover:
@@ -807,6 +960,8 @@ R2-2601543	Discussion on 6G Mobility	CATT	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p029`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+提出研究基于不同 service requirements 在不同 orbit 间高效切换，以及 network assisted/controlled switching mechanisms。另提出研究 Multi-Orbit solution 对 cell selection、cell re-selection 和 handover 的影响、VSAT 的 network assistance information、邻区数量、cell prioritization criteria，以及高效提供 LEO/MEO/GEO ephemeris 的方式。
 
 ```text
 For multi-orbit scenario, suggest RAN2 to study:
@@ -832,6 +987,8 @@ R2-2602488	Study on 6G Mobility Framework	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+讨论指出，6G NTN 的 multi-orbit mobility 可在没有特定增强的情况下支持；同时提出研究多轨场景下的 cell selection/reselection、UE 与网络功耗、pingpong、mobility restrictions 和 assistance information。该条目记为 Noted。
+
 ```text
 Multi-orbit NTN mobility can be considered to be supported for 6G NTN without any specific enhancements.
 -	CATT thinks that we can do something more efficiently to save UE and NW power. Google thinks that if the UE camps in GEO and then LEO comes along for a few second, it would be desirable to avoid switching to LEO and this case is not supported. Samsung thinks that we have other ways in idle mode to prevent the UE from camping in other cells.
@@ -846,6 +1003,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+将 GNSS-free NTN operation 相关方面的讨论列为 6G study 的优先事项。
+
 ```text
 Discussions on aspects of GNSS-free NTN operation are prioritized in the 6G study.
 ```
@@ -853,12 +1012,16 @@ Discussions on aspects of GNSS-free NTN operation are prioritized in the 6G stud
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
 
+RAN2 研究 GNSS-free NTN operation 的 UP procedure timings 和 measurement timings 处理方式。
+
 ```text
 RAN2 studies how to handle UP procedure timings and measurement timings for GNSS-free NTN operation.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p033`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+RAN2 研究 GNSS-free NTN operation 下，如何支持 (quasi-)Earth-fixed cells 和 Earth-moving cells 的 mobility。该条目记为 Noted。
 
 ```text
 RAN2 studies how to support mobility for (quasi-)Earth-fixed cells and Earth-moving   cells for GNSS-free NTN operation.
@@ -868,6 +1031,8 @@ R2-2601672	Mobility Aspects for 6G NTN	MediaTek Inc.	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p034`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+提出按 RAN1 术语研究不同 GNSS availability levels（GNSS-based、GNSS-degraded、GNSS-free/GNSS-less）的 NTN mobility procedures。GNSS-degraded operation 的 UE position fix 和 accuracy 等待 RAN1 结论；GNSS-free/GNSS-less 则设计不依赖 GNSS UE location information 的 mobility procedures。
 
 ```text
 RAN2 should study NTN mobility procedures for different levels of GNSS availability, following RAN1’s terminology (i.e., GNSS-based, GNSS-degraded, and GNSS-free/GNSS-less).
@@ -879,6 +1044,8 @@ R2-2601630	Discussion on 6G Mobility	OPPO	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.4-p035`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.4 Mobility
+
+针对 6G NTN 的 RRC CONNECTED mode mobility，提出 GNSS-based 情况复用 5G NTN 的多项机制，并研究 TN>NTN mobility 的 UE location based event trigger 和 PDD report。还提出以 GNSS-based operation 为基线研究 GNSS-degraded/GNSS-free 的 rough UE position 可行性，以及对所有 GNSS availability types 研究基于 QoS 的 handover 或 cell switch。
 
 ```text
 For RRC CONNECTED mode mobility in 6G NTN:
@@ -941,6 +1108,8 @@ R2-2602590	Discussion on mobility framework for NTN including multi-orbit scenar
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.4 Mobility
 
+研究如何降低与 HO command processing 相关的中断时间及 HO 的数据中断时间。识别整体 HO delay timeline 的组成部分，并确定各部分由哪个 WG 负责。
+
 ```text
 Study how to reduce interruption time related to HO command processing
 Study how to reduce data interruption time related to HO.
@@ -952,6 +1121,8 @@ R2-2600374	Considerations on 6G Mobility	ZTE Corporation, Sanechips	discussion	R
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.4 Mobility
 
+研究基于 pre-configuration 的 mobility，以协调 RAN3 解决上述 resource reservation 问题。
+
 ```text
 Pre-configuration based mobility is studied with the aim to address the resource reservation issues described above in coordination with RAN3
 R2-2600645	Mobility for 6GR	MediaTek Inc.	discussion
@@ -960,12 +1131,16 @@ R2-2600645	Mobility for 6GR	MediaTek Inc.	discussion
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+Early DL synchronization 可帮助 UE 为候选小区获取下行定时参考，从而减少 mobility 期间的中断。精细时间同步与 UE power consumption 之间存在权衡。
+
 ```text
 Early DL synchronization can help to reduce interruption during mobility by allowing UEs to derive downlink timing references for candidate cells, but the trade-off between fine time synchronization and UE power consumption is delicate.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o001`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+Early UL synchronization 可能减少 mobility 期间的中断，但会增加 UE complexity、可能增加 UE power consumption，并增加 network complexity。
 
 ```text
 Early UL synchronization may help to reduce interruption during mobility but it increases the UE complexity (special DCI), may increase the UE power consumption (early RA to cells the UE may not go to) and increases the network complexity (inter-node coordination).
@@ -974,12 +1149,16 @@ Early UL synchronization may help to reduce interruption during mobility but it 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+Early CSI acquisition 可帮助减少 mobility 期间的 throughput degradation，但会增加网络和 UE 的 power consumption；额外处理还可能引入更多 latency 或 interruption。
+
 ```text
 Early CSI acquisition can help to minimize throughput degradation during mobility, but it is a high-cost operation for the network and the UE in terms of power consumption and the additional processing effort may introduce further latency/interruption.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o003`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+5G mobility（如 L3 HO、LTM）即使只有最小变更也依赖传输完整的 RRCReconfiguration message，导致显著处理延迟；LTM 的 fast RRC processing 可缓解该问题，但效果受 UE capability 和缺乏 network control 限制。
 
 ```text
 5G mobility (e.g. L3 HO, LTM) relies on transmitting the full RRCReconfiguration message even for minimal changes, leads to significant processing delays (20ms per RAN4, sometimes 40ms in practice). While LTM's fast RRC processing feature mitigates this, but its effectiveness is limited by UE capability, and lack of network control.
@@ -988,12 +1167,16 @@ Early CSI acquisition can help to minimize throughput degradation during mobilit
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+5G signaling design 为 L1 和 L3 measurements 定义了完全不同的 signaling frameworks，没有考虑两者功能的相似性。原文将此主要归因于相关讨论在不同 WGs 中进行。
+
 ```text
 The 5G signaling design defines completely different signaling frameworks for L1 and L3 measurements, without taking into account the similarities between these functions. This is mainly because the discussions are taking place in different WGs.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o005`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+Unified signaling design 是 6G design 的预期目标之一，但不是唯一目标。设计不应仅为追求统一而放弃功能设计本身的合理性。
 
 ```text
 Unified signaling design is an expectation of 6G design, but not the only goal. We should not abandon the rationality of the functional design itself simply in pursuit of unification.
@@ -1002,12 +1185,16 @@ Unified signaling design is an expectation of 6G design, but not the only goal. 
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+CHO 的 resource reservation 周期最长可达 3.7 秒，并且依据典型 CHO preparation thresholds，可能需要为超过 3 个候选小区准备资源。
+
 ```text
 The period of resource reservation for CHO can be as large as 3.7 seconds and the resources might need to be prepared for more than 3 candidate cells, based on the typical CHO preparation thresholds.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o007`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+CHO 的 resource inefficiency 随小区内 UE 数量、每个 UE 的候选小区数量及资源预留时长增加。大多数预留资源最终未被使用，因为 UE 只对一个已准备的候选小区执行 CHO，或完全不执行 CHO。
 
 ```text
 Resource inefficiency in CHO scales with the number of UEs in the cell, number of candidate cells per UE and the time those resources are reserved. Furthermore, most of these resources are eventually not used as the UE executes a CHO just to one of the prepared candidate cells or does not execute CHO at all.
@@ -1016,12 +1203,16 @@ Resource inefficiency in CHO scales with the number of UEs in the cell, number o
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+为 conditional mobility 预留候选无线资源的网络负担，以及网络无法完全控制 UE mobility，是 CHO 商业化的障碍。
+
 ```text
 Network burden to reserve candidate radio resources for conditional mobility and network’s inability to fully control UE mobility are obstacles to CHO commercialization.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o009`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+在 Legacy L3 handover 或 CHO 中，UE 只应用 HO command 并执行常规 delta reconfiguration；而在 LTM 中，UE 必须先执行新的、复杂的 LTM-specific configuration management（clause 5.3.5.18.6），该步骤主要用于支持后续 mobility。无论网络是否实际应用后续 mobility，UE 都需要实现这一步。
 
 ```text
 In Legacy L3 handover or CHO, the UE just applies HO command and performs normal delta reconfiguration. But in LTM, the UE has to perform a new and complex LTM-specific configuration management (clause 5.3.5.18.6) first, which is largely specified to enable subsequent mobility. The UE needs to implement this complex step regardless whether the network actually applies subsequent mobility or not.
@@ -1030,12 +1221,16 @@ In Legacy L3 handover or CHO, the UE just applies HO command and performs normal
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+Multi-Orbit NTN solution 将有助于实现 ubiquitous 和 robust connectivity。
+
 ```text
 Multi-Orbit NTN solution would contribute to a ubiquitous and robust connectivity.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o011`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+Multi-Orbit NTN solution 需要考虑新的 mobility 和 handover 场景，并寻求相应解决方案。
 
 ```text
 For the Multi-Orbit NTN solution, new mobility and handover scenarios need to be considered, and solution sought.
@@ -1044,12 +1239,16 @@ For the Multi-Orbit NTN solution, new mobility and handover scenarios need to be
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+Multi-Orbit NTN solution 需要考虑额外的 handover triggering mechanism。
+
 ```text
 With the Multi-Orbit NTN solution, additional handover triggering mechanism would need to be considered.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o013`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+Multi-Orbit NTN solution 下，VSAT 的 neighbouring list 中将包含大量 satellite cells。
 
 ```text
 with the Multi-Orbit NTN solution, large number of satellite cells would be in VSAT’s neighbouring list.
@@ -1058,12 +1257,16 @@ with the Multi-Orbit NTN solution, large number of satellite cells would be in V
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+Multi-Orbit NTN solution 需要考虑 Non-Terrestrial Service Anchor。
+
 ```text
 A Non-Terrestrial Service Anchor need to be considered for a Multi-Orbit NTN solution.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o015`
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
+
+Multiple SMTCs configuration 配合 UE 在 idle/inactive mode 下自适应调整，以及 connected mode 下由 NW 控制的 SMTCs 调整方案，对 6G NTN 很重要。
 
 ```text
 Multiple SMTCs configuration with UE adaptive adjustment solutions in idle/inactive mode and with NW-controlled adjustment of SMTCs solutions in connected mode are important for 6G NTN.
@@ -1072,6 +1275,8 @@ Multiple SMTCs configuration with UE adaptive adjustment solutions in idle/inact
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+为支持至少 beam hopping，6G NTN 需要在 idle/inactive mode 下采用 location-based SMTC selection，并在 connected mode 下采用 UE assisted SMTC configuration。
+
 ```text
 Location-based SMTC selection solution in idle/inactive and UE assisted SMTC configuration in connected mode are necessary for 6G NTN at least to support ‌beam hopping.
 ```
@@ -1079,12 +1284,16 @@ Location-based SMTC selection solution in idle/inactive and UE assisted SMTC con
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.4 Mobility
 
+在 NTN cell 中广播 TN coverage information，以及在 TN cell 中提供 NTN assistance information，有利于节能，并需要支持 6G NTN-TN reselection。
+
 ```text
 TN coverage information broadcast in NTN cell and NTN assistance information provided in TN cell are beneficial for energy saving and needs to support for 6G NTN-TN reselection.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-o018`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+RAN2 将在 6G 讨论中考虑 5G mobility 的不足，并记录 early DL sync、early UL sync 和 early CSI acquisition 的具体短板，包括信令复杂度、UE 功耗、资源开销及不必要的提前操作。
 
 ```text
 Capture the advantages and drawbacks (possibly using as starting point the tables in this contribution) of the following technical components:
@@ -1104,6 +1313,8 @@ R2-2600374	Considerations on 6G Mobility	ZTE Corporation, Sanechips	discussion	R
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+研究降低 6G mobility 中 Tprocessing delay 的方法，包括仅在 mobility 时更新最少配置以实现简单快速切换，以及增强 5G fast RRC processing，例如 NW-controlled fast RRC processing。
+
 ```text
 Study on the followings for reducing Tprocessing delay in 6G mobility:
 Study methods to further reduce Tprocessing time, e.g. enable simple and fast handover by only updating a minimum set of configurations during mobility.
@@ -1115,6 +1326,8 @@ R2-2600127	Discussion on 6G mobility	Xiaomi	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+为尽量减少 service interruption，RRC configuration 按不同部分组织，mobility 时仅重新配置发生变化的部分。RAN4 的 interruption time 要求根据发生变化的配置部分定义。
+
 ```text
 To minimize service interruption, RRC configuration is structured into different parts and only changed parts are reconfigured during mobility. RAN4 requirements for interruption time are defined according to the changed configuration parts.
 Noted
@@ -1124,6 +1337,8 @@ R2-2600805	Mobility 5G shortcomings and how to address them in 6G	Ericsson	discu
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+研究为 mobility 定义特定的 RRC message，并研究 UE 如何根据消息内容采用不同的 RRC processing delay 要求。必要时，此类消息可以较小。
+
 ```text
 Define specific RRC message(s) for mobility (which may have a rather small size if needed) and study how the UE may apply different RRC processing delay requirements depending on the content of such RRC message.
 Noted
@@ -1132,6 +1347,8 @@ R2-2600472	Selected topics on 6G Mobility	Apple	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p004`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+RAN2 将研究使用低开销、类似 MAC 的 Layer-2，承载 mobility 相关的“critical and short”控制配置交换和 measurement reporting，以实现快速、高效且稳健的 mobility。讨论还涉及减少 HO processing 和 data path interruption，以及配置大小与处理时间的关系。
 
 ```text
 For fast, efficient yet robust mobility, RAN2 to study on using low overhead (MAC like)  Layer-2 for all mobility related “critical and short” control configuration exchange and for measurement reporting.
@@ -1148,6 +1365,8 @@ Discussions
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+RAN2 先研究 6G measurements 的需求和方案，再分析配置或流程能否统一。首阶段将关注测量类型、被测 RS、报告方式及 measurement report 内容。
+
 ```text
 RAN2 first studies the requirements and solutions for 6G measurements, and then analyse whether any configuration or procedure can be unified. For the first step, RAN2 to focus on the following aspects:
 Measurement types: L1 or L3? beam-level or cell-level? Periodical or event-based?
@@ -1160,6 +1379,8 @@ R2-2600279	Mobility and Measurements for 6G	Qualcomm Incorporated	discussion	Rel
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p006`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+6G Measurement framework 支持 serving 和 non-serving cells、不同 RS 类型及不同测量目的，并涵盖频率和 RAT 范围、gap-assisted 与 non-gap-assisted 测量，以及周期和事件触发报告。Cell level 和 beam level measurements 列为支持项。
 
 ```text
 6G Measurement framework should support the following:
@@ -1176,6 +1397,8 @@ R2-2600127	Discussion on 6G mobility	Xiaomi	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p007`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+RAN2 假设 6G Measurement framework 至少支持 serving 和 non-serving cells、不同 RS 类型（若 RAN1 同意）、不同测量目的、不同频率及 RAT 范围、gap-assisted 与 non-gap-assisted 测量，以及周期和事件触发报告。Cell level、beam level、L1 和 L3 measurements 仍标为 FFS；RAN2 至少等到 RAN2#134 再继续讨论。
 
 ```text
 For measurement and measurement gap related study, RAN2 can postpone the discussion and wait for RAN1 and RAN4’s progress.
@@ -1194,6 +1417,8 @@ R2-2600783	Various Aspects of 6G TN and NTN Mobility and Measurements	Nokia	disc
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+Mobility without pre-configuration 被视为 6G TN 的 baseline。研究 pre-configuration based mobility，目标是解决前述资源预留问题。
+
 ```text
 Mobility without pre-configuration is considered as a baseline for 6G TN. Pre-configuration based mobility is studied with the aim to address the resource reservation issues described above.
 Noted
@@ -1202,6 +1427,8 @@ R2-2600444	Consideration on mobility aspects for 6G	LG Electronics Inc.	discussi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p009`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+研究如何减少 conditional mobility 的候选无线资源预留造成的资源浪费，例如共享 mobility radio resources（如 CB-PUSCH）、动态启停执行条件评估，以及执行 conditional mobility 时的 hello/bye indication。讨论提出研究增强有无 pre-configuration 的 mobility。
 
 ```text
 Study how to minimize radio resource waste due to candidate radio resource reservation for conditional mobility, e.g., shared radio resources for mobility (e.g., CB-PUSCH), dynamic activation/deactivation of evaluation of execution condition, and hello/bye indication upon conditional mobility execution.
@@ -1215,6 +1442,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+6G不应支持NR LTM中的subsequent mobility和reference configuration。RAN2将研究是否支持subsequent mobility，以及是否能以更简单的方式支持。
+
 ```text
 The subsequent mobility and reference configuration as in NR LTM should NOT be supported in 6G. RAN2 to study whether to support subsequent mobility, and if yes, how to support it in a simpler way.
 NTN (General):
@@ -1223,6 +1452,8 @@ R2-2600177	6G Mobility aspects for NTN	THALES, TNO, ESA, Novamint, LG Uplus	disc
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p011`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+研究6G中NTN mobility的支持，包括idle和connected modes下的NTN/NTN及NTN/TN mobility，并考虑GNSS free运行。讨论还涉及GNSS resilient、不同程度的location information，以及RAN2视角的mobility影响。
 
 ```text
 Study the support of mobility with NTN in 6G (e.g. NTN/NTN, NTN/TN) in both idle and connected modes with GNSS free 6GR operation.
@@ -1243,6 +1474,8 @@ Study the support of mobility with NTN in 6G (e.g. NTN/NTN, NTN/TN) in both idle
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+Connected mode mobility with NTN应以zero packet loss和minimal interruption time为目标。该目标涵盖NTN/NTN及TN/NTN mobility。
+
 ```text
 Connected mode mobility with NTN shall aim at zero packet loss and minimal interruption time
 -	LG asks if this include TN to NTN mobility.  Thales explains that it includes both NTN/NTN And TN/NTN
@@ -1251,6 +1484,8 @@ Connected mode mobility with NTN shall aim at zero packet loss and minimal inter
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p013`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+研究TN与NTN之间的mobility支持，并研究相关高效信令，包括在NTN cells广播TN coverage information、在TN cells广播NTN assistance information，以及TN cells与NTN cells之间的ANR机制。
 
 ```text
 Study the support of mobility between TN and NTN. This requires efficient signaling for   the:
@@ -1272,6 +1507,8 @@ R2-2600277	Multi-Orbit NTN Solution for 6G	SES, MITRE, JSAT, Thales, Lockheed Ma
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+RAN2假设所有状态下GNSS-based mobility以5G GNSS-based mobility mechanism为baseline，并进一步研究GNSS-based mobility及GNSS free和resilient mobility。对于6G TN与6G NTN间mobility，研究在TN cells提供NTN assistance information、是否及如何在NTN cells提供TN coverage information，并考虑inter-RAT mobility和同一运营商下的multi-orbit场景；范围为single connectivity。
+
 ```text
 RAN2 to consider “Multi-Orbit” NTN solution in the study of mobility procedures as part of the 6G Study item.
 -	Huawei asks if the expected impact is providing assistance information.   Assistance information is needed everywhere regardless of whether it is TN or NT.
@@ -1289,6 +1526,8 @@ R2-2600509	Discussion on Measurement and mobility framework for NTN	HONOR	discus
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
 
+对于NTN，RAN2将考虑以location-based和time-based条件用于measurement report及UE triggered mobility，例如cell switch和cell reselection。
+
 ```text
 For NTN, RAN2 will consider location-based and time-based conditions for measurement report and UE triggered mobility (e.g., cell switch and cell reselection).
 R2-2600951	Discussion on 6G mobility	CMCC	discussion	Rel-20	FS_6G_Radio
@@ -1296,6 +1535,8 @@ R2-2600951	Discussion on 6G mobility	CMCC	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p016`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+6G NTN measurement可考虑idle/inactive mode下以time-based和location-based条件启动neighbour cell measurements，并在connected mode下进行location-based triggered measurement reporting。还可考虑多种SMTC配置与调整方案，以及为6G NTN-TN reselection提供TN coverage information和NTN assistance information。
 
 ```text
 For 6G NTN measurement, the following enhancements could be considered:
@@ -1309,6 +1550,8 @@ R2-2600765	Discussion on 6GR mobility aspects	Sony	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.4-p017`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.4 Mobility
+
+Time-based和location-based conditional handover是6G NTN的baseline。6G NTN需要处理因NTN cells移动导致的handover signalling storm问题。
 
 ```text
 Time-based and location-based conditional handover is the baseline for 6G NTN. 6G NTN needs to address the signalling storm issue during handover due to the movement of the NTN cells.
@@ -1363,6 +1606,8 @@ R2-2601102	6G mobility and measurements	TCL	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.4 Mobility
 
+NR cell (re)selection framework（包括 best cell principle、cell ranking 和 inter-freq/RAT prioritization 等）作为 6G cell reselection framework 的基线。后续研究 6G 相关方面对 cell selection/reselection 的影响，并待其他 WGs 在 cells、reference signals 和 measurement framework/requirements 等方面取得进展后继续讨论。
+
 ```text
 NR cell (re) selection framework (e.g best cell principle, cell ranking, inter-freq/RAT prioritization, etc)  is the baseline of 6G cell reselection framework.
 Understand the issues we want to address in 6G. Study further how other 6G related aspects with energy saving, spectrum aggregation, service awareness, features, deployment type (e.g. TN, NTN), slicing, speed dependent etc impact cell selection/reselection, etc.
@@ -1373,6 +1618,8 @@ R2-2508832	Discussion on 6G mobility	CMCC	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-a001`
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.4 Mobility
+
+对于 5G 与 6G 的 inter-RAT mobility，起步方案支持 RRC_CONNECTED 状态下的 handover 和 re-direction，并可向 UE 提供 inter-RAT cell reselection information。进一步增强需求待 intra-RAT 方案的后续讨论后再评估，并考虑 MRSS。
 
 ```text
 1	For inter-RAT mobility (5G and 6G), the following is supported as a starting point:
@@ -1421,12 +1668,16 @@ R2-2509038	Discussion on 6G Mobility	Google Korea LLC	discussion
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
 
+5G mobility 设计的关键经验包括：不同 3GPP releases 中存在针对不同 handover types 的冗余设计；提升 HO performance 的方案往往仅适用于特定 handover types。
+
 ```text
 Key lessons learned from 5G mobility design: Redundant design across 3GPP releases (for different handover types), and Solutions to improve HO performance are often limited to specific handover types.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-o001`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
+
+NR mobility 存在碎片化和复杂性，且与服务无关。6G 应面向多样化服务和设备，目标是建立单一、稳健、低时延且可扩展的框架。
 
 ```text
 NR mobility suffers from fragmentation and complexity, and it is service agnostic. 6G should aim for a single, robust, low-latency and scalable framework adaptable to diverse services and devices.
@@ -1435,12 +1686,16 @@ NR mobility suffers from fragmentation and complexity, and it is service agnosti
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
 
+5G NR 中，L1 和 L3 measurement 使用分开且重复的 RS configurations。
+
 ```text
 In 5G NR, separate and duplicate RS configurations exist for L1 and L3 measurement.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-o003`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
+
+在 5G NR 中，UE 应先执行 L3 measurement，以确保目标小区是已知小区，然后再执行 L1 measurement。
 
 ```text
 In 5G NR, the UE should perform L3 measurement to ensure the target cell is a known cell before performing L1 measurement.
@@ -1449,12 +1704,16 @@ In 5G NR, the UE should perform L3 measurement to ensure the target cell is a kn
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
 
+在 5G NR 中，L1 measurement results 作为 L3 measurement results 的中间输入。
+
 ```text
 In 5G NR, L1 measurement results serve as intermediate inputs for L3 measurement results.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-o005`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
+
+网络可利用 L1 measurement results，有效推导 cell/beam-level measurements 和 L3-filtered measurements。
 
 ```text
 The network can use L1 measurement results to derive cell/beam-level measurements and L3-filtered measurements effectively.
@@ -1463,12 +1722,16 @@ The network can use L1 measurement results to derive cell/beam-level measurement
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.4 Mobility
 
+5G 的一个痛点是多个额外的 MG 相关功能（如 NeedforGap Pre-MG、Con-MG、NCSG）未纳入 5G Day-1，增加了支持不同功能的复杂性。6G Day-1 应支持简单且灵活的 MG signaling procedure。
+
 ```text
 One of the pain points of 5G is that multiple additional MG-related features, e.g., NeedforGap Pre-MG, Con-MG, NCSG, was not included in 5G Day-1, which increase the complexity to support different features. A simple and flexible MG signaling procedure should be supported in 6G Day-1.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-o007`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+提出为所有支持的 handover types 设计统一的 6GR mobility framework，目标包括采用相同的 configuration signaling structure，并尽可能复用同一组 building blocks（functions/procedure steps）。该提议被记录（Noted）。
 
 ```text
 RAN2 design a unified 6GR mobility framework, aiming at the following for all supported handover types,
@@ -1485,12 +1748,16 @@ R2-2508706	Connected mobility for 6GR	InterDigital Pennsylvania	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+提出将 L3 HO 和 LTM 整合为单一 mobility framework，支持基于 L3/L1 measurements 和 L3/L2/L1 signalling 的 network-triggered 与 conditional mobility。
+
 ```text
 Consolidate L3 HO and LTM into a single mobility framework that supports both network-triggered and conditional mobility based on L3/L1 measurements and L3/L2/L1 signalling.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p002`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+提出统一 L3 HO 和 LTM（包括 network-triggered 和 conditionally triggered）的 signalling 与 procedural framework，同时允许分别配置各自的 triggering 和 reporting conditions/parameters。讨论认为可整合共同部分，但记录中对统一信令类型、保留 L3 与较低层信令等仍有不同意见；提议被记录（Noted）。
 
 ```text
 Unify the signalling and procedural framework for L3 HO and LTM (both for network triggered and conditionally triggered), while enabling the possibility to configure the triggering and reporting conditions/parameters separately for each.
@@ -1505,6 +1772,8 @@ R2-2508477	Discussion on 6G mobility	NTT DOCOMO, INC.	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+提出 6G unified mobility mechanism 应覆盖两类流程：网络不经预配置而配置并触发 mobility、UE 随即执行；以及网络向 UE 预配置候选配置后，由 NW/UE 触发 mobility。原文还指出 NW-triggered mobility 和 UE-initiated mobility 适用于不同目的和场景；提议被记录（Noted）。
+
 ```text
 For balanced efficient resource management and mobility performance, “unified mobility mechanism” in 6G should cover following 2 types of mobility procedure.
 NW configures and triggers the mobility without pre-configuration, and UE performs it immediately (i.e., legacy L3 HO-like mobility)
@@ -1518,6 +1787,8 @@ Observation 5	NW-triggered mobility and UE-initiated mobility are applicable for
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+提出 6G unified mobility 支持基于 L1 和 L3 measurement 的 mobility、NW-triggered 和 UE-initiated mobility，以及 immediate 和 subsequent cell switch。还提出支持 RACH-less、early UL/DL sync、early CSI 和 early RRC processing；提议被记录（Noted）。
+
 ```text
 The 6G unified mobility supports 1) both L1 measurement based mobility and L3 measurement based mobility; 2) both NW-triggered mobility and UE-initiated mobility; 3) Immediate and subsequent cell switch; 4) RACH-less, early UL/DL sync, early CSI and early RRC processing.
 [2min]
@@ -1527,6 +1798,8 @@ R2-2508548	Discussion on 6GR Rel-20 mobility aspects	Sony	discussion	Rel-20	FS_6
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p005`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+一项意见提出以 Rel-19 LTM 作为 6G handover 工作的基线，并支持 L3 HO。记录的 agreement 是研究至少列出的 mobility schemes，包括无预配置的网络触发流程、预配置方案及 UE 触发流程，以及 CFRA、RACH-less、early UL/DL sync 和 early CSI；方案需考虑中断、鲁棒性、吞吐量下降、UE/NW 复杂度和资源效率，并先研究 5G 的不足及方案如何应对 6G 需求。该 study item 不考虑 NR 中的 DAPS。
 
 ```text
 Rel-19 LTM should be the baseline for any HO work in 6G as LTM exhibited short interruption time and simple design. In addition,
@@ -1573,6 +1846,8 @@ R2-2508056	Discussion on 6GR mobility	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+RAN2 将研究统一测量，例如为 L1 和 L3 measurement 使用 common RS configuration。并与 RAN4 协调 common beam level 和 cell level measurement，以及 common L1 和 L3 measurement。
+
 ```text
 RAN2 to study the unified measurement, e.g. common RS configuration for L1 and L3 measurement. Coordination with RAN4 on common beam level and cell level measurement, common L1 and L3 measurement.
 [2min]
@@ -1581,6 +1856,8 @@ R2-2508221	Discussion on 6GR Mobility	Sharp	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p007`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+6GR 支持统一 measurement framework，至少包括适用于 L1 和 L3 measurements 的 single reference signal configuration，以及取代现有 RRC、MAC CE 和 UCI 多种机制的 unified reporting mechanism。原文指出，通过不同 uplink channels 发送相同或相似类型的 measurement reports 会造成不必要的 signalling complexity。
 
 ```text
 6GR support unified measurement framework with at least the following aspects.
@@ -1593,6 +1870,8 @@ Observation 2	NR defines means for sending the same or similar type of measureme
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p008`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+6GR measurements 应按统一 measurement framework 配置和上报：分别由 measurement configuration 定义 UE 测量的 reference signals，由 measurement reporting configuration 定义上报时机和内容。L1 和 L3 measurement 特性（如 L3 filter）作为配置属性；UE 根据 reliability、latency 或 error cases 等要求选择适当信道上报。
 
 ```text
 Measurements in 6GR shall be configured and reported according to a unified measurement framework which has the following characteristics:
@@ -1607,6 +1886,8 @@ R2-2508577	Discussion on 6GR mobility designs	Huawei, HiSilicon	discussion	Rel-2
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+RAN2 应与 RAN1 密切合作，为 6GR mobility 开发适用于 L1 和 L3 measurements 的统一 measurement 和 configuration 方案。原文强调应尽早纳入 RAN1，以确保充分理解这一原则。
+
 ```text
 RAN2 should collaborate closely with RAN1 to develop a unified solution for measurement and configuration that is suitable for L1 and L3 measurements for 6GR mobility. It is important to involve RAN1 early to ensure a thorough understanding of this principle.
 [2min]
@@ -1616,12 +1897,16 @@ R2-2508985	Mobility for 6GR	MediaTek Inc.	discussion
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+针对 6G measurement gap，RAN2 可从 procedure 和 signalling 设计着手。RAN4 可确定 MG periodicity、length、pattern 及相应 requirement。
+
 ```text
 For 6G measurement gap, RAN2 can start from the design of procedure and signalling. RAN4 can determine the MG periodicity, length, pattern, and corresponding requirement.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p011`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+RAN2 的目标是设计 measurement gap signaling framework，使 UE 能根据当前 UE configuration 和 status 动态请求 measurement gap。
 
 ```text
 RAN2 aim to design a measurement gap signaling framework that allows UE to request measurement gap dynamically based on current UE configuration and status.
@@ -1632,6 +1917,8 @@ R2-2508875	Study on 6G Mobility Framework	Samsung	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p012`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+NR cell reselection framework 是 6G cell reselection framework 的基线。原文提出 6GR cell reselection 应支持 IDLE UEs 在多载波间高效分配负载，并考虑 services 和/或 device types、3D mobility 与 velocity。
 
 ```text
 NR cell reselection framework is the baseline of 6G cell reselection framework.
@@ -1650,6 +1937,8 @@ R2-2508502	Discussion on mobility aspects in 6GR	China Telecom	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+6GR 对处于 Idle/Inactive（if supported）模式 UE 的 mobility management，应在一般 cell selection/reselection procedure 设计中考虑 network energy saving enhancements 和 multi-carrier enhancements。讨论中提及 slicing、idle mode multicarrier framework，以及测量框架和 requirements 对相关问题推进的影响。
+
 ```text
 Regarding 6GR Mobility management for UE in Idle/Inactive (if supported) mode, take network energy saving enhancements and multi-carrier enhancements into account for the general cell selection/reselection procedure design in 6GR.
 [2min]
@@ -1663,6 +1952,8 @@ Discussions
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
 
+5G 和 6G 支持 RRC_CONNECTED 与 RRC_IDLE UE 的 inter-RAT mobility。RRC_CONNECTED 下可支持 handover 和 re-direction，并考虑 L1 based 与 L3 based handover/cell switch；RRC_IDLE 下可向 UE 提供 inter-RAT cell reselection information。
+
 ```text
 5G and 6G inter-RAT mobility is supported for both RRC_CONNECTED and RRC_IDLE state UE:
 ­	For RRC_CONNECTED state, both handover and re-direction can be supported for inter-RAT mobility, and both L1 based and L3 based handover/cell switch are considered;
@@ -1674,6 +1965,8 @@ R2-2508384	6G Mobility Discussion	Apple	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.4-p015`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.4 Mobility
+
+为提高 IRAT mobility 效率，RAN2 应评估将 IRAT RACH-less handover、IRAT early DL/UL synchronization 和 IRAT early CSI acquisition 作为 UE optional features，并就可行性咨询 RAN1 和 RAN4。讨论中对方案可行性、复杂度、中断、L3 mechanism 基线及 mobility 简化等方面存在不同意见。
 
 ```text
 For efficient IRAT mobility, RAN2 should evaluate on 6G UE performing IRAT RACH-less handover, IRAT early DL/UL synchronization and IRAT early CSI acquisition as optional features at the UE. Consult RAN1 and RAN4 for feasibility of this.

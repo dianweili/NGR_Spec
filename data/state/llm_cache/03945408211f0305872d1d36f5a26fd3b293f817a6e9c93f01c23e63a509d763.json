@@ -1,8 +1,0 @@
-{
-  "impact": "medium",
-  "summary_zh": "6GR 支持 normal cyclic prefix，即与 NR 定义的 normal CP 相同。是否需要其他 CP 仍为 FFS。",
-  "tags": [
-    "normal cyclic prefix",
-    "CP"
-  ]
-}

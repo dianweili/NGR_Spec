@@ -1,7 +1,7 @@
 import json
 
 from ngr.config import ExtractConfig
-from ngr.extract.backend import CliResult, LlmRateLimited
+from ngr.extract.backend import CliResult, LlmRateLimited, LlmTimedOut
 from ngr.extract.budget import Budget
 from ngr.extract.cache import LlmCache
 from ngr.extract.runner import extract_all
@@ -68,6 +68,20 @@ def test_cache_hit_avoids_call(tmp_path):
     assert cli2.calls == [] and events[0]["summary_zh"].startswith("采纳")
 
 
+def test_checkpoint_persists_cache_restoration_and_completed_batches(tmp_path):
+    events, cache, checkpoints = [ev(1), ev(2)], LlmCache(tmp_path), []
+    cli = FakeCli([reply([event["id"] for event in events])])
+    extract_all(events, CFG, cli_factory=lambda model, effort: cli, cache=cache,
+                budget=Budget(10), checkpoint=lambda: checkpoints.append(events[0]["llm_status"]))
+    assert checkpoints == ["ok"]
+
+    for event in events:
+        event.update(summary_zh=None, llm_status="pending")
+    extract_all(events, CFG, cli_factory=lambda model, effort: FakeCli([]), cache=cache,
+                budget=Budget(10), checkpoint=lambda: checkpoints.append(events[0]["llm_status"]))
+    assert checkpoints[-1] == "ok"
+
+
 def test_malformed_json_retries_once_then_marks_failed(tmp_path):
     events, cli = [ev(1)], FakeCli(["не json", "still not json"])
     stats = extract_all(events, CFG, cli_factory=lambda model, effort: cli, cache=LlmCache(tmp_path), budget=Budget(10))
@@ -91,6 +105,15 @@ def test_rate_limit_stops_cleanly_keeping_done_work(tmp_path):
     assert events[0]["llm_status"] == "ok"
     assert events[2]["llm_status"] == "pending"
     assert stats.rate_limited is True
+
+
+def test_timeout_stops_without_retry_or_marking_events_failed(tmp_path):
+    events, cli = [ev(1), ev(2)], FakeCli([LlmTimedOut("timed out")])
+    stats = extract_all(events, CFG, cli_factory=lambda model, effort: cli,
+                        cache=LlmCache(tmp_path), budget=Budget(10))
+    assert len(cli.calls) == 1
+    assert [event["llm_status"] for event in events] == ["pending", "pending"]
+    assert stats.failed == 0 and stats.timed_out is True
 
 
 def test_budget_exhaustion_stops_cleanly(tmp_path):

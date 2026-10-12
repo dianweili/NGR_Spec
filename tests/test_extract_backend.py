@@ -1,8 +1,9 @@
 import subprocess
+import os
 
 import pytest
 
-from ngr.extract.backend import CodexExec, LlmError, LlmRateLimited
+from ngr.extract.backend import CodexExec, LlmError, LlmRateLimited, LlmTimedOut
 
 
 def fake_run(stdout="", returncode=0, stderr="", response='{"results":[]}'):
@@ -29,9 +30,21 @@ def test_call_uses_safe_required_flags(monkeypatch):
     monkeypatch.setattr(subprocess, "run", run)
     CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})
     command = run.cmd
-    assert command[:2] == ["codex", "exec"]
+    assert command[1] == "exec"
     for flag in ["--ephemeral", "--sandbox", "read-only", "--ignore-user-config", "--ignore-rules", "--output-schema", "--output-last-message"]:
         assert flag in command
+
+
+def test_finds_desktop_codex_when_path_is_not_configured(monkeypatch, tmp_path):
+    old = tmp_path / "OpenAI" / "Codex" / "bin" / "old" / "codex.exe"
+    new = tmp_path / "OpenAI" / "Codex" / "bin" / "new" / "codex.exe"
+    old.parent.mkdir(parents=True); old.touch()
+    new.parent.mkdir(parents=True); new.touch()
+    os.utime(new, (new.stat().st_atime + 1, new.stat().st_mtime + 1))
+    monkeypatch.delenv("CODEX_CLI_PATH", raising=False)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr("ngr.extract.backend.shutil.which", lambda _: None)
+    assert CodexExec._executable() == str(new)
 
 
 def test_call_sets_model_and_effort(monkeypatch):
@@ -65,5 +78,5 @@ def test_timeout_raises_llm_error(monkeypatch):
     def timeout(cmd, **kwargs):
         raise subprocess.TimeoutExpired(cmd, 600)
     monkeypatch.setattr(subprocess, "run", timeout)
-    with pytest.raises(LlmError, match="超时"):
+    with pytest.raises(LlmTimedOut, match="超时"):
         CodexExec("gpt-6-astra", "low").call("x", output_schema={"type": "object"})

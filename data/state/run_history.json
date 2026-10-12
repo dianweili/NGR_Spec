@@ -134,5 +134,117 @@
     "llm_calls": 0,
     "exit_code": 0,
     "message": ""
+  },
+  {
+    "started": "2026-10-09T16:37:38",
+    "duration_s": 32.3,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-09T16:44:35",
+    "duration_s": 900.2,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-09T17:41:12",
+    "duration_s": 473.1,
+    "new_events": 0,
+    "llm_calls": 13,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-09T23:24:28",
+    "duration_s": 18001.5,
+    "new_events": 0,
+    "llm_calls": 20,
+    "exit_code": 0,
+    "message": "100 条摘要生成失败"
+  },
+  {
+    "started": "2026-10-10T10:24:46",
+    "duration_s": 41.5,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-10T10:37:16",
+    "duration_s": 719.3,
+    "new_events": 0,
+    "llm_calls": 19,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-10T11:36:49",
+    "duration_s": 1456.9,
+    "new_events": 0,
+    "llm_calls": 0,
+    "exit_code": 3,
+    "message": "ChatGPT/Codex 调用超时，已暂停本轮并保留待处理事件"
+  },
+  {
+    "started": "2026-10-10T14:58:34",
+    "duration_s": 306.7,
+    "new_events": 0,
+    "llm_calls": 7,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-10T15:48:53",
+    "duration_s": 1801.1,
+    "new_events": 0,
+    "llm_calls": 40,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-10T18:56:14",
+    "duration_s": 2751.8,
+    "new_events": 0,
+    "llm_calls": 83,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T09:40:47",
+    "duration_s": 860.6,
+    "new_events": 0,
+    "llm_calls": 32,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T10:28:30",
+    "duration_s": 0.2,
+    "new_events": 0,
+    "llm_calls": 0,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T10:39:09",
+    "duration_s": 0.5,
+    "new_events": 0,
+    "llm_calls": 0,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T10:48:53",
+    "duration_s": 0.5,
+    "new_events": 0,
+    "llm_calls": 0,
+    "exit_code": 0,
+    "message": ""
   }
 ]

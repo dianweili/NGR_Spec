@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 
 from ngr.config import ExtractConfig
-from ngr.extract.backend import LlmError, LlmRateLimited, SUMMARY_SCHEMA
+from ngr.extract.backend import LlmError, LlmRateLimited, LlmTimedOut, SUMMARY_SCHEMA
 from ngr.extract.budget import BudgetExhausted
 from ngr.extract.cache import cache_key
 from ngr.extract.tasks import (
@@ -27,6 +27,7 @@ class ExtractStats:
     skipped: int = 0
     failed: int = 0
     rate_limited: bool = False
+    timed_out: bool = False
     budget_exhausted: bool = False
 
 
@@ -43,10 +44,12 @@ def _apply(event: dict, payload: dict) -> None:
         event["llm_status"] = "ok"
 
 
-def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, budget) -> ExtractStats:
+def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, budget,
+                checkpoint=None) -> ExtractStats:
     """补全 full 深度事件的逐条摘要，失败不影响英文原文或后续渲染。"""
     stats = ExtractStats()
     pending: list[tuple[str, dict]] = []
+    restored_from_cache = False
     for event in events:
         if event.get("depth") != "full":
             stats.skipped += 1
@@ -58,8 +61,13 @@ def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, b
         if hit is not None:
             _apply(event, hit)
             stats.cached += 1
+            restored_from_cache = True
             continue
         pending.append((key, event))
+
+    # 缓存按条写入；先恢复到 state，进程中断后下次也能从这里继续。
+    if restored_from_cache and checkpoint is not None:
+        checkpoint()
 
     if not pending:
         return stats
@@ -91,6 +99,13 @@ def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, b
                 stats.rate_limited = True
                 log.warning("额度受限，本次运行到此为止；已完成的结果已保存")
                 return stats
+            except LlmTimedOut as exc:
+                # 不把暂时无响应误记为事件失败，也不对同一批再耗一个完整超时。
+                # 保留 pending，待下一轮健康检查通过后继续。
+                budget.record_failure(entry, exc)
+                stats.timed_out = True
+                log.warning("批次 %d 调用超时，已保留待处理状态并停止本轮", offset // cfg.batch_size)
+                return stats
             except (SchemaError, LlmError) as exc:
                 budget.record_failure(entry, exc)
                 log.warning("批次 %d 第 %d 次失败: %s", offset // cfg.batch_size, attempt, exc)
@@ -108,4 +123,6 @@ def extract_all(events: list[dict], cfg: ExtractConfig, *, cli_factory, cache, b
             _apply(event, payload)
             cache.put(key, payload)
             stats.summarized += 1
+        if checkpoint is not None:
+            checkpoint()
     return stats

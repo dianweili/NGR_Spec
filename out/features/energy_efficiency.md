@@ -1,12 +1,23 @@
 # 6GR 能效
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：收敛中
 
-_尚无综述_
+6GR 能效已在 RAN1 形成多项评估基线，涵盖基线网络配置、基站休眠状态与转换参数，以及 UE 的带宽、天线、载波聚合和上行功耗缩放规则；CAT 2.1 也已纳入系统级评估。RAN2 正围绕 UE 与网络休眠机会的协同推进统一非连续监测框架，C-DRX-like 机制作为基线，DL-WUS 作为可选配合功能，Cell DTX/DRX 则采用周期性 Active Duration 与 non-Active Duration 框架。多项机制方向已记录或确定为后续研究事项，但关键参数、适用场景和信令细节尚未定案。
+
+**未决问题**
+
+- 基站休眠转换是否需按较多 TXRU 引入 delta value，以及 CAT 2.1 Set 4 相关细节。
+- UE 功耗模型仍有待定项，包括 8Rx scaling、部分带宽配置与 SMaxBW 评估选项、light sleep 是否采用 micro-sleep scaling，以及部分 EE processing 数值和缩放。
+- 多载波与 CA 功耗缩放仍有未决情形，包括不同 CC 带宽下的 multiple-RF-chain 参数，以及尚待研究的载波切换、快速启停和资源分配机制。
+- C-DRX 与 DL-WUS 的周期、监测计时器及动态定时器调整仍待研究；DL-WUS without C-DRX 的研究优先级较低，是否支持仍未确定。
+- Cell DTX/DRX 与 UE DRX 的对齐和联合控制、网络休眠期间 UE 所需信息及信令方式仍未形成完整机制；还需研究 QoS、时延敏感业务和不同 UE 状态下的行为。
+- idle mode 多载波初始接入及 connected mode 跨载波操作的适用用例、部署条件和具体机制仍在研究。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.3.3 Energy efficiency
+
+指出静态 CDRX timer operations 会在四种情形导致不必要的 PDCCH monitoring：无数据活动、无后续传输、重传无效，以及不能支持单连接内多种业务或动态时延要求。
 
 ```text
 Static CDRX timer operations lead to unnecessary PDCCH monitoring at least in following cases:
@@ -19,12 +30,16 @@ Static CDRX timer operations lead to unnecessary PDCCH monitoring at least in fo
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.3.3 Energy efficiency
 
+为适应 DL 和 UL traffic 的动态变化，可考虑采用 NW-initiated 或 UE-initiated solution 来实现 6G CDRX timer adaptation。
+
 ```text
 To enable CDRX timer adaptation in 6G, both NW-initiated solution and UE-initiated solution can be considered to adopt to the dynamics of DL and UL traffics.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-o002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+提出为 connected mode 设计 single discontinuous monitoring framework：UE 在收到 DL WUS 或到达 periodic CDRX occasion 时，启动配置时长的 PDCCH monitoring。若 UE 在该时长内被 PDCCH 调度，则保持唤醒一段时间，并开始监测可能的 retransmission scheduling。
 
 ```text
 Design a single discontinuous monitoring framework for connected mode, including:
@@ -37,12 +52,16 @@ Design a single discontinuous monitoring framework for connected mode, including
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+定义一个同时适用于 DL WUS 和 CDRX 的 single timer；当 UE 被 PDCCH 调度时，该 timer 使其保持唤醒一段时间。
+
 ```text
 A single timer, applicable to both DL WUS and CDRX, is defined to stay awake for a certain time period when the UE is scheduled on PDCCH.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p002`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+当 UE 被 PDCCH 调度时，用于监测 retransmission scheduling 的 timer（例如 retransmission timer）也同时适用于 DL WUS 和 CDRX。
 
 ```text
 A timer (e.g., retransmission timer) for the purpose of monitoring retransmission scheduling is also applicable to both DL WUS and CDRX when the UE is scheduled on PDCCH.
@@ -54,6 +73,8 @@ R2-2603435	Discussion on network and UE energy efficiency	Huawei, HiSilicon	disc
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p003`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+对 C-DRX 与 DL WUS 配置组合的研究，假设 C-DRX 参数包括 DRX cycle、onDuration-like Timer x 和 inactivityTimer-like Timer y；WUS 参数包括 WUS cycle、PDCCH monitor Timer x 和 inactivityTimer Timer y。UE 未收到 WUS 时的行为、两类 cycle 是否相同，以及两类 timer 是否相同仍为 FFS。
 
 ```text
 For single UE discontinuous monitoring framework, RAN2 to study the following UE behaviour steps:
@@ -88,6 +109,8 @@ R2-2603589	Further Views On 6GR Energy Efficiency	ZTE Corporation, Sanechips	dis
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+single discontinuous monitoring framework 基于 C-DRX-like mechanism 设计；DL-WUS 被视为可选功能，并应与 C-DRX-like mechanism 配合工作。
+
 ```text
 The single discontinuous monitoring framework is designed based on the C-DRX like mechanism, the DL-WUS is considered as an optional feature which shall work together with the C-DRX like mechanism.
 R2-2602968	Discussion on 6G power efficiency	Xiaomi	discussion	Rel-20	FS_6G_Radio
@@ -95,6 +118,8 @@ R2-2602968	Discussion on 6G power efficiency	Xiaomi	discussion	Rel-20	FS_6G_Radi
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p005`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+对于支持 DL-WUS 的 UE，网络可配置 DL-WUS 与 C-DRX cycle 对齐或不对齐，也可配置不使用 C-DRX cycle，供 PDCCH monitoring 使用。
 
 ```text
 For UEs that support DL-WUS, the network can configure DL-WUS with or without (or aligned/not aligned) C-DRX cycle for PDCCH monitoring.
@@ -105,6 +130,8 @@ R2-2603711	6G CDRX timer adaptation	Apple, ZTE Corporation, Lenovo, NEC, Xiaomi,
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+作为起点，UE C-DRX 可配置为依据 C-DRX onDuration timer、inactivity timer、HARQ RTT timer 和 HARQ retransmission timer 周期性监测 PDCCH。
+
 ```text
 As a starting point, the UE C-DRX can be configured to periodically monitor PDCCH according to C-DRX onDuration timer, inactivity timer, HARQ RTT timer and HARQ retransmission timer.
 ```
@@ -112,12 +139,16 @@ As a starting point, the UE C-DRX can be configured to periodically monitor PDCC
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+认为 5G C-DRX 的一个痛点是静态定时器操作导致不必要的 PDCCH 监测。CDRX 定时器值配置后保持固定，不随数据调度活动、后续传输、重传有效性或业务类型变化。
+
 ```text
 Conclude that a pain point of 5G C-DRX is unnecessary PDCCH monitoring due to static timer operation, i.e., CDRX timer values are fixed once configured, regardless of data scheduling activity, subsequent transmissions, retransmission validity, or the traffic type.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p008`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+支持在有或无 DL WUS 的 6G discontinuous PDCCH monitoring procedure 中动态调整 CDRX timer(s)，具体可调整的定时器及方案细节待研究。研究如何减少不必要的 PDCCH 监测，并考虑网络复杂度和信令开销等因素。
 
 ```text
 Support dynamic adaptation of CDRX timer(s) in the 6G discontinuous PDCCH monitoring procedure with and without DL WUS. FFS which CDRX timer(s) can be adapted. FFS details of adaptation solution.
@@ -135,12 +166,16 @@ R2-2603846	Consideration on Energy efficiency for 6G	LG Electronics Inc.	discuss
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+RAN2 应考虑配置多个 DRX patterns，以更好适配具有不同业务特征的 multi-flow 并提升 energy efficiency。
+
 ```text
 In 6G, RAN2 should consider configuring multiple DRX patterns to better accommodate multi-flow with various traffic characteristics for improved energy efficiency.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p010`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+RAN2 应考虑支持快速 DRX pattern switching，以响应 traffic pattern 变化和动态 QoS requirements。
 
 ```text
 RAN2 should consider mechanisms to enable fast DRX pattern switching in response to traffic pattern change and dynamic QoS requirements.
@@ -149,12 +184,16 @@ RAN2 should consider mechanisms to enable fast DRX pattern switching in response
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+RAN2 研究如何减少 onDuration time 期间所有 serving cells 上不必要的 PDCCH 监测。
+
 ```text
 RAN2 studies how to reduce unnecessary PDCCH monitoring on all serving cells during onDuration time.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p012`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+考虑按 DRX group 或 serving cell 应用 DRX configuration。还提出研究基于 UE 活动、触发事件、service type 和近期调度活动的 UE-specific monitoring configurations，以及 connected mode DRX 的监测窗口、活动窗口切换和 UL/DL Inactivity Timers 等事项。
 
 ```text
 RAN2 consider to apply DRX configuration per DRX group or per serving cell.
@@ -179,6 +218,8 @@ R2-2602968	Discussion on 6G power efficiency	Xiaomi	discussion	Rel-20	FS_6G_Radi
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+对于 idle/inactive state，若网络在进入或离开 sleeping opportunities 时要改变小区中的 SSB/paging/SI/RACH configurations，采用隐式机制，例如依靠 SI update 或 layer 1 signaling。
+
 ```text
 For idle/inactive state, use implicit mechanism, e.g. to rely on SI update or layer 1 signaling if network wants to change SSB/paging/SI/RACH configurations in the cell when entering/leaving the sleeping opportunities
 Noted
@@ -188,12 +229,16 @@ R2-2603712	Views on 6G energy efficiency	Apple	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+支持为 6G RRC_CONNECTED UEs 至少提供显式 NW TX/RX sleeping pattern。
+
 ```text
 Support 6G explicit NW TX/RX sleeping pattern at least for RRC_CONNECTED UEs.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p015`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+对于 6G 显式 NW TX/RX sleeping pattern 的信令，支持通过 RRC configuration 和 UE group common lower layer indication 进行动态激活/去激活。connected mode 的讨论包括网络睡眠期间静默的信号、UE 行为及显式与隐式机制所用信令等事项。
 
 ```text
 On signaling of 6G explicit NW TX/RX sleeping pattern, support both RRC configuration and UE group common lower layer indication for its dynamic activation / deactivation.
@@ -220,6 +265,8 @@ R2-2603031	Discussion on 6G Energy Efficiency	CATT	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+若 6G 网络在 DL 睡眠，connected UEs 至少无需监测 DL semi-persistent scheduling，也无需监测新传输的 PDCCH。对于 non-connected UEs，提出两种选项：无需监测 common reference signal、paging 和 system information，或以稀疏周期监测这些内容。
+
 ```text
 If the network of 6G is sleep in DL:
 connected UEs at least don’t need to monitor DL semi-persistent scheduling, nor monitor PDCCH for new transmissions.
@@ -230,6 +277,8 @@ Option 2: monitor with sparse period for common RS, paging and system informatio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p017`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+当 6G network 在 UL 休眠时，RAN2 考虑适用于所有 UE 状态的两种选项：不发送任何数据或信号；或除发起 Random Access procedure 外不发送任何数据或信号。
 
 ```text
 If 6G network is sleep in UL, RAN2 consider the following options for UEs in all states:
@@ -242,6 +291,8 @@ R2-2603554	Discussion on energy efficiency for network and UE	Lenovo	discussion	
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+为实现 energy efficiency 并协调 NES 与 UE power saving，可按 traffic 和 UE 维度考虑 resource management。
+
 ```text
 To achieve energy efficiency, also to align NES and UE power saving, the resource management may be considered per traffic and UE basis
 R2-2603423	6G Energy Efficiency	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
@@ -250,12 +301,16 @@ R2-2603423	6G Energy Efficiency	InterDigital, Inc.	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+支持根据 NW energy saving operation 调整 UE power saving configuration。
+
 ```text
 Support adaptation of UE power saving configuration based on NW energy saving operation.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p020`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+UE 调整 C-DRX cycle configuration，以与 active cell DTX/DRX configuration 对齐。
 
 ```text
 UE adapts C-DRX cycle configuration to align with the active cell DTX/DRX configuration.
@@ -265,6 +320,8 @@ R2-2602968	Discussion on 6G power efficiency	Xiaomi	discussion	Rel-20	FS_6G_Radi
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
 
+对于 connected state，以 legacy time-domain periodic/fixed cell DTX/DRX pattern 为基线。RAN2 将进一步研究是否需要依据 network indications 动态控制 cell DTX/DRX，以兼顾 network energy saving 和 delay-sensitive traffic 的性能。
+
 ```text
 For connected state, the legacy time-domain periodic/fixed cell DTX/DRX pattern is taken as baseline. RAN2 to further study the need of dynamic control of cell DTX/DRX based on network indications to balance between preserving network energy saving and providing better performance for delay-sensitive traffic.
 R2-2602957	Discussion on 6GR UE PowSav and NES	vivo	discussion	Rel-20
@@ -272,6 +329,8 @@ R2-2602957	Discussion on 6GR UE PowSav and NES	vivo	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_134/) · `RAN2-134-9.3.3.3-p022`
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.3 Energy efficiency
+
+研究在 RRC_CONNECTED mode 的 cell DTX non-active period 内，使用 DL WUS 触发 on-demand PDCCH monitoring。
 
 ```text
 Study DL WUS to trigger on-demand PDCCH monitoring during the cell DTX non-active period in RRC_CONNECTED mode.
@@ -306,6 +365,8 @@ R2-2604082	Discussion on Explicit Cell DTX/DRX for Energy efficiency in 6GR	CEWi
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.3.3 Energy efficiency
 
+下次会议基于这些基线步骤继续研究共同点，以及如何启用相关功能，以定义单一 discontinuous monitoring framework。下次会议公司应重点对这项工作的建模；两个方案的细节仍待研究，包括 PDCCH monitoring 定时器、监测周期及其是否相同或对齐。
+
 ```text
 1	For next meeting using these baseline steps, further study the points of commonalities and how to enable these functions with the aim to define a single discontinuous monitoring framework.
 2	For next meeting companies should focus on modelling of how this work.
@@ -319,6 +380,8 @@ R2-2601939	Discussion on energy efficiency	ASUSTeK	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.3.3 Energy efficiency
 
+DLWUS Option 1-2 可独立于 C-DRX 配置其周期，并实现类似 C-DRX 的周期性 PDCCH monitoring 功能。
+
 ```text
 DLWUS Options 1-2 can configure its periodicity independently of C-DRX and achieve periodic PDCCH monitoring functionality similar to C-DRX.
 ```
@@ -326,12 +389,16 @@ DLWUS Options 1-2 can configure its periodicity independently of C-DRX and achie
 
 ### [6G/Rel-20 RAN2#133bis] `observation` 9.3.3.3 Energy efficiency
 
+DLWUS option 1-1 可指示 UE 是否需要为下一个 CDRX period 唤醒，其 power saving gain 优于 DCP。
+
 ```text
 DLWUS option 1-1 can be used to indicate whether needed to wake up for the next CDRX period and has better power saving gain than DCP.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-o002`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+采用不带 DL-WUS 的 C-DRX 作为基线 UE power saving solution。RAN2 将聚焦于理解网络配置不带 DL-WUS 的 C-DRX-like mechanism 在 6G 中的形态。
 
 ```text
 C-DRX without DL-WUS is adopted as baseline UE power saving solution.
@@ -350,6 +417,8 @@ R2-2602078	Discussion on Energy Efficiency	HONOR	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
 
+对于 DL WUS 与 C-DRX 结合的方案，支持研究 option 1-1 和 option 1-2。
+
 ```text
 For DL WUS together with C-DRX, support to study both option 1-1 and option 1-2.
 Noted
@@ -358,6 +427,8 @@ R2-2602472	Views on 6G Energy Efficiency	NTT DOCOMO	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p002`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+RAN2 将研究带有 dynamic wake-up mechanism 的 C-DRX。是否引入 DCP 或 DL-WUS，应在 DL-WUS 设计细节确定并由 RAN1 讨论评估后再论证。
 
 ```text
 RAN2 to study C-DRX with dynamic wake-up mechanism. For the dynamic wake-up mechanism, whether to introduce DCP or DL-WUS should be justified after the DL-WUS design details are determined and evaluated within RAN1 discussions.
@@ -368,6 +439,8 @@ R2-2602495	Discussion on 6G Energy Efficiency	Transsion Holdings	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p003`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+提出为 6G 研究并定义单一 discontinuous monitoring framework，明确 unified DL WUS 与 C-DRX 的交互，覆盖三种基线工作模式。基线行为包括 UE 周期性监测 DL WUS 或 PDCCH；收到面向该 UE 的 DL WUS 后，启动一段时间的 PDCCH monitoring，未收到或非面向该 UE 时可回到休眠，C-DRX 下则监测 PDCCH 并在相应条件下休眠或保持唤醒。
 
 ```text
 Study and define a single discontinuous monitoring framework for 6G that clearly defines the interaction between a single, unified DL WUS and C-DRX, covering the three baseline modes of operation.
@@ -396,6 +469,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
 
+DL WUS 不带 C-DRX 时，其操作可类似 LP-WUS operation 的 Option 1-2，同时移除 C-DRX cycle。相关提案为 DL-WUS 按自身周期监测，并可指示启动 active timer，在此期间 UE 监测 PDCCH。
+
 ```text
 For DL WUS without C-DRX, the operation could be similar to Option 1-2 of LP-WUS operation while removing C-DRX cycle.
 R2-2601747	Discussion on 6G energy efficiency 	NEC	discussion	Rel-20	FS_6G_Radio
@@ -406,6 +481,8 @@ R2-2602424	Discussion on 6G energy efficiency	CMCC	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
 
+是否支持不带 C-DRX 的 DL-WUS，应考虑不同工作组的规范工作量以及 RAN1 在 signalling design 上的进展。
+
 ```text
 Whether to support DL-WUS without C-DRX should consider the specification effort in different working groups and RAN1 progress on signalling design.
 R2-2602217	Views on 6G energy efficiency	Apple	discussion	Rel-20	FS_6G_Radio	Late
@@ -413,6 +490,8 @@ R2-2602217	Views on 6G energy efficiency	Apple	discussion	Rel-20	FS_6G_Radio	Lat
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p006`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+RAN2 优先研究“C-DRX without DL WUS”和“DL WUS together with C-DRX”，除非由 RAN1 触发，否则推迟研究“DL WUS without C-DRX”。Rel-19 LP-WUS option 1-2 类似方案应纳入“DL WUS together with C-DRX”方向研究。
 
 ```text
 RAN2 first study “C-DRX without DL WUS” and “DL WUS together with C-DRX”, and postpone the study of “DL WUS without C-DRX” unless triggered by RAN1. Rel-19 LP-WUS option 1-2 like option should be studied under the direction of “DL WUS together with C-DRX”.
@@ -423,12 +502,16 @@ R2-2601885	Considerations for Energy Saving in 6GR	Samsung	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
 
+6GR Cell DTX/DRX机制将包含Active Duration概念，定义UE接收下行信号、获得已调度上行资源并发送上行信号的时段。
+
 ```text
 The 6GR Cell DTX/DRX mechanism will include the concept of Active Duration, defining the period during which the UE receives downlink signals, scheduled uplink resources, and transmits uplink signals.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p008`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+6GR Cell DTX/DRX机制将采用基于周期的框架，在Active Duration与non-Active Duration之间交替运行，类似NR。
 
 ```text
 The 6GR Cell DTX/DRX mechanism will operate on a cycle-based framework, alternating between Active Duration and non-Active Duration, similar to the NR.
@@ -438,6 +521,8 @@ R2-2601513	Discussion on 6G energy efficiency	Xiaomi	discussion	Rel-20	FS_6G_Rad
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p009`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+为支持网络休眠机会并避免UE与网络不同步，原文提出RRC_CONNECTED UE需要获知时域cell DTX/DRX pattern及可能的动态触发，以确定可用UL/DL信号和资源。讨论中也提出研究implicit与explicit机制及相应UE行为，尚未形成机制结论。
 
 ```text
 To enable network sleeping opportunities and avoid the mismatch between the UE and the network, the UE needs to know following information:
@@ -470,12 +555,16 @@ R2-2601710	Discussion on network and UE energy efficiency	Huawei, HiSilicon	disc
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
 
+RAN2将研究与UE discontinuous monitoring framework及DL WUS协同设计的Cell DTX。
+
 ```text
 RAN2 to study: Cell DTX design aligned with UE discontinuous monitoring framework operating with DL WUS;
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p011`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+RAN2将研究用于网络与UE联合节能的clustered UL/DL data transmission。提案还提出在connected mode灵活配置对齐的DL和UL传输时机，可按UE配置，也可跨UE或UE组配置。
 
 ```text
 RAN2 to study clustered UL/DL data transmission for joint network and UE energy saving.
@@ -487,6 +576,8 @@ R2-2601989	Discussion on network and UE energy efficiency	1Finity	discussion	Rel
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
 
+RAN2将研究UE DRX与网络休眠机会（例如Cell DTX/DRX）之间的高效对齐机制。该条目标记为Not treated。
+
 ```text
 RAN2 to study efficient mechanisms to align between the UE DRX and sleeping opportunities in NW (e.g., Cell DTX/DRX).
 Not treated
@@ -496,6 +587,8 @@ R2-2602406	Consideration on Energy efficiency for 6G	LG Electronics Inc.	discuss
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133bis/) · `RAN2-133bis-9.3.3.3-p013`
 
 ### [6G/Rel-20 RAN2#133bis] `proposal` 9.3.3.3 Energy efficiency
+
+原文提出在6G考虑多种DRX配置，以适配不同流量特征的multi-flow并提升能效；另有提案主张采用单一DRX配置。相关提案意见并存，未给出一致结论。
 
 ```text
 In 6G, RAN2 should consider multiple DRX configurations (i.e., more than two DRX configurations) to better accommodate multi-flow with various traffic characteristics for improved energy efficiency.
@@ -534,6 +627,8 @@ R2-2602586	Discussion on Energy Efficiency aspects of 6GR	Rakuten Symphony	discu
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.3.3 Energy efficiency
 
+提出一次仅激活一个 DRX configuration，并研究是否需要多个配置及其 use case；同时研究三种 C-DRX 与 DL WUS 组合。目标是定义统一的 discontinuous monitoring framework，涵盖 UE 对 wake up signalling 的周期监测及后续 PDCCH monitoring，并考虑与 NW sleeping opportunities、cell DTX/DRX 的交互。
+
 ```text
 1	Single DRX configuration active at a time.   Discuss at later time whether there is a need to have multiple configuration and what is the use case.
 2	Pain point in 5G - too many options DRX, LP-WUS option 1-1, option 1-2, DCP, and different features designed in different releases
@@ -545,6 +640,8 @@ R2-2600650	Network and UE energy efficiency in 6G Nokia	discussion	Rel-20	FS_6G_
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-a001`
 
 ### [6G/Rel-20 RAN2#133] `agreement` 10.3.3.3 Energy efficiency
+
+研究网络休眠时，UE 在所有 RRC states 下运行所需的信息。初步提出 UL 侧至少需知道 UL resources 及可发送时机，DL 侧需知道网络可能发送下行内容的时机，例如 resources 和用于测量的 reference signals。
 
 ```text
 Study what the UE would need to know to be able to operate in all RRC states if the network is going to sleep.
@@ -558,12 +655,16 @@ R2-2600405	Discussion on network and UE energy efficiency	Huawei, HiSilicon	disc
 
 ### [6G/Rel-20 RAN2#133] `observation` 10.3.3.3 Energy efficiency
 
+原文提出，6G 预计会引入更多类型的业务流量，各自具有不同的时延、周期性、数据量和突发性特征，因此需要 differentiated 或 service aware 的 CDRX configuration，以多个参数值适配多种流量模式。
+
 ```text
 6G is expected to introduce a broader range of traffic types, e.g., metaverse and multimodal interactive services with the combination of video, audio, sensor data and tactile feedback, each with distinct latency, periodicity, data volume, and burstiness characteristics, thereby requiring differentiated or service aware CDRX configuration with multiple parameter values for multiple traffic patterns.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-o001`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+提出 RAN2 在 6G 中考虑为 UE 配置并启用多个 DRX configurations（多于两个）；关于是否同一时间只激活一个 DRX configuration，意见存在分歧。该提议被记录（Noted）。
 
 ```text
 In 6G, RAN2 should consider to configure and enable multiple DRX configuration (i.e. more than two DRX configuration).
@@ -575,6 +676,8 @@ R2-2600931	Discussion on 6G energy and power saving features	Qualcomm Incorporat
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p001`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+提出支持单个 DRX configuration，并为其设置多个参数值以适配某一业务的不同流量模式；讨论意见包括无需同时运行多个 DRX、多个配置可能增加复杂度且不利于省电，以及可根据 traffic flow 调整 timers。该提议被记录（Noted）。
 
 ```text
 Support a single DRX configuration with multiple parameter values for a UE to accommodate different traffic patterns of a service.
@@ -595,6 +698,8 @@ R2-2600751	Discussion on energy efficiency for network and UE	Lenovo	discussion	
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
 
+RAN2 研究 RRC_CONNECTED UE 的两种 DL-WUS 方案：一种与类似 c-DRX 的机制协同，在检测到 DL-WUS 后于 c-DRX on-duration timer 内监测 PDCCH；另一种与该机制解耦，在检测到 DL-WUS 后于新定义的 timer 内监测 PDCCH。该事项被记录（Noted）。
+
 ```text
 RAN2 to study following DL-WUS schemes for UEs in RRC_CONNECTED state in 6GR:
 •     Scheme1: DL-WUS to work together with c-DRX like mechanism, UE performs PDCCH monitoring within the c-DRX on-duration timer, when DL-WUS is detected before the timer.
@@ -606,6 +711,8 @@ R2-2600950	Discussion on 6G energy efficiency	CMCC	discussion	Rel-20	FS_6G_Radio
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p003`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+提出可考虑三种用于 RRC_CONNECTED UE 省电的 DL-WUS use cases：在 drx-onDurationTimer 前配置时机的 DCP-like DL-WUS、C-DRX active period 内动态 PDCCH monitoring 的 DL-WUS，以及触发额外或非周期 on-duration timer 的 LP-WUS option 1-2-like DL-WUS。该提议被记录（Noted）。
 
 ```text
 Following DL-WUS use cases can be considered for RRC_CONNECTED UE power saving:
@@ -623,6 +730,8 @@ R2-2600650	Network and UE energy efficiency in 6G	Nokia	discussion	Rel-20	FS_6G_
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
 
+记录了从 RAN2 角度进一步研究三种配置的优先选择：C-DRX without DL WUS、DL WUS together with C-DRX，以及 DL WUS without C-DRX。
+
 ```text
 Study further which of these options are preferred configurations from RAN2 perspective: “C-DRX without DL WUS”, “DL WUS together with C-DRX” and “DL WUS without C-DRX”
 [2 mins]
@@ -632,6 +741,8 @@ R2-2600690	Views on 6G Energy Efficiency	NTT DOCOMO, INC.	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p005`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+记录了研究 C-DRX 与 dynamic wake-up mechanism；是否引入 DCP 或 DL-WUS，应在 DL-WUS 设计细节确定并经 RAN1 讨论评估后论证。讨论意见包括支持研究所有选项、以 DL WUS with DRX 为基线，以及担忧 DL WUS without C-DRX 的可靠性和多方案复杂度。
 
 ```text
 RAN2 to study C-DRX with dynamic wake-up mechanism. For the dynamic wake-up mechanism, whether to introduce DCP or DL-WUS should be justified after the DL-WUS design details are determined and evaluated within RAN1 discussions.
@@ -661,6 +772,8 @@ Discussion
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
 
+记录了 6G 支持 cell DTX 和 UE C-DRX；还支持 cell DTX/DRX 与 UE CDRX 对齐，同时允许二者的 active time 长度不同。
+
 ```text
 6G supports cell DTX/ as well as UE C-DRX. Additionally, aligning cell DTX/DRX with UE CDRX is supported possible but allowing also UE CDRX and cell DTX/DRX having different active time lengths.
 [2 mins]
@@ -670,6 +783,8 @@ R2-2600581	Discussion on energy efficiency	ASUSTeK	discussion	Rel-20
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p007`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+记录了对于 RRC_Connected UEs，UE DRX configuration 与 cell DTX configuration 对齐。
 
 ```text
 For RRC_Connected UEs, the UE DRX configuration is aligned with the cell DTX configuration.
@@ -681,12 +796,16 @@ R2-2600462	Views on 6G energy efficiency	Apple	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
 
+RAN2 将 5G Cell DTX/DRX mechanism 作为 6G 实现 Network sleeping opportunities 的起点，即由 NW 配置明确的周期性 active/inactive pattern。详细机制仍待进一步研究。
+
 ```text
 RAN2 assume that 5G Cell DTX/DRX mechanism is the starting point to achieve Network sleeping opportunities in 6G, i.e. explicit periodic active/inactive pattern is configured by the NW. FFS its detailed mechanism.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p009`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+记录了 6G 中 Cell DTX/DRX 可配置为与 UE CDRX 配合或不配合，以提高 UE 和 NW 的灵活性。讨论涉及周期模式、与 UE active times 对齐、idle/inactive/connected mode 支持，以及 delay sensitive traffic 下 UE 唤醒网络等事项。
 
 ```text
 To achieve more flexibility for both UE and NW, Cell DTX/DRX can be configured with UE CDRX or without UE CDRX in 6G.
@@ -713,6 +832,8 @@ Discussion on cell DTX/DRX mechanism
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
 
+RAN2 将研究 flexible cell DTX 与 flexible UE C-DRX 的联合且简化的设计，例如避免功能重复。
+
 ```text
 RAN2 to study joint and simplified (e.g., to avoid duplication) design for flexible cell DTX and flexible UE C-DRX.
 [2 mins]
@@ -721,6 +842,8 @@ R2-2600126	Discussion on 6G energy efficiency	Xiaomi	discussion	Rel-20	FS_6G_Rad
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p011`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+记录了 connected state 下 joint UE/network power saving 的考虑方向：固定模式的 UE/network sleeping cycles 应对齐，例如一个周期为另一个的倍数；动态模式则应设计节能 signaling，以触发 cell 和 UE 的 active/non-active periods。
 
 ```text
 In 6G, for joint UE/network power saving in connected state, consider following directions:
@@ -733,6 +856,8 @@ R2-2600086	Discussion on 6GR UE PowSav and NES	vivo	discussion	Rel-20
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
 
+进一步研究 cell DTX/DRX-like mechanism 时，cell DTX 不必像 NR Rel-18 那样仅与 UE C-DRX 紧密耦合，并应考虑 DL WUS；DL WUS 可在有或没有 UE C-DRX 时工作。
+
 ```text
 For further study of cell DTX/DRX like mechanism, cell DTX need not be tightly coupled with only UE C-DRX like NR Rel-18, and should take DL WUS into consideration which may work w/wo UE C-DRX.
 [2 mins]
@@ -741,6 +866,8 @@ R2-2600607	Discussion on network and UE energy efficiency	Fujitsu	discussion	Rel
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_133/) · `RAN2-133-10.3.3.3-p013`
 
 ### [6G/Rel-20 RAN2#133] `proposal` 10.3.3.3 Energy efficiency
+
+RAN2 将研究在网络启用 sleeping opportunities（例如 Cell DTX/DRX）时，如何确保 UE 的 QoS。
 
 ```text
 RAN2 to study how to ensure the UE’s QoS with enabling sleeping opportunities in NW (e.g., Cell DTX/DRX).
@@ -772,6 +899,8 @@ R2-2601109	Discussion on Energy Efficiency aspects of 6GR	Rakuten Mobile, Inc	di
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.3.3.2 Energy efficiency
 
+将进一步研究 connected mode 的 sleeping opportunities，例如 CELL DTX/DRX。网络侧认为，在不同状态间对齐 sleeping opportunities 有益；对于 non-connected state，等待 RAN2 和其他工作组在 common signal、SI、paging、RA 等设计方面取得进一步进展。
+
 ```text
 Study further how to achieve sleeping opportunities (e.g. CELL DTX/DRX) for connected mode.
 There are benefits from NW perspective to aligning the sleeping opportunities (e.g. CELL_DTX/DRX) across different states.
@@ -781,6 +910,8 @@ R2-2508243	Network and UE energy efficiency in 6GR	Nokia, Nokia Shanghai Bell	di
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.2-a001`
 
 ### [6G/Rel-20 RAN2#132] `agreement` 10.3.3.2 Energy efficiency
+
+作为 UE sleeping opportunities 的起点，假设支持类似 C-DRX 的机制，并进一步研究其细节。还将研究 DL WUS 是否以及如何与该机制协同，考虑 RAN1 的 L1 power saving features 进展以避免功能重复，并研究其与网络 sleeping opportunities 的交互。
 
 ```text
 As a starting point for UE sleeping opportunities, assume C-DRX like mechanism is supported.  Study further details of C-DRX like mechanism.
@@ -793,6 +924,8 @@ R2-2508940	Discussion on  energy efficiency for network and UE	Lenovo	discussion
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.2 Energy efficiency
 
+提出 cell DTX 应与 UE C-DRX 对齐，尤其考虑 flexible UE C-DRX，以避免不同版本中分别定义的机制造成 UE 行为重复和额外限制，并获得更长睡眠时长带来的节能收益。
+
 ```text
 Separate cell DTX and UE C-DRX mechanisms were defined in different 5G releases with duplicated UE behaviours and additional restrictions between cell DTX and UE C-DRX. To obtain the energy saving gain coming from longer sleep duration, the cell DTX should be aligned with UE C-DRX, especially considering a flexible UE C-DRX.
 ```
@@ -800,12 +933,16 @@ Separate cell DTX and UE C-DRX mechanisms were defined in different 5G releases 
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.2 Energy efficiency
 
+提出在 6G 中联合优化 cell-DTX、cell-DRX 与 UE 的 DRX 或偏好，以在满足性能预期的同时最大化网络和 UE 的能效。
+
 ```text
 In 6G, cell-DTX and cell-DRX mechanisms can be further optimized jointly with UE’s DRX or preferences to maximize energy efficiency for both network and UEs while ensuring performance expectations.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.2-o002`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
+
+将研究所有 RRC states 下的 Cell DTX/DRX，包括对 common signal/channel transmission 及 UE-specific transmission/reception 的影响。讨论中涉及各状态是否采用相同方案、参数差异、RACH resources、common signals、idle mode 初始接入、按小区配置以及与 RAN1 进展的关系；该事项已记录。
 
 ```text
 Study Cell DTX/DRX in all RRC states, including impact on common signal and channel transmission and UE specific transmission and reception.
@@ -828,6 +965,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
 
+将研究联合设计 Cell DTX/DRX 与 UE DRX，并考虑配置或未配置 UE DRX 的 UE；该事项已记录。
+
 ```text
 Study Cell DTX/DRX and UE DRX to be jointly designed, considering UEs with or without UE DRX configurations.
 Noted
@@ -838,6 +977,8 @@ R2-2508519	Discussion on network and UE energy efficiency	Huawei, HiSilicon	disc
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
 
+RAN2 将研究 flexible cell DTX 与 flexible UE C-DRX 的联合、简化设计，例如避免重复。
+
 ```text
 RAN2 to study joint and simplified (e.g., to avoid duplication) design for flexible cell DTX and flexible UE C-DRX.
 R2-2508754	Discussion on 6G energy and power saving features	Qualcomm Incorporated	discussion
@@ -845,6 +986,8 @@ R2-2508754	Discussion on 6G energy and power saving features	Qualcomm Incorporat
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.2-p003`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
+
+RAN2 开始研究 6G 中 cell-DTX 与 DRX、UE DRX 或 UE preferences 联合优化的适用性。
 
 ```text
 RAN2 starts the study on the applicability of joint optimization with cell-DTX and DRX and UE DRX or UE preferences in 6G.
@@ -854,6 +997,8 @@ R2-2508754	Discussion on 6G energy and power saving features	Qualcomm Incorporat
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.2-p004`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
+
+UE DRX 被采纳为 6G 的关键特性，以支持 UE 和 network nodes 的 energy and power saving。记录的意见包括保留 C-DRX、研究 WUS，以及避免 L1 和 L2 中出现多个或重复的方案。
 
 ```text
 UE DRX is adopted as a key feature in 6G to support energy and power saving for both UEs and network nodes.
@@ -874,6 +1019,8 @@ Noted
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
 
+RAN2 将研究增强 6G 的 C-DRX 方案，例如支持多个 active DRX configurations 或 adaptive DRX operation，以改善 UE power efficiency。提案包括在 connected mode 配置多种 DRX window types，并为其关联预配置的 PHY-layer configurations。
+
 ```text
 RAN2 to study enhancements to the C-DRX scheme in 6G, e.g. support of multiple active DRX configurations or adaptive DRX operation, to improve UE power efficiency.
 R2-2508613	Energy Efficiency for 6G: Network and UE Perspectives	Ericsson	discussion	Rel-20	FS_6G_Radio
@@ -886,6 +1033,8 @@ R2-2508928	Discussion on energy saving of 6GR	Spreadtrum, UNISOC	discussion	Rel-
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
 
+研究在 6G day-1 connected mode 中将 LP-WUS 与 C-DRX 解耦。
+
 ```text
 Study the decoupling of LP-WUS and C-DRX for connected mode in 6G day-1.
 R2-2508296	Discussion on energy efficiency in 6G	OPPO	discussion	Rel-20	FS_6G_Radio
@@ -894,6 +1043,8 @@ R2-2508296	Discussion on energy efficiency in 6G	OPPO	discussion	Rel-20	FS_6G_Ra
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
 
+对于 RRC CONNECTED 状态的 UE，RAN2 研究更简化的 UE power saving features，例如支持不依赖 DRX 的 wake-up signal operation。
+
 ```text
 For RRC CONNECTED state UEs, RAN2 studies more simplified UE power saving features, e.g., support wake-up signal operation without DRX.
 R2-2508613	Energy Efficiency for 6G: Network and UE Perspectives	Ericsson	discussion	Rel-20	FS_6G_Radio
@@ -901,6 +1052,8 @@ R2-2508613	Energy Efficiency for 6G: Network and UE Perspectives	Ericsson	discus
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.2-p008`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
+
+对于 6GR，允许由 WUS 触发特定的 “OnDuration” window configurations，以通过适当的 PHY setting 实现节能的 receiver reactivation。
 
 ```text
 For 6GR, allow WUS-based triggering of specific "OnDuration" window configurations, enabling energy-efficient receiver reactivation with appropriate PHY setting.
@@ -911,6 +1064,8 @@ R2-2508519	Discussion on network and UE energy efficiency	Huawei, HiSilicon	dis
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
 
+RAN2 将研究 IDLE mode 的 DL WUS，包括用于 paging 的 DL WUS。
+
 ```text
 RAN2 to study DL WUS for IDLE mode, including DL WUS for paging.
 R2-2508940	Discussion on  energy efficiency for network and UE	Lenovo	discussion	Rel-20	FS_6G_Radio
@@ -918,6 +1073,8 @@ R2-2508940	Discussion on  energy efficiency for network and UE	Lenovo	discussion
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.2-p010`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.2 Energy efficiency
+
+RAN2 将研究 LP-WUS/WUR，作为 6GR 所有 RRC states 的候选 UE power saving techniques，其中包括将用于 paging reception 的 LP-WUS/WUR 作为 day1 候选特性，并以 5G NR design 为基线。还将研究在 LR 上进一步放宽或卸载 RRM measurement，以及在 RRC_CONNECTED mode 使用 LR 进行 RRM/RLM/BFD measurements。
 
 ```text
 RAN2 to study LP-WUS/WUR as one of candidate UE power saving techniques for all RRC states in 6GR, including:
@@ -953,6 +1110,8 @@ R2-2509072	6G and UE power saving simplification considerations	Nordic Semicondu
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.1 Operation in idle mode
 
+进一步研究 idle mode 多载波初始接入时，至少考虑 UL 覆盖增强或 DL-UL 覆盖不平衡、RACH 容量/卸载/负载均衡、网络节能/减少公共信令等用例。对每个用例研究多载波操作相对现有机制在何种条件下能带来额外收益；不排除其他用例。
+
 ```text
 For further study of initial access for idle mode multi-carrier operation, consider at least the following potential use cases:
 UC-1: UL coverage enhancement / DL-UL coverage imbalance
@@ -964,6 +1123,8 @@ For each identified use case, study whether and under which conditions multiple-
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.4.1-a001`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.1 Operation in idle mode
+
+研究 idle mode 多载波初始接入时，考虑三类候选物理载波场景：1 DL + 多个 UL、多个 DL + 1 UL、多个 DL + 多个 UL。UE 对给定初始接入过程可只使用候选载波的子集；纳入研究不代表同意支持，需求及适用用例和部署场景仍待进一步研究。
 
 ```text
 For study of multiple carriers where for initial access a UE can utilize resources for UL (Msg1, etc) or for both UL (Msg1, etc.) and DL (Msg2, etc.) in one carrier other than the carrier where the UE obtains the system information providing configuration for those resources, consider the following potential scenarios for the set of candidate physical carriers for which resources are provided for initial access:
@@ -978,6 +1139,8 @@ Note 3: The inclusion of a scenario for study does not imply agreement to suppor
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.1 Operation in idle mode
 
+对所述 idle mode 多载波初始接入研究，基线规定：一次 RACH procedure 尝试中，每个链路方向使用一个选定的 physical carrier。
+
 ```text
 For study of multiple carriers where for initial access a UE can utilize resources for UL (Msg1, etc) or for both UL (Msg1, etc.) and DL (Msg2, etc.) in one carrier other than the carrier where the UE obtains the system information providing configuration for those resources,
 As a baseline, a single selected physical carrier is used per link direction throughout an attempt of an RACH procedure.
@@ -985,6 +1148,8 @@ As a baseline, a single selected physical carrier is used per link direction thr
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.4.1-a003`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.1 Operation in idle mode
+
+进一步研究 idle mode 多载波初始接入时，至少考虑三类部署条件：可假设共同 timing/frequency synchronization relationship 的共址载波、不能假设该关系的共址载波，以及不能假设该关系的非共址载波。其他相关部署假设按适用情况考虑，包括载波频率关系/频带间隔、numerology/duplexing configuration 和 UE RF/baseband capability；同步关系是否可假设以 UE 视角判断。
 
 ```text
 For further study of multiple carriers where for initial access a UE can utilize resources for UL (Msg1, etc) or for both UL (Msg1, etc.) and DL (Msg2, etc.) in one carrier other than the carrier where the UE obtains the system information providing configuration for those resources, consider at least the following deployment conditions:
@@ -1036,6 +1201,8 @@ R1-2606671	Discussion on operation in idle mode	KDDI Corporation
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.2 Operation in connected mode
 
+研究 6GR 中跨载波 UL transmission switching，至少考虑所有 UL signals/channels 是否及如何采用统一设计、切换信令方式、Tx chains 和 carriers 数量、switching gap，以及与 carrier aggregation 的交互。按需与其他工作组（例如 RAN4）协调；SRS antenna switching 在 UL CSI 议程另行讨论。
+
 ```text
 Study UL transmission switching across carriers in 6GR, at least considering the following:
 Whether/how to achieve unified design for all UL signals/channels
@@ -1051,6 +1218,8 @@ Note: SRS antenna switching is separately discussed under UL CSI agenda
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.2 Operation in connected mode
 
+研究 6GR 中跨载波 DL reception switching，至少识别适用场景，包括 NR LB-CA 所考虑的场景，并按需与其他工作组（例如 RAN4）协调。
+
 ```text
 Study DL reception switching across carriers in 6GR, at least considering the following:
 Applicable scenario(s) (e.g., the scenario(s) considered for NR LB-CA), including identify the scenario(s)
@@ -1059,6 +1228,8 @@ Coordination with other WG(s), e.g., RAN4 (as needed)
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.4.2-a002`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.2 Operation in connected mode
+
+研究 6GR connected mode 多载波操作中快速启用/禁用访问 additional carriers 的机制，至少考虑 UE power saving 和/或 NW energy saving、carrier states、启用/禁用方式，以及假设的 NW-side 和 UE-side 要求。
 
 ```text
 For 6GR multiple carrier operation in connected mode, study mechanisms for fast enabling/disabling access to additional carriers, considering at least the following:
@@ -1072,6 +1243,8 @@ Assumed UE-side requirements
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.2 Operation in connected mode
 
+研究 6GR connected mode 多载波操作中的 PXSCH 资源分配机制，考虑 PXSCH 限于单个 carrier 或跨多个 carriers。还需考虑适用场景和条件，以及按需与其他 WG（如 RAN4）协调。
+
 ```text
 For 6GR multiple carrier operation in connected mode, study mechanisms for PXSCH resource allocation, considering at least the following:
 A PXSCH confined within a carrier
@@ -1082,6 +1255,8 @@ Coordination with other WG(s), e.g., RAN4 (as needed)
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.4.2-a004`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.2 Operation in connected mode
+
+研究 6GR connected mode 多载波操作中的 PXSCH 调度机制，涵盖 self-carrier、cross-carrier 和 multi-carrier scheduling，并考虑各机制的适用场景和条件及按需与其他 WG（如 RAN4）协调。Multiple slot scheduling 将在其他议程单独讨论。
 
 ```text
 For 6GR multiple carrier operation in connected mode, study mechanisms for scheduling PXSCH, considering at least the following:
@@ -1098,6 +1273,8 @@ Multiple slot scheduling will be discussed separately in other agenda.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/) · `RAN1-126-10.4.2-a005`
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.4.2 Operation in connected mode
+
+对于 6G UE 在 CONNECTED mode 下的 single carrier bandwidth operation，6GR-BW 至少应包含 carrier 内的频率位置和连续 PRB 数量；研究是否还需关联其他参数，并尽量减少相关参数数量。还需研究与 6GR-BW 相关的信号/信道收发，以及 DL 和/或 UL 切换的收益、必要性和潜在机制。
 
 ```text
 For the study of bandwidth operation with single carrier operation in CONNECTED mode for a UE in 6G, at least consider the following:
@@ -1147,6 +1324,8 @@ R1-2606672	Discussion on operation in connected mode	KDDI Corporation
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+确定将 PDCCH-only BW scaling table 的 column 用于所有其他 DL signal/channel processing。公司需报告采用的 S_MaxBW 选项：Option A 为 S_MaxBW=0，Option B 为 MaxBW=200% 时取 0.3、MaxBW=400% 时取 1.0；表中给出了 <=25%、100%、200% 和 400% 对应的 scaling factor。
+
 ```text
 Adopt  column of PDCCH-only BW scaling table for all other DL signal/channel processing
 For S_MaxBW value, companies to report which option assumed (Option A: S_MaxBW=0; Option B: S_MaxBW={0.3 for MaxBW = 200%, 1.0 for MaxBW = 400%}).
@@ -1161,6 +1340,8 @@ For S_MaxBW value, companies to report which option assumed (Option A: S_MaxBW=0
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+确定 UL CA 的 2CC scaling：inter-band CA（假设 2 RFs）相对 1CC 的 power scaling factor 为 1.5；intra-band CA（假设 Single RF）在 0、23、26 dBm 时分别应用 1.2、1.05、1.05。该 scaling 假设所有 CC 均已激活，且不影响 carrier activation/deactivation delay。
+
 ```text
 Adopt UL CA scaling for 2CC as
 For inter-band CA (assuming 2 RFs), power scaling factor w.r.t. 1CC is 1.5
@@ -1174,6 +1355,8 @@ Scaling on power consumption assuming all CCs are activated, and no implication 
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+确定同一频段内 UL 2Tx antennas 相对 1TX 的 power scaling factor 为 1.5。
+
 ```text
 Power scaling factor for UL 2Tx antennas w.r.t. 1TX is 1.5
 Note: 2TX antennas are in the same frequency band
@@ -1184,12 +1367,16 @@ From Wednesday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+确定 CAT 2.1 在 reference configuration sets 1–4 中的 relative power values 与 CAT 2 相同。
+
 ```text
 The relative power values for CAT 2.1 are the same as the relative power values for CAT 2 across all reference configuration sets 1-4.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.4-a004`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
+
+确定 CAT 2.1 在 Set 4 的 transition times 与 Sets 1、2、3 已同意的值一致：Light sleep 为 100 milliseconds，Deep sleep 为 2 seconds。
 
 ```text
 Transition times for CAT 2.1 in Set 4 are aligned with the agreed values for Sets 1, 2, and 3, i.e.,
@@ -1200,6 +1387,8 @@ Deep sleep: 2 seconds
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+给定 CAT 2.1 在 Set 4 的 relative transition energy values：Light sleep 为 210，Deep sleep 为 6300。
+
 ```text
 Relative transition energy values for CAT 2.1 in Set 4 are
 Light sleep: 210
@@ -1208,6 +1397,8 @@ Deep sleep: 6300
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.4-a006`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
+
+原文说明 BS 在 SBFD operation 下的 power consumption 按天线因子及 DL、UL 频谱占比分别建模，并提及 static power 以及 DL、UL SBFD operation 的因子。公式内容缺失，无法确定具体模型表达式。
 
 ```text
 The power consumption of SBFD operation in BS, using a factor of its antennas,  and  , and a fraction of the spectrum,  and  for DL and UL operation, respectively, is modelled according to:
@@ -1219,12 +1410,16 @@ From Friday session
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+确定 UL BW 比例因子为 200% 且 TX power level 为 0 dBm 时，power scaling 为 1.2。
+
 ```text
 Power scaling for UL BW with 200% BW ratio factor is 1.2 for 0 dBm TX power level.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.4-a008`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
+
+对于基于 one RF chain 的 CA reception，PDCCH-only 的 power scaling factor 定义为相同总带宽下 single CC reception 的 bandwidth scaling factor 加上 X × (CC number − 1)。若假设每个 CC 都进行 PDCCH monitoring，X = [0.2]；若仅在一个 CC 上监测，X = 0；其他情况仍待讨论。该因子假设所有 CC 均已激活，且不涉及载波激活或去激活时延。
 
 ```text
 For CA reception based on one RF chain, power scaling factor for PDCCH-only is defined as:
@@ -1237,6 +1432,8 @@ The scaling factor assumes all CCs are activated. There is no implication on car
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.4-a009`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
+
+对于基于 multiple RF chains 的 CA reception，总体 power scaling factor 定义为 one RF chain CA reception 的 power scaling factor 加上 Y × (CC number − 1)，其中 PDCCH + PDSCH、PDCCH-only 及其他信号或信道的 Y = [0.3]。因子假设 RF chain 数与 CC number 相同且所有 CC 均已激活；CC BW 不同于参考配置时 Y 值是否相同仍待讨论，且不涉及载波激活或去激活时延。
 
 ```text
 For CA reception based on multiple RF chains, overall power scaling factor is defined as:
@@ -1251,12 +1448,16 @@ The scaling factor assumes the same number of RF chains as the CC number and tha
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
 
+评估时，10 MHz BW 的 EE processing power 取对应 5MHz BW power 值的 1.2 倍。
+
 ```text
 For evaluation purpose, EE processing power values for 10 MHz BW is 1.2x of the corresponding power values of 5MHz BW.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124b/) · `RAN1-124b-10.4-a011`
 
 ### [6G/Rel-20 RAN1#124b] `agreement` 10.4 Energy efficiency
+
+纳入不含 EE processing 的 RRM measurement UE power consumption 值：Serving cell RRM 为 100，Serving & neighbour cell RRM 按 N、同步情况及 FR1/FR2 给出对应数值，并假设 neighbour cells 为已知小区。上述功耗基于 100MHz reference configuration；其他下行信号或信道处理可应用 BW scaling，且可应用 BW 和 antenna scaling rules。
 
 ```text
 Include UE power consumption values for the RRM measurements without EE processing as follows:
@@ -1277,6 +1478,8 @@ R1-2603444	Final Summary of 6GR Energy Efficiency Study	Moderators (Ericsson, Me
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+为 NES 评估和候选 6GR 节能方案的相对比较，定义基线网络配置：单小区至少采用 20 ms 周期的 SSB，并规定 SIB1、RO 的可选周期配置。公司需报告相关 BS 处理值和平均网络负载，也可在说明理由后评估其他配置；该评估不用于与 5G/NR 比较能效。
+
 ```text
 For NES evaluation purposes and relative comparison of different candidate energy saving schemes for 6GR, define the following baseline network configurations
 SSB with 20 ms periodicity, at least for single cell
@@ -1292,6 +1495,8 @@ Note: The corresponding evaluation is not intended for energy efficiency compari
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+已采纳 BS reference configuration Set 4 中 CAT1 和 CAT2（若支持）的转换时间：Deep sleep 分别为 50 ms 和 10 s，Light sleep 分别为 6 ms 和 640 ms。是否因 TXRU 数量较多而需要 delta value 仍待讨论。
+
 ```text
 The following transition times are adopted for BS models CAT1 and CAT2, if supported, for BS reference configuration Set 4:
 | Power state | BS Category 1, Set 4 | BS Category 2, Set 4 |
@@ -1303,6 +1508,8 @@ FFS: whether delta value is needed due to larger number of TXRU
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a002`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+已采纳 BS reference configuration Set 4 中 CAT1 和 CAT2（若支持）的相对转换能量：Deep sleep 分别为 1075 和 31500，Light sleep 分别为 163 和 1344。是否因 TXRU 数量较多而需要 delta value 仍待讨论。
 
 ```text
 The following relative transition energies are adopted for BS models CAT1 and CAT2, if supported, for BS reference configuration Set 4:
@@ -1316,6 +1523,8 @@ FFS: whether delta value is needed due to larger number of TXRU
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+若引入 BS model CAT 2.1 (2-plus)，其 Set 1–3 转换特性包括 Deep Sleep 转换时间 2 s、Light Sleep 转换时间 100 ms，以及对应额外转换能量 3400 和 170。Set 4 仍待讨论。
+
 ```text
 IF a BS model CAT 2.1 (2-plus) is introduced, it has the following transition energy characteristics for Set 1-3. FFS: Set 4:
 | Transition Time (Deep Sleep) | Transition Time (Light Sleep) | Additional Transition Energy (Deep Sleep) | Additional Transition Energy (Light Sleep) |
@@ -1325,6 +1534,8 @@ IF a BS model CAT 2.1 (2-plus) is introduced, it has the following transition en
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a004`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+将 UL long PUCCH/PUSCH/PRACH 的 TX power 与 relative power 值纳入 UE power model，UE reference configuration 为 1TX chain。0 dBm 对应 250、23 dBm 对应 700（均为 agreed; reference only），并列出 10、15、20、26 dBm 对应值。
 
 ```text
 Include the following UL long PUCCH/PUSCH/PRACH power values in the UE power model:
@@ -1342,6 +1553,8 @@ Note: UE reference configuration is 1TX chain
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+已采纳 6GR UE power consumption model 的 cross-slot scheduling scaling：PDCCH-only 的 cross-slot scheduling 功耗为 same-slot scheduling 的 0.7 倍。该规则适用于 FR1（包括约 7GHz）和 FR2（包括 24.25–52.6 GHz）。
+
 ```text
 Adopt the following cross-slot scheduling scaling for evaluation for 6GR UE power consumption model:
 |  | Scaling | Comment |
@@ -1351,6 +1564,8 @@ Adopt the following cross-slot scheduling scaling for evaluation for 6GR UE powe
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a006`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+将 DL antenna scaling factors 纳入 6GR UE power consumption model，适用于 FR1 和 FR2；FR2 假设 DL antenna 数量最多为 4。已给出 6Rx、4Rx、2Rx、1Rx 相对于 4Rx 或 2Rx 的 scaling，8Rx scaling 仍待讨论。
 
 ```text
 Include the following DL antenna scaling factors in 6GR UE power consumption model:
@@ -1369,6 +1584,8 @@ From Thursday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+RAN1 将进一步定义带宽为 20MHz 或更小的 UE reference configuration。是否对两种 reference configuration 应用不含 SMaxBW 的相同 scaling rules，以及是否复用或扩展 NR TR 38.875 的 reference configuration 和 power values，仍待讨论。
+
 ```text
 RAN1 to further define reference configuration for UEs with 20MHz or smaller bandwidth.
 FFS: Same scaling rules (without SMaxBW) are applied to both reference configurations.
@@ -1377,6 +1594,8 @@ FFS: Reuse/extend the reference configuration and power values from NR TR 38.875
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a008`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+更新 6GR UE power model 中 PDCCH+PDSCH bandwidth scaling table，列出不同 ΓB 和 ΓTput 下的 scaling values，并规定 adaptation delay = Tmin 不大于 NR BWP switch delay (Type 2)。SMaxBW 取值方案及允许 adaptation delay 时 scaling factor 的选项需由公司报告评估假设。
 
 ```text
 Update PDCCH+PDSCH bandwidth scaling table in the 6GR UE power model with the following values
@@ -1394,6 +1613,8 @@ If adaptation delay  is allowed, scaling factor for  can be 0.4 or the other opt
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+更新 6GR UE power model 中 PDCCH-only bandwidth scaling table：在 adaptation delay = Tmin（不超过 NR BWP switch delay (Type 2)）时，表格按 ΓB、ΓTput 和 SMaxBW 给出 scaling values，并要求公司报告评估采用的 SMaxBW 选项。若允许 adaptation delay，scaling factor 可选 0.8 或 0.6，评估所用选项也需报告。
+
 ```text
 Update PDCCH-only bandwidth scaling table in the 6GR UE power model with the following values:
 Subject to adaptation delay = Tmin, no larger than NR BWP switch delay (Type 2)
@@ -1409,6 +1630,8 @@ If adaptation delay  is allowed, scaling factor for  can be 0.8 or the other opt
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a010`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+在 6GR UE power model 中加入 micro sleep 的 bandwidth scaling table；在 adaptation delay = Tmin（不超过 NR BWP switch delay (Type 2)）时，按 ΓB 设置 scaling factor，并要求公司报告采用的 SMaxBW 选项。还规定了按 DL antenna number 的 scaling factor；是否将这些 scaling rules 应用于 light sleep 仍待研究。
 
 ```text
 Include the following bandwidth scaling table for micro sleep in the 6GR UE power model:
@@ -1434,6 +1657,8 @@ FFS: Whether the above scaling rules is applicable to light sleep
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+FR1 的 EE Processing 2-RX 采用表中 Micro sleep、Light sleep 和 Deep/Ultra-deep 的数值；1-RX 数值作为已同意的参考值。若 EE processing reception time 为一个 slot 内的 X 个 symbols，power value 按 X/14 缩放；additional energy overhead 是否缩放及 10MHz BW 的数值仍待研究。
+
 ```text
 For EE Processing 2-RX in FR1, adopt the following values:
 | Sleep State | 2-RX | 1-RX (agreed; reference only) |
@@ -1451,12 +1676,16 @@ From Friday session
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+引入 BS model CAT 2.1。CAT 1、CAT 2 和 CAT 2.1 均可用于 6GR SI evaluations。
+
 ```text
 BS model CAT 2.1 is introduced. All BS models CAT 1, CAT 2 and CAT 2.1 may be used for evaluations in 6GR SI.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a013`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+EE evaluations 中，需研究将 BS active antenna TXRU 数量调整为总数的 1/2 和 1/4，并调整相关 circuitry。BS power model、power states、state transitions、覆盖与吞吐等事项仍列为待研究内容。
 
 ```text
 In EE evaluations, to adapt a BS’s number of active antenna TXRU to {1/2 and 1/4} of the total number of antenna TXRU and to adapt the associated circuitry.
@@ -1477,6 +1706,8 @@ Use cases (e.g., UE-initiated on-demand SIB1)
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
 
+基于 one RF chain 的 CA reception，其 power scaling factor 与相同 total bandwidth 的 bandwidth scaling 相同；该缩放假设所有 CCs 均已激活，且不影响 carrier activation/deactivation delay。PDCCH-only slots 的单独缩放，以及基于多个 RF receive chains 的 CA reception 缩放仍待研究。
+
 ```text
 For CA reception based on one RF chain, power scaling factor is same as that of bandwidth scaling with the same total bandwidth.
 Scaling on power consumption assuming all CCs are activated, and no implication on carrier activation/deactivation delay.
@@ -1486,6 +1717,8 @@ FFS: Scaling for CA reception based on more than one RF receive chains.
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_124/) · `RAN1-124-10.4-a015`
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.4 Energy efficiency
+
+6GR UE power consumption model 采用 UL scaling：假设 Short PUCCH 和 SRS 均为 1-symbol 时，其功率分别为 uplink power 的 0.3 倍。该规则适用于 FR1（包括 around 7GHz）和 FR2（包括 24.25 GHz–52.6 GHz）；不同 symbol numbers 的 scaling 仍待研究。
 
 ```text
 Adopt the following UL scaling for 6GR UE power consumption model:

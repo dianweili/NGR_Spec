@@ -1,12 +1,22 @@
 # 6GR 共用协议其他议题
 
-**当前进展** · 阶段：—
+**当前进展** · 阶段：讨论中
 
-_尚无综述_
+RAN2 正在研究 UE 在网络监督或有限网络控制范围内，依据环境、应用和无线条件动态调整 RRC 参数及协议行为，以改善性能，并探讨相关 KPI、场景和报告需求。与此同时，RAN2 已启动承载 mobility 相关数据的系统信息安全保护研究，目标是防范伪基站等攻击。对于系统信息安全机制及威胁范围，讨论倾向结合 SA3 的威胁分析后再考虑具体方案。相关研究仍需兼顾 PWS 可达性及系统信息开销等影响。
+
+**未决问题**
+
+- 哪些系统信息需要安全保护，以及应采用何种保护机制，待 SA3 讨论和威胁分析。
+- 如何满足 TS 22.268 的 PWS 要求并避免因 UE 缺少安全密钥或经由其他运营商基站不可达而降低 PWS 可达性。
+- 系统信息安全保护对 SIB 开销的影响，以及需要保护与无需保护的系统信息如何区分。
+- UE 智能调整网络参数的适用场景、网络监督方式、性能指标及报告需求尚待研究。
+- 网络控制下 UE 可调整参数或配置的范围，以及具体特性的收益和系统性能影响尚待后续分析。
 
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others
+
+现有部署几乎总是对所有 UE 使用相同的一组参数值，很少根据 UE 的动态条件和能力进行区分；这可能导致 UE 和系统性能次优，并使用户体验在不确定的期间内较差。
 
 ```text
 Existing deployments almost always use the same set of parameter values for all UEs with little differentiation for the dynamic conditions and capabilities of the UEs, which can result in sub-optimal performance for both the UE and the system and poor user experience for indefinite period of time.
@@ -15,12 +25,16 @@ Existing deployments almost always use the same set of parameter values for all 
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others
 
+UE 可根据环境、应用和无线条件动态调整参数值，以改善用户体验。
+
 ```text
 The UE can adapt the parameter values dynamically based on environmental, application, and radio conditions to improve the user experience.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-o002`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others
+
+引入对 system information 的安全保护，以防止篡改和 false base station attacks。
 
 ```text
 Introduction of security protection for system information prevents tampering and false base station attacks.
@@ -29,12 +43,16 @@ Introduction of security protection for system information prevents tampering an
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others
 
+对与邻区测量相关的 system information 进行安全保护，有助于使 IDLE mode mobility 保持在 NW 控制之下。
+
 ```text
 Security protection of system information related to neighboring cell measurements is beneficial to keep IDLE mode mobilities under NW’s control.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-o004`
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others
+
+对指示 PWS 的 system information 进行安全保护仍有待解决的挑战，包括 TS 22.268 中的 PWS requirements，以及经由其他运营商 base stations 无法触达 PWS 的问题。
 
 ```text
 Security protection of system information indicating PWS involves several challenges that need to be resolved: PWS requirements in TS 22.268 and unreachability of PWS via other operators’ base stations.
@@ -43,12 +61,16 @@ Security protection of system information indicating PWS involves several challe
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others
 
+若 UE 未获得用于传送 PWS 的 system information 对应的 security key，就无法解码该信息，可能导致 PWS reachability 降低。
+
 ```text
 Regarding the system information used to deliver PWS, if the UE does not obtain the corresponding security key, it will be unable to decode the system information, which may lead to reduced reachability of PWS.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-o006`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
+
+RAN2 研究如何在 Control Plane 和 User Plane 层级启用“flexible” protocols，使 UE 可使用内部算法提升性能，同时不依赖 AI/ML model management framework。
 
 ```text
 RAN2 study how to enable “flexible” protocols at Control and User Plane levels which allow the UE to use internal algorithms for better performance but do not rely on the AI/ML model management framework.
@@ -57,12 +79,16 @@ RAN2 study how to enable “flexible” protocols at Control and User Plane leve
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
 
+RAN2 研究一种机制，使 UE 能在网络监督下调整 RRC configured parameters 的值。
+
 ```text
 RAN2 study a mechanism which can allow the UE to adapt values of RRC configured parameters under network supervision.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-p002`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
+
+为在 UE 使用“smart”算法调整参数值时支持 NW 监测 UE 性能，RAN2 研究 KPIs 和其他 metrics。研究还包括适用场景，以及是否需要此类 reporting 及其级别。
 
 ```text
 To enable NW monitoring of the UE performance when the UE uses “smart” algorithms to adapt parameter values, RAN2 study KPIs and other metrics along with the applicable use cases and necessity and level of such reporting.
@@ -72,6 +98,8 @@ R2-2508566	Discussion of User Plane Functionalities	Lenovo	discussion	Rel-20	FS_
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-p003`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
+
+RAN2 应研究使 UE 能在网络控制的有限范围内智能调整 NW 参数或配置（例如 RLC timer、LCH priority）的方案。讨论指出，后续阶段可针对具体 feature 提交提案，并分析其收益和对 system performance 的影响。
 
 ```text
 RAN2 should study solutions which enable UE to adapt NW parameter/configurations, e.g. RLC timer or LCH priority, intelligently within some limited ranges which are under network control.
@@ -101,6 +129,8 @@ R2-2508421	On system information security	NTT DOCOMO INC.	discussion	Rel-20	FS_6
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
 
+RAN2 启动研究，为承载 mobility-related data 的 system information 引入安全保护，以防御 false base stations 发起的攻击。
+
 ```text
 RAN2 starts a study to introduce security protection for system information that conveys mobility-related data, to defend against attacks from false base stations.
 ```
@@ -108,12 +138,16 @@ RAN2 starts a study to introduce security protection for system information that
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
 
+系统信息应引入何种安全保护由 SA3 讨论并决定。
+
 ```text
 It is up to SA3 to discuss and decide what kind of security protection is introduced for system information.
 ```
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-p006`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
+
+RAN2 研究系统信息安全保护，并考虑 TS 22.268 中对 PWS messages 的要求，同时不降低 PWS 的可达性。
 
 ```text
 RAN2 studies security protection of system information considering requirements for PWS messages in TS 22.268 and without reducing reachability of PWS.
@@ -125,6 +159,8 @@ R2-2508950	Security Requirements in 6GR	CMCC	discussion	Rel-20	FS_6G_Radio
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
 
+除 SA3 检出的 DoS 和 Rogue service attacks 外，RAN2 认为潜在威胁还可能包括涉及 ETWS 和 CMAS 的公共安全威胁，以及针对 MBMS、NTN 和其他服务相关 SIBs 的攻击。
+
 ```text
 In addition to DoS and Rogue service attacks detected by SA3, potential threats from RAN2 prespective may include:
 1) Public safety threats involving ETWS and CMAS;
@@ -134,6 +170,8 @@ In addition to DoS and Rogue service attacks detected by SA3, potential threats 
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
 
+SI 安全机制可能带来的 RAN2 影响包括 SIB Overhead，以及区分哪些 SI 需要或不需要保护。
+
 ```text
 Possible RAN2 effects posed by the SI security mechanism:
 1) SIB Overhead;
@@ -142,6 +180,8 @@ Possible RAN2 effects posed by the SI security mechanism:
 [原文出处](https://www.3gpp.org/ftp/tsg_ran/WG2_RL2/TSGR2_132/) · `RAN2-132-10.3.3.3-p009`
 
 ### [6G/Rel-20 RAN2#132] `proposal` 10.3.3.3 Others
+
+关于 6G system information security，RAN2 提出应确认系统信息是否确实面临安全威胁及是否存在新的潜在风险，并可等待 SA3 的 threat analysis 后再考虑具体技术方案。RAN2 可向 SA3 提供包括 P1、P2 在内的意见；讨论意见支持等待 SA3 后续进展。
 
 ```text
 A key question to SA3 regarding system information security is whether the system information in 6G network is genuinely faces security threats or what are new potential risks. RAN2 can wait the output of SA3's threat analysis before considering specific technical solutions. However, RAN2 can provide inputs including P1 and P2 about RAN2’s key question, extra consideration of threats and conserns to SA3.

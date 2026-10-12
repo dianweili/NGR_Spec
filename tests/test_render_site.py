@@ -7,7 +7,8 @@ def seg(era): return LineageSegment(era=era, release="Rel-20", depth="full",
                                     agenda=["RAN1:10.2"], title_re=None,
                                     meetings={"RAN1": (124, None)})
 WAVE = Feature(slug="waveform", name_zh="6GR 波形", lineage=[seg("6G")])
-FS = {"waveform": {"stage": "收敛中", "open_issues": [], "summary": "s"}}
+FS = {"waveform": {"stage": "收敛中", "open_issues": [], "summary": "s",
+                   "legacy_summary": "源头综述"}}
 
 def E(**kw):
     base = dict(id="RAN1-126-10.2-a001", wg="RAN1", meeting=126, agenda_item="10.2",
@@ -122,6 +123,7 @@ def test_site_embeds_meeting_report_index_and_summary_progress():
         "agreements": 1, "events": 1,
         "features": [{"events": 1, "name_zh": "6GR 波形", "slug": "waveform"}],
         "key": "RAN1-126", "label": "RAN1#126", "meeting": 126,
+        "period": "2026-08-24 至 2026-08-28",
         "source_url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/",
         "suffix": "", "summarized": 1, "wg": "RAN1",
     }]
@@ -132,3 +134,33 @@ def test_site_has_navigation_meeting_filter_and_paged_event_browser():
     for fragment in ('data-nav="meetings"', 'renderMeetings()', 'renderEvents()',
                      'id="meeting-filter"', 'PAGE_SIZE = 30', 'data-page="next"'):
         assert fragment in html
+
+
+def test_site_includes_feature_overview_detail_view_and_legacy_summary():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    data = json.loads(re.search(r'id="ngr-data"[^>]*>(.*?)</script>', html, re.S).group(1))
+    assert data["features"][0]["legacy_summary"] == "源头综述"
+    for fragment in ('renderFeatureDetail()', 'data-feature-overview=',
+                     '当前进展', '未决问题', '5G-A 源头'):
+        assert fragment in html
+
+
+def test_site_keeps_navigation_history_for_back_buttons_and_browser_back():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    for fragment in ('function currentRoute()', 'function goBack()', 'data-nav-back',
+                     "window.addEventListener('popstate'", "persistRoute('replace')"):
+        assert fragment in html
+
+
+def test_site_includes_verified_meeting_period_in_cards_and_events():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    assert "会期：${esc(meeting.period)}" in html
+    assert "2026-08-24 至 2026-08-28" in html
+    assert "${meeting.label} · ${meeting.period}" in html
+
+
+def test_event_search_restores_focus_after_live_rerender():
+    """筛选会重建工具栏；输入框不能因此在首字符后失焦。"""
+    html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    assert "query.focus({preventScroll: true})" in html
+    assert "query.setSelectionRange(" in html
