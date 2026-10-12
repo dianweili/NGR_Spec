@@ -191,6 +191,8 @@ SITE_TEMPLATE = r'''<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b6f66">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b6f66'/%3E%3Cpath d='M11 32h42M32 11v42' stroke='%239fe4d7' stroke-width='2' opacity='.55'/%3E%3Ctext x='32' y='40' fill='white' font-size='24' font-family='Arial,sans-serif' font-weight='700' text-anchor='middle'%3E6G%3C/text%3E%3C/svg%3E">
 <title>6G (Rel-20) RAN 协议进展工作台</title>
 <style>
   :root {

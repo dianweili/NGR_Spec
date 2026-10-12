@@ -44,6 +44,13 @@ def test_site_has_viewport_for_mobile():
     html = render_site([E()], [WAVE], FS, generated="2026-09-17")
     assert 'name="viewport"' in html
 
+
+def test_site_has_an_inline_6g_favicon():
+    html = render_site([E()], [WAVE], FS, generated="2026-09-17")
+    assert 'rel="icon"' in html
+    assert "data:image/svg+xml" in html
+    assert "%3E6G%3C/text%3E" in html
+
 def test_site_renders_with_zero_events():
     html = render_site([], [WAVE], FS, generated="2026-09-17")
     assert "<!DOCTYPE html>" in html.lstrip()[:20]
