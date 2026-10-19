@@ -12,6 +12,34 @@
 - UL WUS 的必要性与适用场景、配置所需信息及载荷仍待评估；部分场景的同步获取、功率确定、干扰缓解和定时可维持时长等问题尚未解决。
 - 基于 EE processing 的 serving/neighboring cell 测量及 serving cell RLM 的可行性、精度、复杂度和规范影响仍待研究。
 
+## 跨会议演进脉络（6G）
+
+2026 年 2 月至 8 月，6GR 唤醒信号与运行机制研究从覆盖目标、设计范围和应用场景，逐步推进到共同评估基线、OFDM sequence 方案、同步误差假设及 monitoring occasions 约束。UL WUS 明确了部分场景下同步和发射功率的依据，但必要性、配置及多项运行机制仍待研究，不能据此认定相关场景已获支持。
+
+### 关键进展
+
+- DL WUS 覆盖研究从以同频段 6G PDCCH 相同覆盖为目标，推进到参考 NR common PDCCH 的具体评估基线；8 月进一步以 reference PDCCH 在 -8.1 dB SNR 下达到 1% BLER 为设计起点，开展 OFDM sequence 的 basic coverage 和 extended coverage 研究。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- SCS 与同步评估逐步具体化：2 月提出同步信号与数据信道同 SCS 时的 DL WUS SCS 假设，4 月明确 FR2-1 下同样的条件并给出 700 MHz、3.5 GHz、7 GHz 评估参数；8 月明确 FR1 和约 7 GHz 的 timing error、frequency error 假设及分布，至少适用于与 SSB 同载波的情况。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- DL WUS 运行研究由 RRC connected 下有无 C-DRX 的 PDCCH monitoring 触发，扩展到 RRC idle 下 paging 唤醒的具体机制；8 月进一步研究 TDMed、FDMed 及组合式 monitoring occasions，并明确 UE 在给定时刻无需监测多于一个 MO。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- EE processing 测量研究从 RRC idle 的 serving cell 和 neighbouring cell RRM measurement，扩展到 RRC connected；8 月将 connected UE 节能评估分为有、无邻区 RRM measurement 两组案例，并认可统一结果收集模板，尚未提供节能收益结论。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- UL WUS 从 standalone cell 和 multi-cell/carrier 的可行性研究，推进到部分场景的同步与功率依据：4 月明确 DS#1b 和 DS#2b 部分情形可利用 always-on synchronization signals 与 PBCH；8 月明确 DS#2a 在同步且 UE 可维持定时，或 #1 为 #2 提供 underlay coverage 时，可使用 #1 的 SSB 作为定时参考。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- 8 月为 DL-WUS 携带信息建立共同评估标准，涵盖复杂度、覆盖、资源开销、节能和时延等，并将已约定的 FAR/FDR/MDR 用作附加非唤醒信息及相关功能的门限。（依据：RAN1-126）
+
+### 待决问题
+
+- DL WUS sequence 设计尚未定型：4 月仍需比较 time domain 与 frequency domain 定义；8 月提出最迟在 RAN1#127 前选择 Zadoff-Chu 或 Gold sequence family，sequence candidates 数量和 extended coverage 设计仍待研究。（依据：RAN1-124b、RAN1-126）
+- FR2-1 中同步信号与数据信道不同 SCS 时的 DL WUS SCS 尚无解决依据。DL WUS reception 所需同步信号及额外同步方法仍需研究；8 月至少针对 RRC idle 继续研究 SSB 作为 QCL source、SSB 与 monitoring occasions 的关联和 QCL type。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- Paging 唤醒中的 PO/PF 关联、唤醒后行为及 connected 下 PDCCH monitoring 的 time offset、时长、停止方式和触发范围等尚未确定；8 月给出的 MO 约束不足以证明这些问题已解决，各 MO 复用方案的能耗与复杂度仍待评估。（依据：RAN1-124b、RAN1-126）
+- RRC connected 下 EE processing 支持 RRM measurement 的可行性、必要性及规范影响仍缺少定论；8 月另提出 serving cell RLM measurement 的研究，UE 节能收益结果仍待收集。（依据：RAN1-124b、RAN1-126）
+- UL WUS 必要性及 idle、inactive、connected mode 候选用途仍待评估；配置获取机制、最小必要信息、payload size 和功率信息提供方式尚未确定。跨载波同步、DS#2a 非共址场景的功率与干扰、路径损耗和波束，以及非同步场景定时参考和可维持时长仍待研究。（依据：RAN1-124b、RAN1-126）
+- RRC_IDLE / RRC_INACTIVE 下 DL-WUS 附加功能仍待研究，包括 SI-modification、ETWS-CMAS notification、按需或附加信号触发、PF/PO 或 RACH occasions 指示，以及如支持时在 inactive state 触发 DL SDT；共同评估标准不代表这些功能已获支持。（依据：RAN1-126）
+
+### 会议时间线
+
+- **RAN1#124**（2026-02-09 至 2026-02-13）：本会议明确了 6GR DL WUS 的覆盖研究目标、部分 SCS 假设及设计与评估范围，并推进其在 RRC connected state 下触发 PDCCH monitoring 的机制研究。会议还纳入了 RRC idle state 下采用 EE processing 的 RRM measurement，以及 standalone cell 和 multi-cell/carrier 场景下 UL WUS 必要性与可行性的进一步研究。这些进展界定了后续协议设计的研究条件与评估要求，尚不代表所研究的 UL WUS 场景已获 6GR 支持。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议明确了 DL WUS detection 的链路级覆盖评估基线及 EE mode 的部分评估假设，并给出了 FR2-1 下有条件的 SCS 假设，为后续方案比较建立共同基础。会议细化了 DL WUS 在 RRC idle 和 RRC CONNECTED state 下的运行机制研究范围，以及 EE processing 支持 RRM measurement 的研究内容，相关协议行为尚待确定。UL WUS 方面，会议明确了部分部署情形下获取同步和确定发射功率的依据，跨载波同步及所需信息仍待研究。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：本会议推进了 6GR DL WUS 的序列设计、覆盖与同步误差评估，以及 monitoring occasions 和 UE 节能评估框架，并细化了 UL WUS 的配置获取、候选用途和跨小区运行研究。协议层面明确了部分评估假设、监测约束及附加信息的检测门限适用原则，但序列族、配置载荷和多项运行机制仍待后续研究。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.6.1.1 Design of WUS with OFDM based sequence

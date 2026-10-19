@@ -3,6 +3,7 @@ import time
 
 from ngr import pipeline
 from ngr.config import ExtractConfig
+from ngr.extract.backend import LlmTimedOut
 from ngr.extract.runner import ExtractStats
 from ngr.models import Feature, LineageSegment
 from ngr.paths import Paths
@@ -16,7 +17,7 @@ def test_enrich_timeout_skips_feature_digest(monkeypatch):
                         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("must not digest")))
 
     result = pipeline.PipelineResult()
-    assert pipeline._enrich([], [], {}, cfg, result) == {}
+    assert pipeline._enrich([], [], {}, {}, cfg, result) == ({}, {})
     assert result.exit_code == pipeline.EXIT_LLM
     assert "调用超时" in result.alerts[0]
 
@@ -28,10 +29,17 @@ def test_first_successful_run_is_visible_to_heartbeat(monkeypatch, tmp_path):
     monkeypatch.setattr(pipeline, "render_all", lambda *args, **kwargs: seen.update(kwargs))
 
     result = pipeline.PipelineResult()
-    pipeline._write_state([], [], {}, result, {}, time.time())
+    pipeline._write_state([], [], {}, {}, result, {}, time.time())
 
     assert seen["banner"] is None
     assert pipeline.load_runs(tmp_path / "data" / "state" / "run_history.json")[0]["exit_code"] == 0
+
+
+def test_meeting_digest_timeout_is_an_alert():
+    result = pipeline.PipelineResult()
+    pipeline._record_meeting_digest_problems([LlmTimedOut("slow")], result)
+    assert result.exit_code == pipeline.EXIT_LLM
+    assert "超时" in result.alerts[0]
 
 
 def test_remap_counts_only_events_absent_from_prior_state(monkeypatch, tmp_path):

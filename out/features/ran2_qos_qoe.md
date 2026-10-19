@@ -13,6 +13,35 @@ RAN2 已确认 6G Day-1 需考虑 immersive communication、mobile AI 和轻量�
 - AL-FEC 相关信息如何提供给 AS、如何据此差异化处理或丢弃冗余数据，以及所需 HARQ 状态支持仍待研究并需与 SA4 协调。
 - tethering 时动态 non-3GPP 时延与可靠性如何纳入 QoS 适配，以及 default DRB HOL blocking 的解决方案仍待研究并需与 SA2 协调。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR QoS/QoE 与服务感知从识别共性 traffic characteristics/requirements 和探索通用框架，推进到明确 service-awareness 能力、per-packet QoS differentiation 与快速 QoS adaptation 方向，再细化至动态 L2 参数调整、burst information、tethering 和 AL-FEC aware handling。现有材料体现了研究范围与能力方向逐步具体化，但信息传递、映射、动态切换及跨工作组协调仍未形成完整协议方案。
+
+### 关键进展
+
+- RAN2-132 聚焦目标业务共有的流量属性及 QoS requirements；RAN2-133 进一步定义 service-awareness，并假设 UL/DL 均包含 QoS flow-level 和 flow 内 packet-level 的 QoS requirement awareness，同时采用 RAN1 已达成一致的 eXR traffic model 作为 immersive communications 研究 baseline。（依据：RAN2-132、RAN2-133）
+- QoS flow 内差异化处理从初期研究推进为支持 service 和 per-packet QoS differentiation 的能力方向。RAN2-133 的暂定 baseline 包括基于 QFI 识别 traffic、一个 QoS flow 映射到单个 DRB，尚待 SA2 确认；RAN2-133bis 明述 QoS flow 到 RB 的 1:1、N:1 映射。更细粒度处理方案仍未确定，RAN2-134 对 1:N QoS flow-to-DRB mapping 仍有不同主张。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- Dynamic QoS 从预配置 profiles 切换研究，推进到 RAN2-133 提出的不涉及 NAS/NG signalling 的 RAN based switching。RAN2-133bis 将场景细分为 flow 间切换、flow 属性变化和 flow 内 PDUs/PDU sets 属性差异；RAN2-134 进一步研究 QoS profile 不变或变化时按预配置范围动态调整 L2 参数，并指出后两类场景需要 user-plane per-PDU/per-burst 时间尺度的适配。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- Burst-aware handling 从 RAN2-133 的 delay-critical data bursts 差异化处理方向，推进到 RAN2-133bis 研究 burst information 检测和提供方式；RAN2-134 进一步描述信息可覆盖 AS buffer 内、尚未进入 buffer 及尚未生成数据的大小，以及首包预计可供传输的时间。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2-133bis 同意研究面向 E2E user experience 的 service characteristics differentiation，将 tethered device 到 Data Network 的完整路径纳入 latency 和 reliability 考量，并决定就 AN PDB 内补偿 non-3GPP delay 向 SA2 发送 LS；RAN2-134 延续了该研究方向和协调决定，材料未给出补偿方案已确定或 SA2 已反馈的证据。（依据：RAN2-133bis、RAN2-134）
+- AL-FEC 从 RAN2-133 的支持必要性、冗余 packet 丢弃及优先级研究，推进到 RAN2-133bis 的信息提供、PDCP SDU discard 和成功传输判定问题；RAN2-134 明确将研究 AL-FEC aware L2 protocol stack，依据 application-layer reconstruction requirements 对 source 和 repair packets 进行 differentiated handling。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+
+### 待决问题
+
+- 动态 L2 调整的参数、责任归属、RAN/UE 配置对齐、切换条件与行为仍待明确；user-plane QoS indication、UL per-PDU 属性确定、DRB 内处理粒度及 QoS flow/DRB/LCH 映射尚未定案，还需评估 LCP、retransmission、discard 和交付顺序影响。涉及 QoS profile 变化的机制需与 SA2 协调。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- Service-awareness 信息的来源、内容及 UL/DL 传递机制仍待明确，包括 UE assistance information、burst information 上报和 BSR enhancement；AS 获取差异化 packet transmission requirements 的标准支持还涉及 SA2/SA4 协调。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+- Multi-modal 的 flow dependency、跨 UE 同步、联合 QoS adaptation 及 haptic scheduling 仍需研究。RAN2-133 对 synchronization 是否需要 RAN 参与存在分歧，相关 awareness 提议为 Not treated；后续材料没有证明该分歧已解决。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- Tethering 中 non-3GPP delay 的 AN PDB 补偿方式、动态 jitter 导致的 effective PDB 变化、non-3GPP link PER 感知及 E2E reliability 适配仍待确定。（依据：RAN2-133bis、RAN2-134）
+- AL-FEC 所需信息能否配置给 UE 并供 AS 使用、CN/UE 向 RAN 的信息提供方式、冗余数据 discard 和成功传输判定，以及 UL 与 scheduler 增强仍未确定，并需与 SA4 协调。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- HOL blocking 从 RAN2-132 的单一 bearer 跨服务阻塞观察，细化到 RAN2-134 的 default DRB PDCP 接收端问题，仍无确定方案；多个 default DRB、发送端交付指示、较短接收定时器和 selective out-of-order delivery 均待研究。（依据：RAN2-132、RAN2-134）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：本会议明确了 6GR application/service awareness 的初期研究方向：识别目标 6G use cases 共有的 traffic characteristics/requirements，并探索通过尽可能通用的框架向 RAN 和 UE 提供这些信息。协议层面将进一步讨论 service characteristics 和 information 对 UL/DL L2 protocols 的影响；围绕 QoS flow 内差异化处理、multi-modal 传输协调及 dynamic QoS adaptation 的具体机制仍处于提议和研究阶段。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 明确了 6GR QoS/QoE 与服务感知的研究基线和能力方向，将 immersive communication、mobile AI 及 lightweight AI/AR glasses 的需求纳入 Day-1 design 考量。本会议推进了 service-awareness、QoS flow 内 per-packet 差异化处理及 RAN 级快速 QoS adaptation，协议含义是 AS 需考虑更细粒度且动态变化的传输需求。具体 L2 机制仍待研究，QoS framework baseline 尚待 SA2 确认。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：RAN2#133bis 推进了面向 Mobile AI、immersive communication 等业务的 dynamic QoS 与 service-awareness 研究，覆盖 QoS flow 间切换、flow 属性变化及 flow 内差异化处理。讨论基线为 UE/aNB 至少按 QoS flow 粒度接收上层/CN 数据，并支持 QoS flow 到 RB 的 1:1 和 N:1 映射；更细粒度处理及其 L2 机制仍待研究。会议还同意研究面向 E2E user experience 的服务特征差异化支持，并针对 tethering 中在 AN PDB 内补偿 non-3GPP delay 的方案决定向 SA2 发送 LS。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 推进了 dynamic QoS、burst information、service characteristics differentiation、AL-FEC awareness 及 HOL blocking 的研究，重点涉及快速 QoS 适配与服务感知所需的 L2 处理。会议明确研究基于预配置范围或值动态调整 L2 参数，并将 tethering 的端到端体验及 non-3GPP delay 补偿纳入研究。相关协议机制仍需细化，包括动态切换粒度与行为、信息上报方式、映射方案及跨工作组协调，尚不能视为完整协议方案已确定。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.1.2 QoS, QoE and Service-awareness

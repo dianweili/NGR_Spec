@@ -16,6 +16,36 @@
 
 Rel-18/19 将 ISAC channel model 纳入 TR 38.901，建立由含目标散射的 target channel 与 background channel 组成的框架，确定 \(RCS=A*B1*B2\)、多类目标的 RCS/XPR 参数、信道生成与参考模型、部分空间一致性范围，以及 UAV、automotive 等场景的校准和评估基线；Rel-19 还确定了检测、虚警、定位和速度等指标与评估目标值，并明确了部分测量报告选项、assistance information 和 payload size 估算方法。单散射点目标的几何参数、间接路径链路拼接及部分 RCS 和 polarization 建模也取得进展，UAV sensing 评估显示多 TRP 通常比 single TRP 更常达到性能目标。与此同时，车辆 bistatic RCS 的 angular discontinuity、精确 micro-Doppler 公式、功率归一化、复杂路径耦合与剪枝、多散射点、遮挡、环境对象及部分场景参数等仍未充分收敛或标为 FFS；空间一致性只适用于部分链路，payload 与 quantization 对 sensing performance 的影响及不同测量选项的性能影响也未充分评估。材料还记载，delay/range、Doppler/radial velocity、angle、position 和 3D velocity 的 ambiguity handling 及 SF 到 RAN 的 assistance information 不在 Rel-20 NR ISAC 继续讨论，部分事项留待未来评估或研究；这些未决建模和验证工作说明议题仍有后续研究空间，但 agreement 并未规定它们必然延续或在 6G 解决。
 
+## 跨会议演进脉络（6G）
+
+按日期，ISAC 研究从 2026 年 4 月的评估场景、物理层研究起点及 UE-involved sensing 协议范围，推进到 5 月的实体角色、数据路径和状态假设，并在 8 月细化评估方法、SAC 用例及物理层研究边界。现有材料尚未形成完整协议方案。4 月两场会议同期举行，不构成先后演进。2 月 RAN1-124 材料涉及 Device 2b/C coverage，未明确其与 ISAC 的关联，不能据此建立 ISAC 演进关系；该设备议题仅有一场材料，不能判断跨会议变化。
+
+### 关键进展
+
+- 评估由场景基线推进到具体参数与统计口径：4 月列出 UAV、human、vehicle、AGV 场景及载频组合；8 月细化 UE 距离、环境与部署假设，明确 MDP、FAP Type 2 和多节点 data fusion 后的指标计算，并统一结果收集模板。（依据：RAN1-124b、RAN1-126）
+- UE sensing procedures 从研究排序走向角色划分：4 月确定按 DL 测量、UL 发送、UE-to-UE 收发顺序研究，并定义 UE-centric sensing；5 月明确支持 UEs/TRPs 作为 Tx 和/或 Rx SEs，按 UE 发送和接收两类推进研究。材料未表明 UE-centric 范围分歧已解决。（依据：RAN2-133bis、RAN2-134）
+- 配置与数据路径逐步具体化：4 月仍讨论现有信令复用及端到端 SF–UE 协议建议；5 月确定研究 UE-SF 类似 LPP 的配置交互，明确 UE sensing measurement data 发往 aNB 且在 aNB 可见，后续处理及向 SF 转发属于 RAN3 范围。UE-gNB RRC 动态调整配置仍仅为 Noted。（依据：RAN2-133bis、RAN2-134）
+- SE selection 与 service continuity 从请求假设推进到能力报告支持：4 月确认针对 UE 和 Area 的两类请求；5 月支持通过 reactive/proactive UE capability reporting 进行 SE (re)selection，并以参与 sensing procedures 的 UE 处于 RRC_CONNECTED 为当前假设，不预设最终 6G RRC state model。（依据：RAN2-133bis、RAN2-134）
+- Communication assistance 从待补充评估内容推进到明确 SAC 代表性用例：8 月选定 sensing assisted beam management 和 sensing assisted CSI acquisition and reporting，鼓励评估感知或通信性能并说明辅助信息及非理想因素；其他用例仍可研究。（依据：RAN1-124b、RAN1-126）
+- 物理层研究从比较通信 RS 复用、enhanced RS、dedicated RS 及以 CP-OFDM 为起点，推进到 sensing RS RE pattern 的 SLS 评估方式和基于 AF 的 PSLR、ISLR、Main lobe width 定义框架；8 月同时明确不考虑 NR ISAC UE-side measurement report Measurement Level A，尚未完成 RS 或 waveform 最终选择。（依据：RAN1-124b、RAN1-126）
+
+### 待决问题
+
+- 评估基线仍有未决项：4 月场景与 sensing modes 的适配及参数尚待讨论；8 月 UAV-UE/AGV-UE 是否纳入 sensing capable UE、部分场景是否移除 CPE UE 仍无共识，另行采用与 5GA ISAC study 相同的 MDP/FAP Type-2 定义仍为 FFS。（依据：RAN1-124b、RAN1-126）
+- sensing architecture、SF 位置及其与 aNB 的职责和控制协调仍待明确；完整配置生命周期采用何种协议、测量采用 6G RRC framework 还是类似 LPP 的框架，均未确定。UE-UE/UE monostatic 研究依赖其他工作组进展，UE-centric 范围与顺序分歧未见后续解决证据。（依据：RAN2-133bis、RAN2-134）
+- SE selection/re-selection 的 criteria、参与节点、所需信息，以及 UE sensing capability 内容、报告路径和框架复用仍待研究；移动场景的 service continuity 及 RRC_IDLE/INACTIVE 或其他 UE (sub)states 下的 ISAC procedures 尚未明确。（依据：RAN2-133bis、RAN2-134）
+- measurement 定义、级别、非理想因素及报告机制仍需协调。UE 向 RAN 报告数据的方式依赖 RAN1 对数据内容的研究；8 月 per-path、scattering point/object、delay/Doppler/angle profiles 等指标及报告方式仍待研究，不能将已明确的数据目的地视为报告协议已确定。（依据：RAN1-124b、RAN2-134、RAN1-126）
+- RS 组成、复用/增强/专用选项、端口与 precoding 选择仍待论证；CP-OFDM 序列增强、有效 CP length extension 的必要性与方案，以及 Linear/Circular AF 和 CAF 的定义下选仍未完成。4 月保留的其他 waveform 与 frame structure 增强也未见最终选择。（依据：RAN1-124b、RAN1-126）
+- 独立的 Device 2b/C 材料中，两类设备在 coverage 之外的必要性仍由 RAN 决定，Device C maximum transmit power 在 -3 dBm 至 5 dBm 范围内尚未最终选定；后续输入未提供该议题的进展。（依据：RAN1-124）
+
+### 会议时间线
+
+- **RAN1#124**（2026-02-09 至 2026-02-13）：本会议推进了 Rel-20 study 中 Device 2b 与 Device C 的评估材料整理，确定将更新后的 TP 及 coverage 评估结果纳入 TR38.769，并补充各公司的 energy harvesting/storage assumptions。RAN1 明确了两类设备的 coverage 差异及对应户外距离范围，为后续设备必要性和 Device C maximum transmit power 的选择提供依据，但未确定最终功率取值。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议明确了 Rel-20 6G ISAC 感知性能评估的 baseline 场景，并确立 RS、测量与报告、waveform 和 frame structure 的研究起点。协议相关研究将比较通信 RS 复用、增强及感知专用 RS，并研究测量报告的传递路径、触发方式和信令层级；这些约定尚不构成最终协议方案。Waveform 和 frame structure 研究以 6GR 通信设计为起点，同时保留增强及其他 waveform 的研究空间。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确了 6GR ISAC 至少支持的用例，并区分了不同 sensing modes 对 RAN2 的影响，为协议研究划定了起点。UE-involved sensing work 明确了由 DL 测量、UL 发送到 UE-to-UE 收发的研究顺序，并确认了针对 UE 和 Area 的两种 sensing service request 假设。通用 sensing procedures、现有信令与测量机制的复用以及跨工作组架构协调仍需继续研究，尚未形成完整协议方案。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议明确支持 UEs 和 TRPs 作为 Tx 和/或 Rx Sensing Entities（SEs），并按 UE 发送与接收 sensing signal 两类推进 sensing procedures 研究。协议方面，推进 UE-SF 类似 LPP 的交互及 UE-gNB RRC signalling 的研究，明确 UE sensing measurement data 发送至 aNB 且在 aNB 可见，但尚未确定完整的配置与测量协议框架。会议还将 SE selection/re-selection 和移动场景下的 service continuity 纳入研究，当前以参与 sensing procedures 的 UE 处于 RRC_CONNECTED 为假设。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：RAN1#126 推进了 Rel-20 6G ISAC 的评估基线、目标检测/跟踪及 sensing assisted communication（SAC）的指标和结果收集方式，并明确了部分场景假设及多节点融合后的评估口径。会议确定了 SAC 的代表性研究用例，细化了 sensing RS、感知测量指标和 CP-OFDM 序列增强的研究范围。协议层面，本次主要明确了后续物理层设计与报告机制的研究边界，RS 设计选项、测量报告影响及多项评估定义仍待研究或下选。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.5 ISAC

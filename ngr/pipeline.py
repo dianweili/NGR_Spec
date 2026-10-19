@@ -7,10 +7,11 @@ from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from ngr.config import load_features, load_sources
-from ngr.extract.backend import CodexExec, LlmRateLimited
+from ngr.extract.backend import CodexExec, LlmRateLimited, LlmTimedOut
 from ngr.extract.budget import Budget
 from ngr.extract.cache import LlmCache
-from ngr.extract.digest import digest_features
+from ngr.extract.digest import digest_features, digest_meeting_features
+from ngr.extract.evolution import digest_evolutions, evolution_inputs
 from ngr.extract.runner import extract_all
 from ngr.fetch.client import Http, RateLimited
 from ngr.fetch.discover import discover_meetings, fetch_window
@@ -44,11 +45,14 @@ def _load(path: Path, default):
         return default
 
 
-def _write_state(events, features, feature_state, result, stats, started):
+def _write_state(events, features, feature_state, meeting_feature_state, result, stats, started):
     today = time.strftime("%Y-%m-%d")
     write_state(events, P.state / "events.json")
     P.state.mkdir(parents=True, exist_ok=True)
     (P.state / "features_state.json").write_text(json.dumps(feature_state, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    (P.state / "meeting_feature_state.json").write_text(
+        json.dumps(meeting_feature_state, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"
+    )
     record = RunRecord(time.strftime("%Y-%m-%dT%H:%M:%S"), round(time.time()-started, 1),
                        result.new_events, result.llm_calls, result.exit_code, "; ".join(result.alerts))
     # Render against the run that is about to be persisted.  Loading history before
@@ -58,15 +62,31 @@ def _write_state(events, features, feature_state, result, stats, started):
     banner = build_banner(result.alerts, runs, today)
     from ngr.mapping.unmapped import collect_unmapped
     parsed = [payload for path in sorted(P.parsed.rglob("events.json")) if (payload := _load(path, {}))]
-    render_all(events, features, feature_state, P.out, banner=banner,
+    render_all(events, features, feature_state, P.out, meeting_feature_state=meeting_feature_state,
+               feature_evolution_state=_load(P.state / "feature_evolution_state.json", {}),
+               banner=banner,
                unmapped=collect_unmapped(features, parsed))
     result.stats_by_meeting = {key: dict(value) for key, value in stats.items()}
     append_run(P.state / "run_history.json", record)
 
 
-def _enrich(events, features, state, cfg, result, *, checkpoint=None):
+def _record_meeting_digest_problems(problems: list[Exception], result: PipelineResult) -> None:
+    """Make a failed digest call visible to schedulers and the dashboard."""
+    if not problems:
+        return
+    if any(isinstance(problem, LlmRateLimited) for problem in problems):
+        message = "Codex 用量受限，会议特性综述将于下次继续"
+    elif any(isinstance(problem, LlmTimedOut) for problem in problems):
+        message = "Codex 调用超时，会议特性综述未完成；请检查 CLI 登录与连通性"
+    else:
+        message = f"{len(problems)} 份会议特性综述生成失败，已保留可重试队列"
+    result.alerts.append(message)
+    result.exit_code = max(result.exit_code, EXIT_LLM)
+
+
+def _enrich(events, features, state, meeting_feature_state, cfg, result, *, checkpoint=None):
     if cfg.backend != "codex":
-        return state
+        return state, meeting_feature_state
     budget, cache = Budget(cfg.max_calls_per_run), LlmCache(P.state / "llm_cache")
     factory = lambda model, effort: CodexExec(model, effort)
     summary = extract_all(events, cfg, cli_factory=factory, cache=cache, budget=budget,
@@ -76,8 +96,14 @@ def _enrich(events, features, state, cfg, result, *, checkpoint=None):
     if summary.timed_out:
         result.alerts.append("ChatGPT/Codex 调用超时，已暂停本轮并保留待处理事件")
         result.exit_code = max(result.exit_code, EXIT_LLM)
-        return state
+        return state, meeting_feature_state
     state = digest_features(features, events, state, cfg, cli_factory=factory, cache=cache, budget=budget)
+    meeting_problems: list[Exception] = []
+    meeting_feature_state = digest_meeting_features(
+        features, events, meeting_feature_state, cfg, cli_factory=factory, cache=cache, budget=budget,
+        problems=meeting_problems,
+    )
+    _record_meeting_digest_problems(meeting_problems, result)
     budget.log(P.state / "usage_log.jsonl")
     result.llm_calls = budget.calls
     if summary.rate_limited:
@@ -85,7 +111,7 @@ def _enrich(events, features, state, cfg, result, *, checkpoint=None):
         result.exit_code = max(result.exit_code, EXIT_LLM)
     if summary.failed:
         result.alerts.append(f"{summary.failed} 条摘要生成失败")
-    return state
+    return state, meeting_feature_state
 
 
 def run_pipeline(*, wgs=None, use_llm=True, force=False, meetings=None) -> PipelineResult:
@@ -131,8 +157,12 @@ def run_pipeline(*, wgs=None, use_llm=True, force=False, meetings=None) -> Pipel
         for number, suffix in sorted(parsed_meetings)[:-2]:
             manifest = Manifest(P.raw_dir(wg, number, suffix)); manifest.mark_frozen(); manifest.save()
     feature_state = _load(P.state / "features_state.json", {})
-    if use_llm: feature_state = _enrich(events, features, feature_state, cfg.extract, result)
-    _write_state(events, features, feature_state, result, stats, started)
+    meeting_feature_state = _load(P.state / "meeting_feature_state.json", {})
+    if use_llm:
+        feature_state, meeting_feature_state = _enrich(
+            events, features, feature_state, meeting_feature_state, cfg.extract, result
+        )
+    _write_state(events, features, feature_state, meeting_feature_state, result, stats, started)
     if not manual and result.new_events:
         commit_outputs(P.root, ["data/state", "out"], build_commit_message(result.stats_by_meeting))
     return result
@@ -170,7 +200,8 @@ def run_pipeline_remap() -> PipelineResult:
         result.new_events += 1
         key = (event["wg"], event["meeting"], event.get("meeting_suffix", ""))
         stats[key][event["feature"]] += 1
-    _write_state(events, features, _load(P.state / "features_state.json", {}), result, stats, started)
+    _write_state(events, features, _load(P.state / "features_state.json", {}),
+                 _load(P.state / "meeting_feature_state.json", {}), result, stats, started)
     return result
 
 
@@ -187,10 +218,105 @@ def run_pipeline_enrich(*, max_calls: int | None = None,
             max_calls_per_run=max_calls if max_calls is not None else cfg.extract.max_calls_per_run,
             batch_size=batch_size if batch_size is not None else cfg.extract.batch_size,
         )
-        events, state = _load(P.state / "events.json", []), _load(P.state / "features_state.json", {})
-        state = _enrich(events, features, state, extract_cfg, result,
-                        checkpoint=lambda: write_state(events, P.state / "events.json"))
-        _write_state(events, features, state, result, defaultdict(dict), started)
+        events = _load(P.state / "events.json", [])
+        state = _load(P.state / "features_state.json", {})
+        meeting_feature_state = _load(P.state / "meeting_feature_state.json", {})
+        state, meeting_feature_state = _enrich(
+            events, features, state, meeting_feature_state, extract_cfg, result,
+            checkpoint=lambda: write_state(events, P.state / "events.json")
+        )
+        _write_state(events, features, state, meeting_feature_state, result, defaultdict(dict), started)
+        return result
+    finally:
+        lock.release()
+
+
+def run_pipeline_meeting_digests(*, max_calls: int | None = None) -> PipelineResult:
+    """Generate only 6G meeting-feature digests without re-running event enrichment."""
+    started, result, cfg, features = time.time(), PipelineResult(), load_sources(), load_features()
+    lock = ExclusiveRunLock(P.state / "enrich.lock")
+    if not lock.acquire():
+        result.alerts.append("已有摘要任务在运行，已跳过本次以避免覆盖状态")
+        return result
+    try:
+        extract_cfg = replace(
+            cfg.extract,
+            max_calls_per_run=max_calls if max_calls is not None else cfg.extract.max_calls_per_run,
+        )
+        events = _load(P.state / "events.json", [])
+        feature_state = _load(P.state / "features_state.json", {})
+        meeting_feature_state = _load(P.state / "meeting_feature_state.json", {})
+        budget, cache = Budget(extract_cfg.max_calls_per_run), LlmCache(P.state / "llm_cache")
+        factory = lambda model, effort: CodexExec(model, effort)
+        meeting_problems: list[Exception] = []
+
+        def checkpoint(current: dict) -> None:
+            """Make every completed meeting digest visible and resumable at once."""
+            P.state.mkdir(parents=True, exist_ok=True)
+            (P.state / "meeting_feature_state.json").write_text(
+                json.dumps(current, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"
+            )
+
+        meeting_feature_state = digest_meeting_features(
+            features, events, meeting_feature_state, extract_cfg,
+            cli_factory=factory, cache=cache, budget=budget,
+            problems=meeting_problems, checkpoint=checkpoint,
+        )
+        _record_meeting_digest_problems(meeting_problems, result)
+        budget.log(P.state / "usage_log.jsonl")
+        result.llm_calls = budget.calls
+        _write_state(events, features, feature_state, meeting_feature_state,
+                     result, defaultdict(dict), started)
+        return result
+    finally:
+        lock.release()
+
+
+def run_pipeline_feature_evolution(*, max_calls: int | None = None) -> PipelineResult:
+    """Resume cross-meeting synthesis without redoing prior enrichment."""
+    from ngr.render.site import MEETING_PERIODS
+
+    started, result, cfg, features = time.time(), PipelineResult(), load_sources(), load_features()
+    lock = ExclusiveRunLock(P.state / "enrich.lock")
+    if not lock.acquire():
+        result.alerts.append("已有摘要任务在运行，已跳过本次以避免覆盖状态")
+        return result
+    try:
+        if cfg.extract.backend != "codex":
+            result.alerts.append("特性演进需要启用 Codex 摘要后端")
+            result.exit_code = EXIT_LLM
+            return result
+        events = _load(P.state / "events.json", [])
+        feature_state = _load(P.state / "features_state.json", {})
+        meeting_state = _load(P.state / "meeting_feature_state.json", {})
+        evolution_state = _load(P.state / "feature_evolution_state.json", {})
+        sources = evolution_inputs(features, events, meeting_state, MEETING_PERIODS)
+        budget = Budget(max_calls if max_calls is not None else cfg.extract.max_calls_per_run)
+        cache, problems = LlmCache(P.state / "llm_cache"), []
+
+        def checkpoint(current: dict) -> None:
+            P.state.mkdir(parents=True, exist_ok=True)
+            path = P.state / "feature_evolution_state.json"
+            temporary = path.with_name(f".{path.name}.tmp")
+            temporary.write_text(json.dumps(current, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+            temporary.replace(path)
+
+        try:
+            digest_evolutions(sources, evolution_state, cfg.extract,
+                              cli_factory=lambda model, effort: CodexExec(model, effort),
+                              cache=cache, budget=budget, checkpoint=checkpoint, problems=problems)
+        finally:
+            budget.log(P.state / "usage_log.jsonl")
+        result.llm_calls = budget.calls
+        if problems:
+            if any(isinstance(problem, LlmRateLimited) for problem in problems):
+                result.alerts.append("Codex 用量受限，特性演进可在额度恢复后续跑")
+            elif any(isinstance(problem, LlmTimedOut) for problem in problems):
+                result.alerts.append("Codex 调用超时，特性演进可从断点续跑")
+            else:
+                result.alerts.append(f"{len(problems)} 个特性演进生成失败，可从断点重试")
+            result.exit_code = EXIT_LLM
+        _write_state(events, features, feature_state, meeting_state, result, defaultdict(dict), started)
         return result
     finally:
         lock.release()

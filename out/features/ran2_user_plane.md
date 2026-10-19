@@ -13,6 +13,35 @@ RAN2 已确认 6GR 用户面需支持一组核心传输、排序、安全、压�
 - AI 流量特征与模型、TokenCom 特性及相应 QoS/L2 机制，需结合 SA4 等工作组反馈推进。
 - UDC、ROHC、EHC、SCHC 等机制如何构成并集成到 6G 压缩框架。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR 用户面架构从重复功能、开销和处理效率问题梳理，推进到研究基线、功能分工及部分机制选择。RAN2-134提出面向所有支持场景和架构的共同协议栈目标，明确PDCP retransmissions与RLC ARQ保持分离，同时支持unified L2 status report。single SN、PDCP/RLC是否合并、重排序及early forwarding仍未形成完整方案。
+
+### 关键进展
+
+- 序号与架构研究由RAN2-132的joint sequence numbering方向，推进到RAN2-133以standalone和PDCP SN为single SN研究假设；RAN2-133bis继续比较独立SN、分层统一SN与合并层方案。RAN2-134提出部署选项不应影响共同协议栈，并明确PDCP/RLC分设时的最低功能分工，但未确定最终层结构。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- L2 common retransmission mechanism在RAN2-133及RAN2-133bis仍属可行性研究；RAN2-134明确不支持unified L2 retransmission，PDCP retransmissions与RLC ARQ保持分离，且SDU和SDU-segment均需支持重传。同时支持unified L2 status report，AM DRB仅支持用于两类重传的RLC status report，区分了过程统一与报告统一。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- HOL blocking从RAN2-132识别失败CB延迟其他PDU交付，扩展到RAN2-133研究同一DRB内service flows及CB间阻塞。RAN2-133bis优先研究Type 1/2 higher layer HOL blocking，支持PDCP感知QoS flow，并约束DRB内不得引入多个PDCP sequence number spaces；RAN2-134进一步明确从RX/TX两侧结合QoS framework研究，无需专门处理RLC/PDCP control PDUs。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2-133支持发送端基于HARQ process status加快DL ARQ retransmissions，触发细节交由network implementation。RAN2-133bis倾向以DCI显式指示指定UL HARQ process success以清除对应L2 buffers，并批准FARQ LS；同时因预期增益有限，不再推进positive HARQ feedback assisted RLC enhancement。DL FARQ是否进一步增强仍依赖RAN1设计与feedback reliability。（依据：RAN2-133、RAN2-133bis）
+- QoS与交付机制逐步形成部分基线：RAN2-133以QoS flow到DRB映射保留在SDAP为基线，SDAP合并至PDCP及移除RQoS/Rmap仅为Noted；RAN2-133bis明确支持基于定时器的SDU discard；RAN2-134针对PDCP reordering的内存、时延和QoE适配不足，确定研究更简单及增强的机制。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 随机接入从RAN2-132识别partitioning低效，推进到RAN2-133明确仅在必要时使用RACH partitioning，并向RAN1发送LS研究msg1与msg3 indication分工。该会议还以NR Type 1/2作为Day-1 periodic traffic的configured grant研究起点，并为mobile AI建立实时/非实时分类及初步流量建模基线；后两场摘要未提供这些方向的进一步结论。（依据：RAN2-132、RAN2-133）
+
+### 待决问题
+
+- single SN与最终层架构仍待确定，包括SN分配、header组织、control PDU处理、split bearer DC、合并层分段重组，以及CU-DU split下窗口操作和不同终止点的共同状态报告。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- higher layer HOL blocking和PDCP reordering尚缺完整方案：需明确QoS flow感知队列、差异化in-order/out-of-order delivery、SDU识别与转发，以及如何降低timer相关时延和内存需求。reflective QoS是否支持、data discarding增强及congestion management也未见收敛结论。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- lower layer HOL blocking与early forwarding仍依赖RAN1的CB/CBG设计。RAN2-134已发LS询问不依赖TB CRC结果交付成功解码CB/CBG的必要性与可行性；MAC subPDU边界、可信且可解析的数据单位、反馈方式、收益及启用条件仍待明确。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- FARQ仍需明确可靠HARQ feedback设计、DL增强需求、N2A/DTX2A检测，以及MAC CEs和control PDUs的处理；HARQ status indication用于RLC UM、Type 4 HOL blocking中长期Bj<0造成的控制PDU阻塞也待讨论，专用radio bearer和LCH方案仍有不同意见。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 压缩与开销优化尚未定案：UDC支持方式、处理开销、加密数据支持及SCHC候选影响仍需研究。RAN2-132提出的packet concatenation场景、QoS隔离、安全和硬件适配问题，以及header长度与MAC PDU格式优化，后续材料未提供完整解决结论。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+- RAN2-133留下的统一简化RACH、early indication、overload缓解、动态资源调整、更大Msg3/MsgA及CG统一框架仍未见后续结论。mobile AI可变突发和时延需求对应的L2、UL与scheduler机制，以及等待SA4推进的tokenized traffic特征，也缺少后续定案依据。（依据：RAN2-133）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132围绕6GR用户面架构梳理了基本功能需求，并讨论减少重复功能、降低L2开销及改善硬件处理效率的方向。会议识别了sequence numbering、packet concatenation、header和MAC PDU格式等设计的收益与约束，但尚未形成完整的协议栈及层间功能划分方案。packet concatenation留待UP协议和安全理解进一步完善后再讨论，QoS remapping及随机接入资源效率等问题也需继续研究。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 推进了 6GR 用户面架构的研究基线与范围，覆盖 single SN、HOL blocking、QoS 功能归属、重传机制及资源配置。会议支持基于 HARQ process status 的 DL fast ARQ，并明确了随机接入简化、configured grant 增强及 mobile AI 流量建模的研究方向。其协议含义是进一步研究 L2 功能与头部组织、降低交付和重传时延，并适应可变突发流量；协议层合并、UL fast ARQ 指示方式等尚未定案。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：RAN2#133bis 推进了 6GR 用户面在序号与层架构、重传、HOL blocking 及 QoS 适配方面的研究，但尚未确定 PDCP/RLC 合并或 single SN 的最终方案。本会议明确支持基于定时器的 SDU discard，并为 higher layer HOL blocking 确定了优先研究范围和不在 DRB 内引入多个 PDCP sequence number spaces 的约束。会议批准了发给 RAN1 的 FARQ LS，后续 DL FARQ 增强及 lower layer HOL blocking 方案仍依赖 RAN1 的反馈可靠性和 CB/CBG 设计。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议推进了6GR用户面共同协议栈、L2功能分工及重排序、拥塞管理和HOL blocking研究，目标是让部署选项不影响协议栈。会议明确PDCP与RLC重传保持分离，同时支持unified L2 status report，区分了重传过程与状态报告的统一。压缩机制、single SN、重排序增强及early forwarding仍需研究，尚未形成完整协议方案。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.1.1 Functionality for Upper User Plane and related functional requirements

@@ -1,0 +1,2049 @@
+{
+  "channel_coding": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN1-122",
+          "RAN1-124b"
+        ],
+        "text": "基础调制由研究基线转为最低支持要求：RAN1#122 以 NR 调制范围开展研究，RAN1#124b 明确 6G 至少支持 NR equal probability uniform QAM constellation；CP-OFDM 的 DL 为 QPSK、16QAM、64QAM、256QAM、1024QAM，UL 至 256QAM，DFT-s-OFDM 的 UL 另含 pi/2 BPSK。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "LDPC extension 从候选 BG(s)/PCM(s) 提交和性能、复杂度比较要求，推进至参数与结构约束。RAN1#124 研究 maximum code block size 为 8448 或 8448*2 等选项；RAN1#124b 将研究假设收敛为 8448，并细化 new BG 子矩阵结构及矩阵中 1 的总数上限。RAN1#126 明确 BG3 子矩阵 E 支持下三角 E2、不支持单位矩阵 E1，并规定 BG3 in UL 原则上为 UE 强制能力且需 capability signaling，所有支持频段最大 UL channel bandwidth 均不超过 20MHz 的 UE 可选支持。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-124"
+        ],
+        "text": "大载荷 UCI Polar code 研究从将 more than 2 segments 纳入研究，推进至超过 NR 范围且大于 1706 bits 的 segmentation enhancement 评估假设：每段采用 11 bits CRC，rate matching、channel interleaver 和 code-block concatenation 沿用 NR；材料未给出最终设计结论。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-126"
+        ],
+        "text": "3–11 bits small UCI 研究由至少考虑 5G RM code、在发现可论证缺点时研究解决方案，推进至候选编码的统一评估框架：采用 AWGN，比较目标 BLER 下的 SNR、BER，以及收发机复杂度和时延影响。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "PS/GS 研究从固定 MCS、目标 10% BLER 的性能与实现代价报告要求，扩展至 TX/RX chain 潜在影响及 fading channel 场景。RAN1#126 继续研究 GS（1D-NUC）和 PS（ESS-based PS、ECC-based PS），明确 DL 与 UL 不支持采用不同 shaping scheme，并设定 Q3/26 无共识则停止相关研究的条件。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL 4K uniform QAM、UL 1K uniform QAM 从聚焦 FWA 室内外部署、征询 RAN4 EVM/MPR 输入，推进至细化 SLS 参数与 rank/MCS 分布报告要求。RAN1#126 建议采用 UL 1K QAM；两种高阶调制若获支持，均须在规范中限定为 FWA use case，排除 eMBB。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "BG3 子矩阵 E2 的参数 I 仍为 FFS；BG3 in UL 强制支持要求是否增加其他 UE 例外，待 RAN plenary 决定。此前 new BG 其他候选结构及参考码率 X 的最终处理，所给后续摘要未完整交代。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-124"
+        ],
+        "text": "是否需要超过 NR 范围的 UCI 载荷仍需其他议题确认；NR 范围内大于 11 bits 的 UCI Polar code 扩展或增强动机尚无共识。大载荷 segmentation enhancement 的其他评估取值需公司报告，后续材料未给出这些事项的闭环结论。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "3–11 bits small UCI 候选仍需与 5G RM code 比较评估，尚未确定是否替换或增强 5G RM code。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL 或 UL 是否支持 constellation shaping 尚无共识；若支持，仍需在 PS（含 1-bit 或 2-bits）与 GS 之间选择。此前提出的规范与 TX/RX chain 影响、复杂度和存储相对性能收益的权衡，以及 DFT-s-OFDM Net Gain，材料未给出最终结论；也未提供 Q3/26 决策期限之后的结果。"
+      },
+      {
+        "meetings": [
+          "RAN1-123"
+        ],
+        "text": "同一 spectrum efficiency point 对应多个 MCS entries 的选择机制及可能需要的 UE feedback 仍需研究，所给后续摘要未说明其处理结果。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL 4K QAM 是否采用仍无共识；UL 1K QAM 虽获 RAN1 建议采用，材料未给出最终支持决定。此前所需 RAN4 EVM/MPR 输入及其他调制方案、低 PAPR 增强和 waveform 相关影响，也未见明确闭环。"
+      }
+    ],
+    "overview": "按所给五场会议的日期，6GR 信道编码与调制从 2025 年 8 月的 NR 调制研究基线，推进至 2026 年 8 月的最低调制支持范围、部分 BG3 结构及 UL 能力要求。LDPC、UCI 编码、PS/GS 和更高阶 uniform QAM 的评估逐步细化，但尚未形成全部最终设计。材料未包含 RAN1#125，不能确认此前计划的下选过程；最新材料中 constellation shaping 和 DL 4K QAM 仍无支持共识，UL 1K QAM 为 RAN1 建议采用。",
+    "source_hash": "21ca1d5ee785ebfef73340e6d108f3056645ff87bb7e710dd3921cbbcbe1f5a2"
+  },
+  "energy_efficiency": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "UE 节能基线逐步明确：2025年11月采纳 UE DRX 为关键特性，以类似 C-DRX 的机制为研究起点；2026年4月明确不带 DL-WUS 的 C-DRX 为基线，优先研究其与 DL WUS 的结合；5月提出基于 C-DRX-like mechanism、将 DL WUS 作为可选功能的 single discontinuous monitoring framework。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "WUS 与监测机制从组合探索走向研究优先级收敛：早期允许 WUS 触发特定 OnDuration window configurations；2月研究有无 C-DRX、DL WUS 的三种组合；4月优先研究结合 C-DRX 的 option 1-1/1-2，并将 DL WUS without C-DRX 推迟至由 RAN1 触发。5月进一步支持在有或无 DL WUS 时动态调整 CDRX timer(s)，减少不必要的 PDCCH monitoring。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "网络休眠从联合设计方向细化为周期框架与显式指示：2月以5G Cell DTX/DRX 为起点，记录与 UE C-DRX 对齐且 active time 长度可不同的方向；4月明确 Active Duration/non-Active Duration 交替框架；5月支持向 RRC_CONNECTED UEs 提供显式 NW TX/RX sleeping pattern，并通过 RRC configuration 和 UE group common lower layer indication 动态激活/去激活，同时支持依据网络节能操作调整 UE 节能配置。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b"
+        ],
+        "text": "能效评估模型由2月的 NES 基线配置、BS Set 4 转换参数及 UE 调度/带宽/天线功耗规则，扩展到4月的 UL CA、2Tx antennas、10 MHz EE processing 和 RRM measurement 功耗规则。CAT 2.1 的 Set 4 转换特性由待讨论推进为明确取值：Light sleep/Deep sleep 转换时间为100 ms/2 s，相对转换能量为210/6300。该评估基线用于候选6GR方案相对比较，不用于与5G/NR比较能效。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b"
+        ],
+        "text": "CA reception 建模进一步细化：2月规定 one RF chain 按相同总带宽缩放；4月补充 PDCCH-only 的每新增 CC 附加项及 multiple RF chains 的附加缩放形式，部分系数仍未定。两次会议的相关模型均以 CC 已激活为前提，不涉及 carrier activation/deactivation delay。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "8月将网络节能和 UE 省电纳入多载波初始接入及 connected mode 操作研究：确定一次 RACH procedure 尝试中每个链路方向使用一个选定 physical carrier，并明确 6GR-BW 至少包含 carrier 内频率位置和连续 PRB 数量。所列多载波候选场景仅纳入研究，未代表同意支持；材料仅有这一场涉及这些具体基线，无法判断其自身的跨会议变化。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "统一 discontinuous monitoring framework 的细节仍未确定，包括未收到 WUS 时的 UE 行为、WUS 与 C-DRX 的 cycle/timer 是否相同或对齐，以及动态 timer adaptation 的适用定时器、发起方和操作。DCP 与 DL-WUS 的选择及不带 C-DRX 的 DL-WUS 是否支持，仍无解决证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "DRX 配置组织和联合节能机制仍待明确：multi-flow 使用多个配置还是单配置尚无一致结论，多个 DRX patterns、快速 switching、按 DRX group/serving cell 配置及 UE-specific monitoring configurations 继续研究。活动时段对齐已有方向，但高效对齐机制在4月未处理，后续材料未证明其已完成。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "网络休眠期间的具体 UE 行为和信令仍待讨论，包括 non-connected UEs 对 common reference signal、paging、system information 的监测，UL 休眠时能否发起 Random Access，以及静默信号范围和隐式机制。显式 pattern 的推进尚未解决全部动态控制问题，cell DTX non-active period 内通过 DL WUS 触发 on-demand PDCCH monitoring 仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b"
+        ],
+        "text": "功耗模型仍有未定参数和适用范围：CA reception 的 X=[0.2]、Y=[0.3] 仍为括号值，部分 CC 监测组合及非参考 CC 带宽的适用规则待讨论。较早提出的 BS TXRU 调整、窄带 UE reference configuration、8Rx 和部分 sleep scaling 问题，后续材料未提供全部解决证据；SBFD 公式缺失属于材料限制，无法据此确认模型表达式。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "早期提出的跨 RRC states LP-WUS/WUR、用于 paging reception 的 day1 候选方案，以及 LR 上 RRM/RLM/BFD measurements 和测量卸载，后续所给摘要未明确报告结论，不能视为已解决。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "多载波与带宽操作仍需明确候选初始接入场景的额外收益及部署条件、跨载波 UL/DL switching、additional carriers 快速启用/禁用、carrier states、跨载波资源分配与调度，以及 6GR-BW 其他关联参数和切换机制。"
+      }
+    ],
+    "overview": "2025年11月至2026年8月，6GR 能效研究从确立 UE DRX 节能方向，推进到 C-DRX 基线、可选 DL WUS、网络周期休眠及动态监测机制研究。RAN1 同期逐步完善能效评估功耗模型，并在8月明确多载波与带宽操作的部分基线。材料显示评估参数和协议框架持续细化，但尚不足以确认形成完整统一机制；同日期的不同工作组会议不构成先后承接关系。",
+    "source_hash": "f380a60443ed956a17248a119e7b3e8a0767ab1c53f167edd9e548ec27dff4b2"
+  },
+  "evaluation_assumptions": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "明确低于 30 GHz 的 UE antenna modelling，覆盖 1、2、4、8、16 个 antenna elements 及对应 TXRU、Alt 1/Alt 2 和适用载频；Alt 1/Alt 2 的位置仅为性能校准示例，允许采用 TR 38.901 section 7.3 的其他阵列结构或位置。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "约 30 GHz 的 UE antenna configuration 和 radiation pattern 分别遵循 Table 1 和 Table 2；每 panel 含 8 个 antenna elements，Config 0/1/2 分别对应 1/2/4 个 panels，规定每 panel 的 TXRU 配置及 GE,max 为 5 dBi，其他配置可由公司报告。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "补充 FWA/CPE 天线评估选项：单天线单元方向图候选包括 Isotropic、Directional 和 Omnidirectional，CPE 可配置 1–3 个 panels 并优化方向；约 4 GHz 的室外 BS 新增 32 个 antenna elements、4 TXRU 的 Optional 配置。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "细化功率假设：低于 30 GHz 时仅 CPE 假设 UE transmission power 为 35 dBm，并可考虑 EIRP limit；约 30 GHz 的 peak EIRP 为 23–43 dBm，CPE 为 35–55 dBm，具体功率由公司报告。BS Tx power 随带宽按比例增加，室外和室内上限分别为 56 dBm 和 33 dBm。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "更新 Indoor Hotspot、Dense Urban、Rural、Urban Macro 和 Suburban Macro 的 UE distribution 与 UE speed 假设，限制每个 micro TRxP 的 UE 数量不超过对应 macro TRxP；采用相关 CPE antenna height、分布及速度假设，并将 TR38.914 已涵盖但 RAN1 尚未讨论的场景纳入候选评估场景。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "FTP3 extension 采用两种包大小，满足 S₁<S₂、λ₁=K·λ₂、K≥1，且到达服从 Poisson distribution；保留每 UE 一种包大小及每 UE 两种独立 Poisson Process 两种方案。Massive Communication (IoT) 除 32 bytes L2 PDU 外，也可评估如 320 bytes 的更高业务负载。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "UE distribution 和 UE speed 表对 FWA 的适用性仍为 FFS。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "室内与室外 CPE 的预选标准或机制可在评估阶段进一步讨论。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "FTP3 extension 两种方案的相关参数取值留待评估阶段决定。"
+      }
+    ],
+    "overview": "材料仅包含 RAN1-124（2026-02-09 至 2026-02-13）一场会议，不能判断跨会议变化。本次会议细化了 6GR 空口评估的天线、功率、场景及业务模型假设，形成更具体的系统级仿真评估基线，但尚不构成空口协议机制的确定。",
+    "source_hash": "aae306e3097c297979671016957bd9f531a6c9a389ac1825d6a0bbe20f9b123e"
+  },
+  "isac": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "评估由场景基线推进到具体参数与统计口径：4 月列出 UAV、human、vehicle、AGV 场景及载频组合；8 月细化 UE 距离、环境与部署假设，明确 MDP、FAP Type 2 和多节点 data fusion 后的指标计算，并统一结果收集模板。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "UE sensing procedures 从研究排序走向角色划分：4 月确定按 DL 测量、UL 发送、UE-to-UE 收发顺序研究，并定义 UE-centric sensing；5 月明确支持 UEs/TRPs 作为 Tx 和/或 Rx SEs，按 UE 发送和接收两类推进研究。材料未表明 UE-centric 范围分歧已解决。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "配置与数据路径逐步具体化：4 月仍讨论现有信令复用及端到端 SF–UE 协议建议；5 月确定研究 UE-SF 类似 LPP 的配置交互，明确 UE sensing measurement data 发往 aNB 且在 aNB 可见，后续处理及向 SF 转发属于 RAN3 范围。UE-gNB RRC 动态调整配置仍仅为 Noted。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "SE selection 与 service continuity 从请求假设推进到能力报告支持：4 月确认针对 UE 和 Area 的两类请求；5 月支持通过 reactive/proactive UE capability reporting 进行 SE (re)selection，并以参与 sensing procedures 的 UE 处于 RRC_CONNECTED 为当前假设，不预设最终 6G RRC state model。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "Communication assistance 从待补充评估内容推进到明确 SAC 代表性用例：8 月选定 sensing assisted beam management 和 sensing assisted CSI acquisition and reporting，鼓励评估感知或通信性能并说明辅助信息及非理想因素；其他用例仍可研究。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "物理层研究从比较通信 RS 复用、enhanced RS、dedicated RS 及以 CP-OFDM 为起点，推进到 sensing RS RE pattern 的 SLS 评估方式和基于 AF 的 PSLR、ISLR、Main lobe width 定义框架；8 月同时明确不考虑 NR ISAC UE-side measurement report Measurement Level A，尚未完成 RS 或 waveform 最终选择。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "评估基线仍有未决项：4 月场景与 sensing modes 的适配及参数尚待讨论；8 月 UAV-UE/AGV-UE 是否纳入 sensing capable UE、部分场景是否移除 CPE UE 仍无共识，另行采用与 5GA ISAC study 相同的 MDP/FAP Type-2 定义仍为 FFS。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "sensing architecture、SF 位置及其与 aNB 的职责和控制协调仍待明确；完整配置生命周期采用何种协议、测量采用 6G RRC framework 还是类似 LPP 的框架，均未确定。UE-UE/UE monostatic 研究依赖其他工作组进展，UE-centric 范围与顺序分歧未见后续解决证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "SE selection/re-selection 的 criteria、参与节点、所需信息，以及 UE sensing capability 内容、报告路径和框架复用仍待研究；移动场景的 service continuity 及 RRC_IDLE/INACTIVE 或其他 UE (sub)states 下的 ISAC procedures 尚未明确。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN2-134",
+          "RAN1-126"
+        ],
+        "text": "measurement 定义、级别、非理想因素及报告机制仍需协调。UE 向 RAN 报告数据的方式依赖 RAN1 对数据内容的研究；8 月 per-path、scattering point/object、delay/Doppler/angle profiles 等指标及报告方式仍待研究，不能将已明确的数据目的地视为报告协议已确定。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "RS 组成、复用/增强/专用选项、端口与 precoding 选择仍待论证；CP-OFDM 序列增强、有效 CP length extension 的必要性与方案，以及 Linear/Circular AF 和 CAF 的定义下选仍未完成。4 月保留的其他 waveform 与 frame structure 增强也未见最终选择。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "独立的 Device 2b/C 材料中，两类设备在 coverage 之外的必要性仍由 RAN 决定，Device C maximum transmit power 在 -3 dBm 至 5 dBm 范围内尚未最终选定；后续输入未提供该议题的进展。"
+      }
+    ],
+    "overview": "按日期，ISAC 研究从 2026 年 4 月的评估场景、物理层研究起点及 UE-involved sensing 协议范围，推进到 5 月的实体角色、数据路径和状态假设，并在 8 月细化评估方法、SAC 用例及物理层研究边界。现有材料尚未形成完整协议方案。4 月两场会议同期举行，不构成先后演进。2 月 RAN1-124 材料涉及 Device 2b/C coverage，未明确其与 ISAC 的关联，不能据此建立 ISAC 演进关系；该设备议题仅有一场材料，不能判断跨会议变化。",
+    "source_hash": "cad64792e8fede14a5620cb026c3cff6871872e76bd41307ebe930c073d56817"
+  },
+  "multi_antenna": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "CSI 评估逐步细化：2月建立 DL/UL CSI acquisition 的 LLS/SLS 假设、CSI prediction 指标及 AI-based CSI compression 开销和复杂度报告要求；4月明确空间域 Linear interpolation 与时域 Sample & Hold 预测基线；8月将 low-resolution 和 high-resolution CSI codebook 分别按 W1W2 only、W1W2Wf 结构开展研究，并考虑 UE implementation complexity。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL CSI 测量能力由评估框架推进到参考信号基线：4月支持 NZP CSI-RS、以 CSI-IM 为干扰测量资源基线，至少支持周期和非周期 CSI-RS，并将 pattern 定义为 CDM groups 的聚合；8月 CSI-RS 和 CSI 设计暂按最大 256 ports 推进，最终端口上限仍未确定。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-126"
+        ],
+        "text": "DMRS 从2月的 PDSCH 最大正交端口数多候选研究，推进到8月明确 DL DMRS 在 X=2 时支持 Nmax=48，UL DMRS 至少对 CP-OFDM 支持相同配置；CDM group structure 采用 comb-based，至少包括 comb-2。PDSCH DMRS 支持 Gold sequence，PT-RS 至少在 PDSCH 的 FDRA/TDRA 内发送且不出现在 DMRS symbol 中。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "UL MIMO 在4月明确支持 codebook based PUSCH transmission，UE antenna ports 为 {1, 2, 3, 4, 8}，CP-OFDM 下 SU-MIMO 最大层数假设与端口数相同，UL CSI 获取以 SRS 为基线。8月 coherent UL MIMO 评估至少采用 TS38.101-1/2 RF coherence requirements，并批准向 RAN4 请求确认 amplitude/phase errors 及建模建议的 final LS。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "SRS 从2月明确 CSI acquisition 和 beam management 用途，推进到4月支持 {1, 2, 3, 4, 8} 个 antenna ports、以 P/AP-SRS 为基线，并以 NR ZC/CGS sequences 和 comb {2, 4, 8} 为研究起点；8月进一步支持 cyclic-shift 和/或 comb-offset，以及至少用于连续 S+U slots 的 cross-slot SRS transmission。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "Beam management 从2月的机制研究范围，推进到4月 network-initiated beam reporting 在适用时至少支持由测量或预测获得的 L1-RSRP；8月明确 DL QCL framework 至少支持五类参数，并明确部分空间、时间和 cross-frequency beam prediction 支持场景。Tracking RS 从2月仿真假设与指标，推进到8月 connected mode 以除 SSB 外的 single-port RS 为精细时间和频率跟踪 baseline。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "CSI-RS 最大端口数仍需在 128、256、512 中决定，8月材料计划于 RAN1#127 决定，但未提供结果；pattern、CDM、sharing、PAPR 和 overhead reduction 仍待评估。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "CSI codebook、reporting 层级与时序、可变 payload、prediction 辅助信息、AI 模型泛化与可扩展性及 explicit feedback 尚未完成设计；joint DL/UL CSI acquisition 的具体操作、误差建模与 UE reciprocity 可行性也未见定案证据。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "PDSCH 每 UE 最大层数仍需从 8、12、16 layers 中选择，PDSCH/PUSCH 的 CW 数量及 codeword-to-layer mapping 尚待确定；DMRS 的 X=1 最大正交端口数、OCC、时频位置和指示、DFT-s-OFDM UL DMRS、PT-RS 细节及 AI based receiver 降低 DMRS overhead 的方案仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "UL precoder 的 coherency types、full-coherent fixed codebook 及 downloadable/uploadable configurable codebook 的适用性、开销、复杂度和功率约束仍待评估；已批准向 RAN4 发出协调 LS，但材料未提供 RAN4 对 RF coherence requirements 的反馈。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "multi-TRP PDSCH 的方案范围、TRP 集合数量和 UE 透明性尚未确定；SRS 的 sparse patterns、TD-OCC multiplexing、precoding、frequency hopping 和更大带宽支持仍待研究，4月提出的 SP-SRS 支持问题未见后续结论。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "UE initiated beam management 的事件、上报流程及相关 UE/网络行为仍待明确；TCI framework 细节和 refined analog beam 的必要性、可行性仍待推进。Tracking RS 的 periodic/aperiodic 支持与配置尚未确定，早期 idle mode 跟踪设计问题未见明确解决证据。"
+      }
+    ],
+    "overview": "2026年2月至8月，6GR 多天线系统研究从 RAN1-124 的评估假设与指标建立，推进到 RAN1-124b 的参考信号和传输能力基线，再到 RAN1-126 的部分 DMRS 结构、QCL 参数及 CSI 设计方向明确。整体仍处于方案研究与筛选阶段；暂定设计和评估基线不能视为最终协议，最大层数、CSI-RS 最大端口数及多项流程和信令尚未定案。",
+    "source_hash": "40bf18d864cec9a6b03639362e8dea52155822f329063ff44d301349817bd788"
+  },
+  "ntn": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN1-124",
+          "RAN1-126"
+        ],
+        "text": "研究框架从沿用5G NTN的LEO、MEO、GSO部署场景和payload type假设，推进到优先识别NTN specific requirements：可采用common/extended design，无法满足要求时引入NTN specific solutions；common design优先考虑TN performance。后续PRACH研究进一步落实了这一原则。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN1-124",
+          "RAN2-134",
+          "RAN1-126"
+        ],
+        "text": "GNSS研究由早期依赖跨组讨论，推进到明确支持GNSS-based、GNSS-degraded及GNSS-less/GNSS-free operation的目标。RAN2随后将GNSS-free移动性优先方向设为non UE-location-based solutions，并支持time-based和beam-level RSRP-based替代触发条件；RAN1进一步明确GNSS-less/free/degraded PRACH的误差研究目标及新增LEO-300场景。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b"
+        ],
+        "text": "大RTT调度从明确支持large scheduling offsets、比较不同实现路径，推进到原则上以NR k_offset概念为基线并允许修改，且至少支持广播k_offset。上行时频同步以NR NTN为基线，至少支持GNSS-based UE预补偿，satellite assistance information的参数研究进一步以NR NTN SIB19为起点。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "Link budget从以TN template为基线，推进到采用具体NTN template、补充S-band轨道与天线模型，再扩展并细化S-band、Ka-band和Ku-band评估假设。研究至少考虑FD-FDD和UE侧HD-FDD；后续还明确SSB LLS检测指标及参数报告要求。这些评估场景不等同于部署或覆盖缺口补偿承诺。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN1-124b",
+          "RAN2-134",
+          "RAN1-126"
+        ],
+        "text": "移动性从Time-based和Location-based CHO等机制的研究优先级，细化到multi-orbit的inter-frequency service-based reselection、TN/NTN测量启动基线及复用5G NTN的SMTC/measurement gap机制。多卫星物理层研究则从mobility与inter-satellite interference management范围，推进到星间同频干扰、大且时变Doppler/timing offsets及至少LEO同轨场景，持续假设UE同时仅连接一颗卫星。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "HARQ从动态启停retransmission mechanisms及多种HARQ stalling缓解方案的研究，推进到认为HARQ feedback disabling和收到前次HARQ-ACK前复用同一HARQ process两种方案均可行；后者受UE out-of-order rules限制。可行性判断尚未形成最终采用决定。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "Common essential、NTN specific essential/optional features、Day-1支持范围及后续release安排仍缺乏定案依据。早期提出的TN/NTN统一grant-free initial access、network energy savings control plane signaling及discontinuous coverage等研究，后续材料未给出完整结论。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN2-134",
+          "RAN1-126"
+        ],
+        "text": "GNSS相关定位条件仍待明确，包括位置fix频率及同等精度非GNSS定位方式。RAN2对无GNSS capability UE暂按无法在NTN获取自身位置处理，等待RAN plenary进展；GNSS-degraded operation仍需结合RAN1研究。新增PRACH场景的差分时间和频率误差细节仍为FFS，GNSS-independent RTT estimation相关议题仅为Noted。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "是否支持UE-specific k_offset及其与6GR整体调度设计的衔接仍待定；TA report收益和satellite assistance information参数仍需研究。HARQ两种可行方案是否最终规定、如何选择尚未决定，仍涉及信令开销、UE功耗、重传恢复、链路自适应及RAN2 out-of-order rules约束。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "移动性仍需研究non-location-based及不依赖GNSS等non-3GPP systems的location-based solutions、各状态下measurement relaxation/initiation triggers、beam-based SMTC和跨卫星测量定时。Multi-orbit方案收益及NTN特定顾虑尚待讨论；QoS-based cell reselection相关议题仅为Noted，L2 timer影响也未定案。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "Beam footprints多于同时激活beams时的default SSB periodicity、hierarchical beam structure、覆盖比例及适用性仍待研究。Inter-satellite interference management尚缺具体技术结论，后续明确研究方向后，elevation angle等参数仍待定。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "评估参数仍未全部收敛：S-band UE antenna组合、TXRU及device type适用性缺少后续定案依据；Ka/Ku-band更大UE天线参数待讨论。S-band APC的other losses暂设6–15 dB，具体值仍待确定，且APC仅评估下行广播信道/信号。"
+      }
+    ],
+    "overview": "2025年11月至2026年8月，6GR NTN从部署假设、TN/NTN共同设计范围及移动性研究优先级，逐步推进到GNSS operation支持目标、物理层评估基线和具体机制的可行性判断。RAN1细化同步、调度、接入、链路预算和多卫星干扰研究，RAN2推进GNSS-free移动性、重选及测量设计。现有材料体现研究范围与评估假设逐步明确，但尚不能认定完整协议方案或Day-1支持范围已定案。",
+    "source_hash": "6c707916ccff585bbf073d5c53a4e045eb2d14dfca469bca3b3631222ba6a0c3"
+  },
+  "ran2_ai_ml": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "2月明确以 Rel-20 AI Mobility 用例为起点适配 6G mobility framework，部分已验证的 RRM、Measurement Event 和限定范围的 L3 beam level prediction 无需重复 simulation；同时支持研究 AI/ML-assisted LTM 和采用 UE-side model 的 UL traffic prediction。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "LCM 从2月提出支持 functionality-based 和 model ID-based LCM，推进到4月明确 functionality-based LCM 为 baseline、model-based LCM 为 FFS；5月再次确认 functionality-based baseline，不能据此认定 model-based LCM 已获支持。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "UE-side model transfer 从4月 awareness、visibility 和 controllability 尚未明确、OTT 提议 Not treated，推进到5月采用 transparent/OTT approach 为基线。MNO 应能识别经 3GPP 进行的 model transfer traffic 并调整优先级，无需了解模型内容，也无意禁止 UE transfer；具体实现不在 RAN2 范围内，已批准向 SA2 发送 LS。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-134"
+        ],
+        "text": "NW-sided model 的 LCM 边界得到延续和明确：2月将 network-side data collection 之外的 LCM functions 留给网络实现，5月明确不规定这些其他功能。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "5月明确 applicability reporting 要求：避免 NW 在缺少先验适用性信息时盲目下发 formal inference configuration，并支持报告单个 inference configuration 的适用性变化。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "model-based LCM 是否支持仍为 FFS；是否以 Rel-19 AI/ML PHY common procedures 为 unified LCM framework 基线，以及各用例的 signaling messages 和 parameters，仍待研究。online training 对 AI/ML procedures 的影响及跨工作组协调也未见后续结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "transparent/OTT baseline 未解决全部 transfer 控制问题：其他基于 UP 的方案，以及 UE server 到 UE 的 transfer 是否需要受 RAN2 影响的 network controllability mechanism 及其功能，仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "网络控制 AI/ML functionality 的原则尚未落实为完整机制。UE-based 与 NW-based management 的安排、LCM decision 的发起方和决策方、请求与报告方式，以及 UE 自主切换权限仍未明确；AI/ML 与 non-AI/ML configuration 双向切换的低时延 one signalling step fallback 可行性仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "Performance monitoring 的职责划分仍待明确，包括 NW-sided model 的 UE assisted monitoring，以及 UE-sided model 的监测执行方、management decision 决策方和 decision 报告或 alignment 方式。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "Mobility prediction 仍依赖 6G measurement 与 mobility framework 的明确，部分扩展 RRM prediction 需等待 RAN4 prediction accuracy evaluation；AI/ML-assisted LTM 仿真、early synchronization、target cell prediction 和 TA prediction 尚待研究，RLF prediction 的研究范围仍需协调。后续材料未提供解决证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "UL traffic prediction 的预测内容、confidence、粒度、收益、评估数据及规范影响仍待研究，BSR 和 LCP 之外的 L2 features 为 FFS；用于节能的 DL traffic prediction 仍需明确执行位置、评估方法和功耗模型，并考虑推理能耗。后续材料未提供解决证据。"
+      }
+    ],
+    "overview": "2026年2月至5月，6GR AI/ML 协议支持从 mobility、traffic prediction 和 LCM 的研究范围及控制原则，推进到 functionality-based LCM、UE-side model transfer 的基线和 applicability reporting 要求。4月明确 functionality-based LCM 为 baseline，5月进一步明确 transparent/OTT transfer 基线及 NW-sided model 的标准化边界。统一 procedures、决策权限、切换和 monitoring 仍未定案；后续材料未说明早期预测用例的待决事项已解决。",
+    "source_hash": "3d710432bdb6bf6c0af53a9ebb0e225dd0e360d5875ef8eb018cf3e86dbb5cf8"
+  },
+  "ran2_common_protocol_other": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "研究在 Control Plane 和 User Plane 层级启用“flexible” protocols，允许 UE 利用内部算法，在网络监督及网络控制的有限范围内调整 RRC configured parameters 或配置，例如 RLC timer 和 LCH priority；该研究不依赖 AI/ML model management framework。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "启动承载 mobility-related data 的 SI 安全保护研究，以防御 false base stations 攻击；研究需考虑 TS 22.268 的 PWS messages 要求并保持 PWS reachability，具体安全保护方式由 SA3 讨论决定。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "UE 智能调整参数的具体机制、适用场景、收益及对 system performance 的影响尚待研究，后续可按具体 feature 提交提案。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "网络监测 UE 性能所需的 KPIs、其他 metrics，以及是否需要 reporting 和 reporting 级别尚未确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "SI 安全威胁及新增潜在风险仍需确认，具体技术方案有待 SA3 threat analysis 的后续进展。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "PWS 安全保护仍需解决跨运营商 base stations 的可达性问题，以及 UE 缺少对应 security key、无法解码所导致的可达性下降风险。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "SI 安全机制引入的 SIB Overhead，以及哪些 SI 需要或不需要保护，仍需评估。"
+      }
+    ],
+    "overview": "材料仅包含 RAN2-132（2025-11-17 至 2025-11-21），不能判断跨会议变化。本次会议推进了“flexible” protocols 与 system information（SI）安全保护的研究方向，具体机制及技术方案仍待研究。",
+    "source_hash": "775e58dc0a01d163eb86c678f5a6c8b51c090d6464dd593228c9355c713cbdd7"
+  },
+  "ran2_control_plane_other": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "2月确认 always-on common signalling aggregation mechanism 的节能收益：由 reference carrier frequency 广播 SSB/SIB1，并提供其他载波的同步参考及初始接入相关配置；同时同意非连接态 UE 无需在多个载波监测 paging。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "接入研究从2月支持覆盖驻留 coverage layer、跨载波初始接入及在 capacity layer 保持连接的 cross-CC initial access 三阶段研究，推进到4月明确支持 UE 从 IDLE/INACTIVE 转换时更快重定向至合适的 carrier(s)/cell(s)，并在 RRC_CONNECTED 建立 aggregation；后者不代表跨载波初始接入方案已确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "CONNECTED mode 聚合从2月提出以 5G CA 为基线的统一 carrier level resource aggregation，推进到4月明确 6G 支持 carrier aggregation、UE 可配置不同载波上的多个 serving cells，且 primary cell 至少承担 system information reception、RLM 等功能；RAN2 聚焦 L2/L3 功能。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "4月明确非共址聚合的研究起点为 FR1-FR2 synchronous deployments，latency 上限为 10 ms，并要求覆盖 single/dual scheduler、调度器可协调或不可协调的情况，以及 PUCCH 假设、性能和可行性。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "初始接入采用驻留载波还是不同载波仍为 FFS，需等待 RAN1 进展；cross-CC initial access 三阶段的 UE 和网络具体操作仍待研究，4月材料未提供这些问题已解决的证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "cell、primary/secondary serving cells 的定义及其与 physical carrier(s) 的映射仍需澄清；哪些功能必须关联特定 serving cell、主辅 serving cells 功能差异及 5G CA framework 改进点仍待研究，6G 术语待 RRC 结构确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "2月提出的 SCell 功能扩展、经 SCell 的 PCell failure recovery 及相关测量方案尚未确定；4月仍需研究 flexible aggregation 的 RRM measurement architecture、fast cell change、RLF handling，以及额外韧性触发条件和 UE 动作。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "非理想回传对调度、HARQ、PDCP/RLC 和额外 UP 时延的影响，以及节点间接口需交换的信息仍待评估；以 NR-DC framework 支持非共址聚合的可行性及 CP/UP 简化方案也未确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "具体 CA 增强功能尚未确定：2月的 UL/DL decoupling、PCell/SCell 快速角色变更，以及4月的单一 MAC entity、multiple TAGs、无需 RRC 参与的载波动态激活/去激活、CA-based duplication、LCH/carrier 灵活映射和 early measurement reporting，仍处于提案或研究阶段。"
+      }
+    ],
+    "overview": "2026年2月至4月，6GR 多载波研究从公共信令聚合、cross-CC initial access 和以 5G CA 为基线的统一载波资源聚合方向，推进到 RRC_CONNECTED 多 serving cells 的 L2/L3 功能、连接转换时快速重定向，以及非共址聚合的研究边界。研究范围更具体，但 cell 定义、协议架构和增强功能仍未定案；后续材料未表明此前 cross-CC initial access 待决项已解决。",
+    "source_hash": "21ca47aef53373c8050a7d0a1ffb7e476f79345ad99f41e9b4dc18f916b2f504"
+  },
+  "ran2_data_model_transfer": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "数据研究基线由记录 data type、endpoint pairs、data size、transmission interval 和 QoS requirement，推进到采纳 Table 1 用于分析，并明确框架至少支持时延宽松的 Large、Small 两类用例，按 UE 累积数据量与最小 UE AS buffer 的比较分类。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "用例范围逐步收敛：RAN2-133bis 目前不将 performance monitoring and inference 视为 data transfer，Immediate MDT 暂归 measurement reporting framework；RAN2-134 明确 standardized UE-side data collection 的标准化范围包括数据类型/格式及传输过程。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "终止职责从暂定 data consumer、termination point 定义及一般性 RAN 解码能力讨论，推进到具体用例划分。RAN2-133bis 至少考虑 SON、NW-side data collection 和 logged MDT 的 RAN 侧终止点，并为标准化 UE-side data collection 设置位置待定的 MNO 可见性终止点；RAN2-134 明确 RAN 不是 AI/ML UE-side data collection 的终止点，且 6G 不支持 UE 经 gNB、OAM 到 server 的 Option 3，并决定向相关工作组发送 LS。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "RAN2-134 明确区分 visibility 与 decodability：前者用于判断如何处理收到的数据，后者用于解码和解释内容。对 UE-side data collection，RAN 不解码或解释内容，但应了解数据类型，以支持 controllability 和 forwarding。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "传输需求由待细化的 QoS 和尚未处理的 mobility 提议，推进到 RAN2-134 要求支持按 use case 设置不同 priority levels 和 QoS parameters，并将 handover 期间保持传输、无需重启 data transfer procedure 且不得丢失数据作为必要方面考虑。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "模型方面，RAN2-132 区分 training data collection 与 model transfer/delivery，并以 5G UE-sided model LCM procedure 为研究起点；RAN2-133 延续 UE-side OTT server 向 UE 交付已训练模型不属于 3GPP 范围的边界，同时明确 model transfer 的 MNO awareness 和 controllability 要求，包括启动、暂停、恢复和停止控制。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "传输架构和承载选择持续未决，增强 CP、增强 UP、new plane/DP、新协议层或实体、新 radio bearer 及相关 logical channels 和 scheduling framework 尚未形成最终方案；是否采用统一数据收集框架也未见定论。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "standardized data 的 decodability 位于 CN 还是 OAM，以及具体终止点安排，仍需与 SA2、SA5 协调；RAN 如何识别数据类型并实现 awareness、传输控制和 forwarding 仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "用例和数据范围仍有缺口：Sensing 的数据特征依赖 RAN1 输入，讨论已延期；continuous learning、QoE 是否纳入框架尚未明确；non-standardized/vendor-specific data 的支持范围及是否需要标准化传输方案仍存在不同意见。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "各用例的具体 QoS parameters、避免 duplicated data collection/reporting/transfer 的机制，以及 UE 侧采集数据能否跨所有用例复用仍待研究。mobility continuity 和 lossless transfer 已成为需求，但材料未给出实现方案。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "网络控制 UE-side training server 到 UE 的模型传输或交付，其实现方式需跨工作组协调；是否需要支持 RAN-generated model 从 RAN 传到 UE，仍等待 RAN1 的用例研究。后续材料未报告这些问题的结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "统一 LCM procedure、two-sided model 的 Day1 LCM 影响，以及 AI/ML 用例的性能、benchmark、复杂度和能耗评估指标仍缺乏确定结论；RAN2-132 指出详细 LCM 讨论需等待 R20 AI-PHY WI 充分进展，后续材料未报告更新。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR 数据与模型传输研究从数据特性基线、模型传输范围和职责划分，推进到用例范围、终止点职责及传输需求的明确。RAN2-134 明确 RAN 不是 AI/ML UE-side data collection 的终止点，但需了解数据类型以支持控制和转发，并提出按用例区分 priority、QoS 以及 mobility 期间 continuity 和 lossless transfer 的要求。具体承载架构、网络侧终止位置和实现机制仍未确定。",
+    "source_hash": "fe1eba4f6c1b5a376521b4b9fec3a23db97e6b8535704685f73c8ef11f269a8b"
+  },
+  "ran2_early_reporting": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "RAN2-133bis明确支持对L2中尚不可用的UL data提前提供调度信息；RAN2-134进一步明确三种predictive reporting形式：仅报告timing information、报告特定时间窗口内的predicted data size，或报告预期到达时间点及数据量，推进了此前未明确的信息组合方式。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "RAN2-134明确Uplink early scheduling information通过MAC CE承载burst arrival prediction和/或burst size prediction；predictive timing information可将Rel-19 XR为DL定义的TTNB复用于6G UL。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "报告控制由早期对触发方式的探索，推进到要求为predictive SR/BSR定义并配置适当触发条件，以控制额外开销；短期和长期traffic reporting均应允许network启用或禁用。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "与现有BSR共存的研究进一步发展为将short-term early reporting纳入包含BSR和DSR的unified scheduling information feedback framework的目标，具体整合机制尚未确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "预测辅助RRC状态转换的讨论进一步明确了范围：提前发起UE与CN间的service flow establishment及early service flow modification procedure不属于RAN2范围；RRC_IDLE到RRC_CONNECTED的转换决定依赖UE implementation，无规范影响。长期预测研究则聚焦辅助aNB配置、重配置及因data inactivity释放UE。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "timing information的具体语义、粒度及报告条件仍需细化；长期UL/DL traffic prediction的报告参数，以及采用QFI、LC、LCG或UE粒度仍未确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "short-term early reporting如何整合进包含BSR和DSR的unified scheduling information feedback framework，以及predictive SR/BSR的具体触发条件仍待推进。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "long-term traffic prediction对aNB有用的报告内容、提供时机及在初始RRC (re)configuration、connected UE reconfiguration和提前释放中的应用仍待研究；辅助提前释放的UL control signaling及通过RRC state transition message或UAI报告的机制尚未明确。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "performance monitoring的必要性和标准化范围尚无一致意见，包括UP监测、NW implementation监测和轻量级CP监测的取舍；AI-based prediction的LCM procedures、CP用例的UE capability reporting、security、trust requirement及prediction failure的fallback/mitigation mechanisms仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "RAN2-133bis提出的不同流优先级、delay-critical bursts支持，以及AI与非AI预测的标准处理方式、网络是否需要知晓预测方法和confidence机制，后续摘要未明确给出结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "predicted traffic load用于SCell activation/deactivation等carrier aggregation management是否产生额外规范影响，RAN2-133bis列为待明确事项，后续摘要未报告结论。"
+      }
+    ],
+    "overview": "2026年4月至5月，6GR 提前报告从支持对尚未进入L2的UL data提供early scheduling information，推进到明确短期预测报告形式、MAC CE承载及network启用或禁用控制。长期预测的应用方向进一步聚焦，但统一反馈框架、报告粒度、监测和预测失败处理等机制仍待研究。",
+    "source_hash": "b963adb2988daffd28cff92a8ad62115bca2d3535afb1e25f7616e727ff0f5ce"
+  },
+  "ran2_general_design": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "明确mobile broadband的高优先级及6G standalone architecture支持Voice的要求，提出eMBB（含immersive communication）、Voice、ISAC和IoT的Day 1需求；其他服务支持需有market needs和use cases依据，并以Day 1满足emergency calls、相关positioning及PWS监管要求为假设。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "移动AI流量特征纳入研究，记录token arrival rate/interval与source file traffic pattern相关、不同tokens可具有不同可靠性要求；但尚未确定是否研究tokenized AI traffic。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "安全跨组协调由批准发往SA3的LS，推进到同意以“Noted”回复SA3 LS并继续审查TR 33.801-01 Annex-B；审查聚焦RAN2相关方面，不预计覆盖SA3全部方案。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "MAC CE安全讨论先梳理无Sequence Number、无in-sequence delivery、部分消息需在security establishment前发送及BSR/DSR/PHR的时效性，随后记录符合UE资源配置才处理MAC CEs的约束；至2026年5月，保护目标拟限于RRC_CONNECTED，排除初始接入及连接失败过程，并确认信令侧支持可配置保护可行。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "system information保护从RAN2角度聚焦接入所需信息的integrity protection，以检测false base station；dedicated delivery of SIBs宜由connected mode security覆盖。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "新增256-bit AEAD的PDCP适配分析，涵盖Confidentiality、Integrity和Combined模式；在COUNT和MAC-I保持5G长度的条件下，AEAD不影响PDCP PDU format。RAN2提出PDCP SDU作为plaintext、整个PDCP header作为associated data的理解。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "Voice fallback、common minimum functional capability及相关参数仍需RAN plenary指导；设备能力表达、scalable design及device types与requirements/features/signalling的研究顺序未见后续定论。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "tokenized AI traffic的研究范围及与SA4的协调、RAN/CN计算资源部署选项、Digital twin traffic model及规范影响仍待研究；vertical services协议条目未处理，UE based sensing signalling被提出待RAN1 initial design稳定后推进。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "MAC CE最终保护方案仍待SA3决定，包括是否仅保护essential MAC CEs、SN和MAC-I等参数及开销与时延权衡；Annex-B审查、潜在攻击恢复机制及“group of UEs”威胁分类仍需推进。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "system information认证范围、SIB认证粒度、signature或authentication token大小、传输更新频率及可接受开销未定；后续SIB携带signature后校验和temporary/provisional connection验证方案仍待SA3评估。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "RRC connection期间仅依赖symmetric security algorithms是否足够，以及PQC是否适用于UE air interface，仍需确认，后续材料未给出结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "AEAD模式、算法共存、输入配置、Cipher-only/Integrity-only配置及48-bit EXTRA_IV同步方式需SA3澄清；MAC-I长度未定，4-byte MAC_BYTES仅为RAN2倾向。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，讨论从6GR业务优先级、Day 1需求和通用设计，推进到MAC CE与system information安全协调，并扩展至256-bit AEAD的PDCP适配分析。MAC CE保护的目标范围逐步明确，但具体安全机制仍待SA3协调决定；早期业务和设备设计待决事项在后续材料中未见明确结论。",
+    "source_hash": "d6b3395159c66355f823f1b43b90b785c696a871bb39a5babf5ae6af9365273b"
+  },
+  "ran2_mac_scheduling": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "CB UL 从以 normal SR/BSR 为比较基线的探索，推进到 RAN2 牵头评估，并在 RAN2-133bis 明确从 TN scenario 下共享资源承载多 UE BSR 开始；KPI 覆盖 UL PRB utilization、data burst latency 和/或 BSR latency，并考虑 collision ratio。评估假设 payload 包含 UE ID，timer 内收到 positive NW response 表示 contention resolution 成功，失败重试采用 HARQ new transmission。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "调度信息从研究 buffer status 与 delay status 的统一 framework，推进到明确支持两类信息、采用 legacy per-LCG reporting 基线；RAN2-134 进一步以 NR BSR/DSR triggering events 作为 unified uplink data status procedure 的触发基线，支持 data importance reporting，并至少将 PHR reporting 与 BSR/DSR 分开。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "RAN2-132 确立 DL SPS 基线并继续研究 UL CG like mechanisms；RAN2-133bis 明确 CG 研究涵盖立即激活、动态激活/去激活及资源调整。RAN2-134 进一步支持一个或多个 CG configurations，通过 RRC 和/或 DCI 激活或去激活，允许多个 CG 同时激活，但每个 cell 同一时刻 UE 仅在一个 CG 上发送，并批准向 RAN1 发送相关 L1 scheduling 需求 LS。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "RA 从 RAN2-133bis 支持 CBRA/CFRA、限定 Msg1/Msg3 indication 适用范围并研究流程统一，推进到 RAN2-134 明确支持 2-step/4-step RA、要求 4-step RA 可独立工作，并支持在 preamble 解码成功但 msgA-PUSCH payload 解码失败时 fallback 到 4-step RA 的 msg3 transmission。MAC 共性设计仍在推进。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "LCP 研究从动态参数以及 delay、importance、跨 flow/packet correlation，扩展到新 LCP design、多种 performance objectives、application context awareness 和 dynamic QoS，并结合 per-LCG/per-LCH UL grant 探索更细粒度调度；截至 RAN2-134 尚未形成具体增强设计。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "RAN2-132 明确支持 sequence number-based L2 recovery 和基于 STATUS reporting 的 ARQ retransmission，保留 ARQ 独立于 HARQ、实现最高 100% reliability 的要求，并研究利用 HARQ process status 加快重传。后续材料未给出该机制定型或要求变更的证据。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "CB-PUSCH 用于 general purposes 还是仅用于 BSR 尚未确定；共享资源 blind decoding complexity、碰撞时 UE 区分与 payload 解码能力及 DMRS/RNTI 假设仍需 RAN1 输入。基于 CG 的增强、复用 RACH framework，以及 valid TA 下仅发送 MSGA payload 的机制仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "调度信息的统一格式、粒度和新增触发条件仍待明确；early reporting 的内容、触发与约束未见后续定论。data importance 粒度、BSR 指示待处理 MAC CE 及其大小、更细粒度 SR 和 SR resources 效率增强仍待研究；PHR 细节需等待 CA framework 与 RAN1 MIMO 要求更明确。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "LCP 动态参数、信道选择、优先级灵活性及 delay、importance、QoS flow/packet dependency 的处理尚待设计；更细粒度 UL allocation/grant 的场景、粒度、DCI 开销及对 LCP/BSR 的影响仍不明确。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "RA 统一的参数、MAC PDU、恢复机制和窗口长度仍待确定；RACH partitioning、2-step RA preamble/PUSCH 对应关系、负载管理和节能设计需与 RAN1 协调。UL CCCH segmentation 的可行性及 preamble partition 方案仍需结合大小需求、复杂度和 contention resolution delay 评估。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "CG 资源使用/未使用指示、UE 发起的 advance indication 及资源效率机制仍待研究；是否以 NR UTO-UCI 为基线存在不同意见，多 CG 操作细节可在 stage 3 继续讨论。此前提出的 CG recycling 和 UE 请求更新 CG configuration 未见明确结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "显式 UL HARQ process status 及利用 HARQ status、feedback 或 network indications 加快 ARQ/RLC 重传的细节仍缺乏定论；更细粒度 HARQ、通过不同 HARQ processes 调度不同 logical channels 的提议也未见后续处理结果。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR MAC 与调度从研究方向逐步推进到评估假设和基本协议行为的确定：CB-PUSCH 明确了 BSR 评估起点，调度信息逐步形成 reporting 与 triggering 基线，RA 和 CG 明确了支持范围及部分操作规则。更细粒度调度、LCP、资源效率增强及跨 RAN1/RAN2 的设计仍待研究，材料未表明整体方案已定型。",
+    "source_hash": "fed6f6c3e142d19bea2d2099467a64780e229b22fd0249cd1dd81668bfba4f76"
+  },
+  "ran2_mobility": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "RAN2#132 以 NR cell (re)selection framework 为基线，并将无预配置、预配置及 UE-triggered mobility 纳入研究；RAN2#133 明确 mobility without pre-configuration 为 6G TN baseline；RAN2#133bis 进一步支持 candidate RRC configuration 预配置和 common candidate RRC configuration，配套 fast RRC processing 并非所有 UE 必须支持。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "测量研究从 L1/L3 measurement 的 common RS configuration 和动态 measurement gap 请求目标，推进到先明确需求与方案、再判断配置或流程能否统一；RAN2#133 暂定框架覆盖 serving/non-serving cells、多种测量目的、频率及 RAT、gap-assisted/non-gap-assisted measurement，以及周期和事件触发报告。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "Early synchronization 从研究范围逐步形成具体流程：RAN2#133bis 同意研究有无预配置及 spectrum aggregation 场景；RAN2#134 支持 NW-triggered early UL synchronization，由 source cell 触发、target cell 计算 TA 并经 source cell 交付 UE，有效 TA 支持 RACH-less mobility；early DL sync 以 source cell 触发 candidate cell 的 TCI-state activation 为基线，也支持仅预配置 DL RS 和 TCI-state configuration。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "切换时延研究从减少配置更新和处理开销，推进到明确由 RAN4 定义不同 HO 场景的 Tprocessing、RAN2 研究 HO command。RAN2#134 明确 Tprocessing 主要取决于实际执行操作，与参数数量或命令大小无直接相关性，并同意通过 LS 请 RAN4 评估 RF/BB configuration 不变场景的时延要求。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "预配置资源效率从候选资源预留问题推进到 initial access 资源指示原则：RAN2#134 明确 source cell 可与 target cell 协调后，通过 cell switch command 指示 CFRA、CG 或用于 RACH-less 的 SR 资源，并要求 UE 每次 cell switch/change 后通知 network。针对 delay-sensitive、bursty traffic，wake-up mechanism 与基于预配置的 UE-based mobility 被作为独立功能研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "Inter-RAT mobility 起步支持 RRC_CONNECTED 下的 handover、re-direction 及提供 reselection information；随后 NTN 研究明确 time/location-based conditional handover baseline，并以 single connectivity 为范围、暂以 5G 机制作为各状态 GNSS-based mobility baseline。RAN2#133bis 进一步明确支持 6G TN–5G NTN Inter-RAT mobility，以及 IDLE、INACTIVE、CONNECTED 下 Intra-6G NTN–TN 双向移动性。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "覆盖 6G Day1 handover schemes 的完整 mobility framework 尚待完善，包括可选 Pre-configuration、Early processing 和 Cell switch triggering/execution；统一 L3 HO 与 LTM 的流程及信令、subsequent mobility 的支持与简化方式，材料未显示已定案。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "时延优化仍待落实：RAN4 需评估 RF/BB-impacting parameters 不变时更低的 T_RRC/T_processing 要求；RAN2 继续研究 small-size HO command、应用 target configuration 前保持 source cell 通信，以及预配置与 fast RRC processing 的结合。Data forwarding 和 path switch 时延还需与 RAN3、SA2 协调。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "候选配置细节和资源预留效率仍待研究，涉及 CFRA、Configured grant、SR 资源、关键与后续配置的拆分，以及 shared resource pool、基于 NW coordination 或 UE assistance info 的 dynamic resource allocation/activation。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "UE-triggered early UL/DL sync 尚未定案；UL 方向需评估 UE-based TA acquisition、CFRA/CBRA 使用、避免不必要同步及 asynchronous network 的 timing assistance。Early DL sync 和 early CSI acquisition 的可行性依赖 RAN1 进展，简化方案及 UE 功耗、复杂度和资源开销权衡仍需研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-134"
+        ],
+        "text": "统一 measurement configuration/reporting、cell/beam level 与 L1/L3 measurements，以及 measurement gap procedure、signaling 和参数要求仍缺乏定案证据。RAN2#134 还提出 connected mode measurement/reporting relaxation、UL-based mobility，以及针对 ping-pongs、unnecessary HOs 和 RLFs 的增强研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "NTN 仍需落实 time/location-based 触发与测量、TN 测量跳过或放宽、RACH-less handover 与 CHO 的组合、不同 TN–NTN 集成模式及 multi-orbit mobility；GNSS-free/GNSS-less 下的移动性和 timings 被列为优先研究，GNSS-degraded 的 position fix/accuracy 尚待 RAN1 结论。Inter-RAT 进一步增强也未见定案证据。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR 移动性从确定 NR 框架基线和研究范围，推进到 TN mobility baseline、candidate RRC configuration 组织原则及 network-triggered early UL/DL synchronization 的具体方案。NTN 移动性逐步明确 baseline 和支持范围。总体仍处于研究与部分原则达成阶段，完整 mobility framework、时延优化、资源预留效率及测量机制尚未定案。",
+    "source_hash": "8c3719dafb1d2e49cd20ef9b1509c6641aee5b0cd41e11e25aec3a5af3e42ed9"
+  },
+  "ran2_paging": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "2月倾向于为 IDLE/INACTIVE 采用 single CN-triggered paging，并假设使用 single paging ID；4月进一步明确 CN-triggered mechanisms、single paging area（no RNA）及 single paging ID 的偏好，其中 idle 使用的 TA-like list 同样适用于 inactive，且 paging LS 已获批准。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "Context 存储从2月假设至少保存在 last RAN node，推进到4月同意 UE AS context 存储在 last aNB；新 aNB 有直接 Xa interface 时，可经 Xa 获取 context。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "2月提出按 paging load 调整 UE 监测 PO 数量的研究方向；4月明确 UE 每个 paging cycle 监测一个 PO，5月以每个 UE paging cycle 监测一个 PO 再次明确。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "PF/PO 设计从2月支持 non-uniform PO distribution、distributed/bundled PF/PO 的方向，推进到4月以一个 distribution formula 支持所有 paging cycles 下的 clustered 和 uniform PF/PO；5月进一步明确 cluster 内 POs 应更密集，且数量多于 NR Rel-19。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "2月提出 paging periodicities 可配置为 SSB periodicities 的倍数，并通过 offsets 调整 PO；支持 paging 的 Cell DTX 要求 PF/PO 位于 on duration 内，同时假设 single DL wake-up scheme，尽量统一 PEI 与 LP-WUS 的 upper layer procedure 和参数。后续材料未报告这些方向的进一步变化。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "统一 CN-triggered paging 和共用 paging area 的跨组可行性仍缺乏确认结果；4月明确偏好并批准 LS，不足以证明2月提出的 paging area 大小、是否适用于 connected 子状态等问题已解决。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "无 Xa interface 时，由 CN 存储 AS context 或经 CN 转移 context 的影响与实现仍需 SA2、RAN3 决定，并考虑安全信息及验证；context fetch 和用于识别 context storage 的 UE ID 也仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "Inactive UE 的 CN paging 触发及恢复 procedures 尚未确定；4月进一步列明 CN 缓冲 MT DL data/signaling、触发 paging 和通过 RRC resume 响应等内容仍需 SA2、RAN3 研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "4月和5月均将 paging formula 的 requirements 及 shortcoming/limitations 整理留至下次会议，详细公式设计留待 WI phase；5月的全部 DRX cycle lengths 下 PF/PO bundling、更小 N、多个 clusters/Paging Possibility 等提案仅获 Noted，signaling overhead、最低周期及配置延迟仍待处理。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "支持 idle/inactive UE paging、通知 system information change 与 ETWS/CMAS，以及 paging capacity（含 paging records）至少达到5G水平，在5月材料中仍为提出的要求；基于 UE paging-related capabilities 分配 PO 也尚无明确结论。"
+      }
+    ],
+    "overview": "2026年2月至5月，6GR 寻呼从统一 IDLE/INACTIVE 的 CN-triggered paging 方向，推进到明确 single paging area、single paging ID 的偏好及 last aNB 存储 AS context 的安排；无线侧逐步明确每个 UE paging cycle 监测一个 PO、以统一公式支持 clustered 和 uniform PF/PO，并增加 cluster 内 PO 密度与数量。跨组 context retrieval 和 CN procedures 仍待研究，具体 paging formula 留待 WI phase，尚无完整机制定案的证据。",
+    "source_hash": "937d60fbee120e30ca331e4561f6e6a372591d65743382499c3abef1bcfbe39d"
+  },
+  "ran2_qos_qoe": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "RAN2-132 聚焦目标业务共有的流量属性及 QoS requirements；RAN2-133 进一步定义 service-awareness，并假设 UL/DL 均包含 QoS flow-level 和 flow 内 packet-level 的 QoS requirement awareness，同时采用 RAN1 已达成一致的 eXR traffic model 作为 immersive communications 研究 baseline。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "QoS flow 内差异化处理从初期研究推进为支持 service 和 per-packet QoS differentiation 的能力方向。RAN2-133 的暂定 baseline 包括基于 QFI 识别 traffic、一个 QoS flow 映射到单个 DRB，尚待 SA2 确认；RAN2-133bis 明述 QoS flow 到 RB 的 1:1、N:1 映射。更细粒度处理方案仍未确定，RAN2-134 对 1:N QoS flow-to-DRB mapping 仍有不同主张。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "Dynamic QoS 从预配置 profiles 切换研究，推进到 RAN2-133 提出的不涉及 NAS/NG signalling 的 RAN based switching。RAN2-133bis 将场景细分为 flow 间切换、flow 属性变化和 flow 内 PDUs/PDU sets 属性差异；RAN2-134 进一步研究 QoS profile 不变或变化时按预配置范围动态调整 L2 参数，并指出后两类场景需要 user-plane per-PDU/per-burst 时间尺度的适配。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "Burst-aware handling 从 RAN2-133 的 delay-critical data bursts 差异化处理方向，推进到 RAN2-133bis 研究 burst information 检测和提供方式；RAN2-134 进一步描述信息可覆盖 AS buffer 内、尚未进入 buffer 及尚未生成数据的大小，以及首包预计可供传输的时间。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "RAN2-133bis 同意研究面向 E2E user experience 的 service characteristics differentiation，将 tethered device 到 Data Network 的完整路径纳入 latency 和 reliability 考量，并决定就 AN PDB 内补偿 non-3GPP delay 向 SA2 发送 LS；RAN2-134 延续了该研究方向和协调决定，材料未给出补偿方案已确定或 SA2 已反馈的证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "AL-FEC 从 RAN2-133 的支持必要性、冗余 packet 丢弃及优先级研究，推进到 RAN2-133bis 的信息提供、PDCP SDU discard 和成功传输判定问题；RAN2-134 明确将研究 AL-FEC aware L2 protocol stack，依据 application-layer reconstruction requirements 对 source 和 repair packets 进行 differentiated handling。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "动态 L2 调整的参数、责任归属、RAN/UE 配置对齐、切换条件与行为仍待明确；user-plane QoS indication、UL per-PDU 属性确定、DRB 内处理粒度及 QoS flow/DRB/LCH 映射尚未定案，还需评估 LCP、retransmission、discard 和交付顺序影响。涉及 QoS profile 变化的机制需与 SA2 协调。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "Service-awareness 信息的来源、内容及 UL/DL 传递机制仍待明确，包括 UE assistance information、burst information 上报和 BSR enhancement；AS 获取差异化 packet transmission requirements 的标准支持还涉及 SA2/SA4 协调。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "Multi-modal 的 flow dependency、跨 UE 同步、联合 QoS adaptation 及 haptic scheduling 仍需研究。RAN2-133 对 synchronization 是否需要 RAN 参与存在分歧，相关 awareness 提议为 Not treated；后续材料没有证明该分歧已解决。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "Tethering 中 non-3GPP delay 的 AN PDB 补偿方式、动态 jitter 导致的 effective PDB 变化、non-3GPP link PER 感知及 E2E reliability 适配仍待确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "AL-FEC 所需信息能否配置给 UE 并供 AS 使用、CN/UE 向 RAN 的信息提供方式、冗余数据 discard 和成功传输判定，以及 UL 与 scheduler 增强仍未确定，并需与 SA4 协调。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-134"
+        ],
+        "text": "HOL blocking 从 RAN2-132 的单一 bearer 跨服务阻塞观察，细化到 RAN2-134 的 default DRB PDCP 接收端问题，仍无确定方案；多个 default DRB、发送端交付指示、较短接收定时器和 selective out-of-order delivery 均待研究。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR QoS/QoE 与服务感知从识别共性 traffic characteristics/requirements 和探索通用框架，推进到明确 service-awareness 能力、per-packet QoS differentiation 与快速 QoS adaptation 方向，再细化至动态 L2 参数调整、burst information、tethering 和 AL-FEC aware handling。现有材料体现了研究范围与能力方向逐步具体化，但信息传递、映射、动态切换及跨工作组协调仍未形成完整协议方案。",
+    "source_hash": "c4d14ddd4e708116b8ec3aafae6dbe1a94e013f8337c31cb7969cf44775ea337"
+  },
+  "ran2_spectrum_aggregation": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "6G-6G spectrum aggregation 将采用简化的 Dual Connectivity，同时保留 Dual Connectivity framework。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "增强 CA framework 被列为研究方向，由各 distributed scheduler 独立处理 BSR、PHR、RACH、SCell activation 等 time-critical MAC functionalities；single MAC entity 内 separate schedulers 的 coordination 规范化仍被认为具有挑战且不理想。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "最高 10ms backhaul delay 的研究安排为影响分析、协议层评估及方案比较两个阶段，覆盖 CA/DC、接口、性能和 UP/CP。材料识别出高 backhaul latency 下 single scheduler 的 HARQ RTT、缓冲需求、状态信息时效性及 MAC 操作性能问题。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "CONNECTED mode 多载波研究纳入 PCell/SCell 配置与操作分离、PCell failure recovery、角色切换、载波添加与激活速度，以及静态 UL/DL 载波组合的限制。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "最高 10ms 非共址 FR1-FR2 场景可满足的需求、简化 DC 的可行性及增强 CA 与 DC 的方案比较仍待完成。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "PCarrier/PCell 与 SCarrier/SCell 的功能清单，以及通过专用信令显式配置功能的方式仍在讨论。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "通过 SCell 报告 PCell failure、避免 RRC re-establishment 的恢复机制，以及多小区 RLM、额外恢复触发和 UE 动作仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "灵活 UL/DL carrier decoupling，以及快速载波/小区添加、修改、激活和去激活的信令与流程仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "10ms backhaul 下尚无统一性能结论，需核查仿真假设、FR1-FR1 范围及与单载波 FR2 的比较，并评估重排序和速率不对称造成的性能下降。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "是否研究 aNB 可透明隐藏的 backhaul delay “X”，以及面向 inter-vendor 场景的 FR1/FR2 enhanced mobility 快速切换细节仍待确定。"
+      }
+    ],
+    "overview": "材料仅包含 RAN2-134（2026年5月18日至22日），不能判断跨会议变化。该会议明确保留 Dual Connectivity framework 并采用简化 DC，同时研究增强 CA 与 distributed schedulers；针对最高 10ms backhaul delay 的非共址场景开展分阶段评估，具体架构、适用条件及性能结论尚未确定。",
+    "source_hash": "4ed2e3d7581116b3a7863faacc76999b664a277cbf551c902afdf04889eb0359"
+  },
+  "ran2_system_access": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "RAN2-132 以假设支持 on-demand SI 和 area specific SI 为研究方向；RAN2-133 随后明确 SIB1 至少保留 camping suitability 判断所需的 cell basic camping information、cell barring information，以及接收下一个 SIB 所需的 scheduling information。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "SIB1 splitting 从先明确内容、大小再评估，推进到研究将其他内容移出 SIB1；RAN2-133bis 进一步梳理配置开销与 two-step acquisition 时延，并暂缓拆分讨论，待6G SIB1内容或新需求明确后恢复。尚未确定拆分结构。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "SI scheduling 从灵活调度与缩短 SI 传输时间的研究，逐步细化为可配置窗口宽度和起始位置；RAN2-134 明确研究 per-SI-message SI-window width 及显式或隐式 window start positions，同时考虑 UE impacts、UE calculations 和避免频繁 SI updates。"
+      },
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "RAN2-132 确立 CA、BWP 及基于5G机制的 cell access control 设计基线，并同意研究 IDLE/INACTIVE（如支持）下用于 paging、system information 和/或 random access 的 multicarrier operation。后续所给材料未提供这些方向的进一步结论。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "SIB1 splitting 的必要性、字段范围、fixed 或 flexible split，以及附加获取时延是否可接受仍未确定；primary SIB1/SIB1x 划分和不同 device types/features 的承载方式仍属提案。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "on-demand SIB1 的 UE request mechanism 和新到达小区 UE 获取 uplink configuration 的方式仍待确定；standalone OD-SIB1 的可行性与收益待 RAN1 进展后再考虑，首先关注 non-standalone OD-SIB1 的方向尚未形成最终机制。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "跨小区共用 SI 的内容、cell-specific 或 area-specific SIB1 的选择，以及 identical SI identification 和 update synchronization 的简化方式仍缺少定案证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "per-SI-message SI-window width 的具体方案仍存在分歧；显式与隐式 window start positions 的结合、起始粒度、窗口重叠处理，以及未广播 SI 的窗口预留、前移或请求后动态分配方式均待确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "Other SI 请求尚未确定采用 Msg1-based 还是 Msg3-based 机制；以 NR Msg3-based OD-SI design 为起点、将 Msg3-based UE request 作为 baseline 和 UE mandatory feature，以及 dedicated OD SI 等仍属于研究或提议。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "不同 periodicities 的 SIB 合并传输、同一 SI-window 内多个 SI messages 的 TDM/FDM，以及与其他 common broadcast signalling 聚集的收益仍需评估网络节能、UE功耗、复杂度和 SI modification 影响；更细粒度 SI change notification 及 Paging DCI 携带 SIB 级更新信息也未定案。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR 初始接入与系统信息研究从设计基线和总体方向，推进到 SIB1 最低信息范围及 SI-window 配置机制。SIB1 splitting 在明确最低内容后，因仍需明确6G内容或新需求而暂缓讨论；SI scheduling 则逐步细化到 per-SI-message SI-window width 和显式或隐式 window start positions。on-demand SI 请求、窗口分配及节能收益仍在研究，尚未形成统一协议设计。",
+    "source_hash": "2f9b75f86e3fa95eee5191e949a6617ac336c23a321fb4b673f30f4b6561b079"
+  },
+  "ran2_ue_capability": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-134"
+        ],
+        "text": "能力报告以保留网络请求流程、支持显式报告及UE Capability ID报告为起点，随后提出minimum baseline capability set、按device type区分的mandatory capability sets，并支持基于delta和reference profiles的module-based reporting/configuration；最新会议仍在研究具体模块化信令与复用机制。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "信令优化从识别band/BC重复上报、filtering粒度过粗及FeatureSetCombination复用不足，推进到将Solution 4（Coarse granularity）和Solution 5（Band combination signalling optimization）纳入TR。FeatureSet ID及FSC List保留候选方案，细节移交WI stage-3决定。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "动态更新从既有NR UAI及NeedForGap用例出发，进一步明确UAI不足以报告UE capability change，并确立统一UE capability change signalling procedure的目标，覆盖UE envelope及特定RF/hardware-related capabilities。最新会议明确仅报告相关能力，由各use case标准定义可更新参数，并复用5G已定义参数。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "动态更新用例从优先研究overheating和MUSIM，扩展至power saving、foldable phones及IDC，再纳入UE internal resource availability（computational power/APU、memory、storage），并研究UE battery level等更广泛用例；纳入研究不代表各用例处理方案已确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-134"
+        ],
+        "text": "动态更新流程从提出网络处理时限及transition period配置同步要求，推进到明确capability change message在RRC connected mode发送、预期在mobility时转发给target aNB，以及fallback timer到期后以RRC re-establishment procedure作为UE基线行为。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "RACS从收益、可行性及ID机制研究，经是否继续使用尚无共识，推进到将表示完整UE capabilities的CN based RACS ID后续讨论交由SA2，RAN2无需继续讨论该项；RAN-centric ID仍属研究方向。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133bis"
+        ],
+        "text": "信令优化的具体选择和收益仍待验证：FeatureSet ID/FSC List细节留待WI stage-3，需基于真实NR capability container评估候选方案及compression，并在WI阶段结合6G RAN1/4 feature list重新评估coarse granularity。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "capability container划分、同一container内的delta signaling、partial capability sets复用、RAN-centric ID分配与使用、避免分段、progressive/iterative enquiries及统一technical specification组织方式仍待确定，需兼顾signaling overhead与future extensibility。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "动态更新进入Idle/Inactive后的处理及最新信息存储仍未确定；mobility时的信息转发虽有预期，跨状态整体流程尚待完善。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "无需网络预配置或许可即可报告的适用用例、触发条件、更新频率和network control仍待明确；自主更新相关提案仅为Noted，foldable phones是否需要capability update及其处理方式也未见收敛证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "网络响应能否reject、supervisory timer是否由网络配置、无响应/NACK/ACK后未适当处理时的统一UE behavior、配置不匹配处理，以及如何避免更新网络不支持的capability field仍待完善。fallback timer到期后的基线行为已明确，但不足以说明全部异常流程已解决。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "减少optional capabilities、basic feature groups及部署跟踪机制尚未定案；UE与网络mandatory feature支持一致性和IODT处理未见后续收敛证据。Commercialization challenges的处理路径及部分根因是否纳入讨论仍待决定。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR UE 能力框架从识别NR能力信令开销、可选特性复杂度及动态更新痛点，推进到baseline/delta模块化设计方向、优化方案纳入TR及动态更新部分流程行为的明确。最新会议已明确报告范围、RRC connected mode发送及fallback timer到期后的基线行为，但能力编码、跨状态处理、网络响应和异常处理仍未形成完整协议方案。",
+    "source_hash": "3622b0756362f22c324d90cfbba78d7cbbb420cc927794398704d84d0b0f94cd"
+  },
+  "ran2_user_plane": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "序号与架构研究由RAN2-132的joint sequence numbering方向，推进到RAN2-133以standalone和PDCP SN为single SN研究假设；RAN2-133bis继续比较独立SN、分层统一SN与合并层方案。RAN2-134提出部署选项不应影响共同协议栈，并明确PDCP/RLC分设时的最低功能分工，但未确定最终层结构。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "L2 common retransmission mechanism在RAN2-133及RAN2-133bis仍属可行性研究；RAN2-134明确不支持unified L2 retransmission，PDCP retransmissions与RLC ARQ保持分离，且SDU和SDU-segment均需支持重传。同时支持unified L2 status report，AM DRB仅支持用于两类重传的RLC status report，区分了过程统一与报告统一。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "HOL blocking从RAN2-132识别失败CB延迟其他PDU交付，扩展到RAN2-133研究同一DRB内service flows及CB间阻塞。RAN2-133bis优先研究Type 1/2 higher layer HOL blocking，支持PDCP感知QoS flow，并约束DRB内不得引入多个PDCP sequence number spaces；RAN2-134进一步明确从RX/TX两侧结合QoS framework研究，无需专门处理RLC/PDCP control PDUs。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "RAN2-133支持发送端基于HARQ process status加快DL ARQ retransmissions，触发细节交由network implementation。RAN2-133bis倾向以DCI显式指示指定UL HARQ process success以清除对应L2 buffers，并批准FARQ LS；同时因预期增益有限，不再推进positive HARQ feedback assisted RLC enhancement。DL FARQ是否进一步增强仍依赖RAN1设计与feedback reliability。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "QoS与交付机制逐步形成部分基线：RAN2-133以QoS flow到DRB映射保留在SDAP为基线，SDAP合并至PDCP及移除RQoS/Rmap仅为Noted；RAN2-133bis明确支持基于定时器的SDU discard；RAN2-134针对PDCP reordering的内存、时延和QoE适配不足，确定研究更简单及增强的机制。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133"
+        ],
+        "text": "随机接入从RAN2-132识别partitioning低效，推进到RAN2-133明确仅在必要时使用RACH partitioning，并向RAN1发送LS研究msg1与msg3 indication分工。该会议还以NR Type 1/2作为Day-1 periodic traffic的configured grant研究起点，并为mobile AI建立实时/非实时分类及初步流量建模基线；后两场摘要未提供这些方向的进一步结论。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "single SN与最终层架构仍待确定，包括SN分配、header组织、control PDU处理、split bearer DC、合并层分段重组，以及CU-DU split下窗口操作和不同终止点的共同状态报告。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "higher layer HOL blocking和PDCP reordering尚缺完整方案：需明确QoS flow感知队列、差异化in-order/out-of-order delivery、SDU识别与转发，以及如何降低timer相关时延和内存需求。reflective QoS是否支持、data discarding增强及congestion management也未见收敛结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "lower layer HOL blocking与early forwarding仍依赖RAN1的CB/CBG设计。RAN2-134已发LS询问不依赖TB CRC结果交付成功解码CB/CBG的必要性与可行性；MAC subPDU边界、可信且可解析的数据单位、反馈方式、收益及启用条件仍待明确。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "FARQ仍需明确可靠HARQ feedback设计、DL增强需求、N2A/DTX2A检测，以及MAC CEs和control PDUs的处理；HARQ status indication用于RLC UM、Type 4 HOL blocking中长期Bj<0造成的控制PDU阻塞也待讨论，专用radio bearer和LCH方案仍有不同意见。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "压缩与开销优化尚未定案：UDC支持方式、处理开销、加密数据支持及SCHC候选影响仍需研究。RAN2-132提出的packet concatenation场景、QoS隔离、安全和硬件适配问题，以及header长度与MAC PDU格式优化，后续材料未提供完整解决结论。"
+      },
+      {
+        "meetings": [
+          "RAN2-133"
+        ],
+        "text": "RAN2-133留下的统一简化RACH、early indication、overload缓解、动态资源调整、更大Msg3/MsgA及CG统一框架仍未见后续结论。mobile AI可变突发和时延需求对应的L2、UL与scheduler机制，以及等待SA4推进的tokenized traffic特征，也缺少后续定案依据。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR 用户面架构从重复功能、开销和处理效率问题梳理，推进到研究基线、功能分工及部分机制选择。RAN2-134提出面向所有支持场景和架构的共同协议栈目标，明确PDCP retransmissions与RLC ARQ保持分离，同时支持unified L2 status report。single SN、PDCP/RLC是否合并、重排序及early forwarding仍未形成完整方案。",
+    "source_hash": "f41644db059d5a3c5ecef3a444cbe22f8ec2a270f142abf4ba2939f69c1552c0"
+  },
+  "rrc": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN2-132"
+        ],
+        "text": "RAN2#132 明确当前采用 single RRC sublayer（no upper/lower split），RRC layer split 讨论推迟至 RAN3 或 RAN 就 CU-DU split 作出决定；后续材料未提供该方向变化的证据。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "状态研究由三态模型与 sub-states 的选择，发展为按业务场景区分研究方向：RAN2#133bis 对 delay-insensitive/bursty traffic 聚焦“Inactive”state，对 delay-sensitive and bursty traffic 继续研究 connected mode mobility 省电；RAN2#134 进一步指出低频且高时延容忍度的 IoT cases 适合 inactive operation，Smartphone/eMBB/FWA foreground traffic 不适合。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-134"
+        ],
+        "text": "RAN2#133 明确 Inactive/sub-state 的 UE AS context 保存、identifier 定位和 UE based mobility 能力，并要求从 network-controlled mobility 转入 UE-controlled mobility 使用受安全保护的显式网络信令。RAN2#134 进一步指出 inactive 与 idle 存在上下文、标识、安全和数据传输要求上的根本区别，应采用不同的 CONNECTED 转换流程；两端保存 AS context 的 resume-like procedure 可支持满足 CP latency requirement 的快速转换。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "RRC structure 从 delta configuration 和 modularization 研究，推进到以 Rel-19 为基线的模块化可行性研究，并在 RAN2#133bis 明确一致使用 additional parameterized types、采用 ID-based linking、除 mandatory features 外允许 UE 无需理解整个 ASN.1 configuration，以及支持 delta signalling 的非逻辑必选字段必须具备释放手段。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "失败处理方向发生明确收敛：RAN2#132 提出保留或应用可用配置部分，RAN2#133 将仅应用有效配置列为候选方案，RAN2#133bis 明确 UE 应报告失败原因；RAN2#134 明确不推进 UE 部分应用 (re)configuration 的规范方案，转向研究跳过部分操作以简化失败处理、减少 UE service interruption。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "stored configurations 从跨状态存储复用的总体方向，推进到具体研究范围：RAN2#134 至少涵盖 INACTIVE 到 CONNECTED、CONNECTED 内 reconfiguration 及 UE 留在同一小区的情况，暂不考虑 IDLE 状态下使用。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "inactive 的确切建模仍未确定，最新讨论包括独立 RRC state 或 IDLE 的“IDLE with suspend”子状态，以及 CN-RAN connection 的 established/suspended 语义；connected mode 下 mobility 省电所用 pre-configuration 的收益、安全影响和可行性也仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN2-132",
+          "RAN2-133",
+          "RAN2-134"
+        ],
+        "text": "inactive 的 paging 定义、与 idle 共用 paging 和 cell (re)selection 的机制、转入 CONNECTED 是否仅由 RRC signaling 启动仍待明确。UE identification、RNA、context transfer 和 context 存储位置涉及 RAN2、RAN3、SA2 协调，材料未显示已完成解决。"
+      },
+      {
+        "meetings": [
+          "RAN2-134"
+        ],
+        "text": "是否规范 inactive 下的 SDT 尚未决定，需比较其与转入 CONNECTED 的能耗，并评估 signaling overhead、mobility、coverage、maximum TBS size、突发大小及持续时间；agentic AI 和部分 Smartphone/eMBB/FWA background traffic 的适用性仍不明确。"
+      },
+      {
+        "meetings": [
+          "RAN2-133",
+          "RAN2-133bis"
+        ],
+        "text": "modular RRC structure 是否支持及具体 ASN.1 设计仍待确定，包括 parameterized delta-signalling lists、configuration constraints、extensible ID 和列表扩展；“partial full config”与“release by default + signal to keep”的稳健性和信令开销比较尚无定论。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "简化 (re)configuration failure handling 应跳过哪些操作、采用何种 RRC procedure，以及 erroneous/inapplicable configurations 的报告范围、粒度和细节仍待研究；不推进部分应用配置并不意味着恢复流程已经确定。"
+      },
+      {
+        "meetings": [
+          "RAN2-133bis",
+          "RAN2-134"
+        ],
+        "text": "stored/reference configuration 的获取、ID/Index 引用、相对 baseline 的 delta signaling、按需激活及激活时修改机制仍待细化；standardized UE-initiated/request RRC connection release 的用例及对 UE、NW 的影响也尚待研究。"
+      }
+    ],
+    "overview": "2025年11月至2026年5月，6GR RRC 从状态模型与配置机制的广泛研究，逐步推进到业务适用范围、RRC structure 规则和失败处理方向的明确。Inactive 的研究逐渐聚焦低频、时延容忍度高的流量，但确切状态建模和 SDT 是否引入仍未确定。配置方面明确了 ID-based linking、delta signalling 释放能力及失败原因报告要求；最新会议明确不推进 UE 部分应用 (re)configuration 的规范方案，转向简化失败处理。配置复用和恢复流程仍在研究。",
+    "source_hash": "08e6a0cab45504918ef8f86e233227d741280a5b7cf0fee1ac07f141bef5f214"
+  },
+  "waveform": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN1-122",
+          "RAN1-123"
+        ],
+        "text": "RAN1#122 确立上行以 CP-OFDM 和 DFT-s-OFDM、下行以 CP-OFDM 为基础，支持 NR normal CP，并以分频段 SCS 配置作为讨论起点。RAN1#123 随后明确 TN communication 的 Extended CP 不再继续研究；该结论仅覆盖所述范围。"
+      },
+      {
+        "meetings": [
+          "RAN1-123",
+          "RAN1-124",
+          "RAN1-126"
+        ],
+        "text": "UL waveform 评估从 RAN1#123 的 Net gain@10% BLER、ACLR、EVM、IBE、通用仿真假设和报告要求，推进到 RAN1#124 明确 NR Rel-15 DFT-s-OFDM 基线、接收端知识披露及多层研究的 SLS/LLS 指标、功率模式和 precoder 假设。RAN1#126 进一步统一结果收集模板并认可更新后的 observations。"
+      },
+      {
+        "meetings": [
+          "RAN1-124"
+        ],
+        "text": "RAN1#124 将 DFT-s-OFDM low UL PAPR enhancement 和多 rank UL MIMO 列为高优先级研究，同时将 Downlink DFT-s-OFDM waveform 及相关增强移出 AI 10.2.1；DL signal 仍可能在相应 AI 单独讨论，不能据此推断所有下行相关研究终止。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "RAN1#124b 优先研究含 π/2 BPSK、QPSK、16QAM 及 spectral extension/truncation 变体的 FDSS cases，并区分由 RAN4 定义要求的 transparent filter 与由 RAN1 指定系数的 non-transparent filter。RAN1#126 将候选范围列为无频谱扩展或截断、频谱扩展、频谱截断三类，供后续筛选。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-126"
+        ],
+        "text": "DFT size 从 RAN1#124 保留两种处理前子载波数选项，推进到 RAN1#126 明确 SE/ST 前至少支持 12 × 2^x3^y5^z 个子载波；另一候选在后者中表述为 X × 2^x3^y5^z（X=4），尚未决定支持。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "RAN1#124b 汇总评估显示系统级收益随场景与设置而异；所列公司均建议考虑将相关提案纳入 6GR TR，但不等于已正式纳入。该会还表示，除非后续 RAN 会议下达任务，否则 waveform 议题下不计划继续讨论所列提案；RAN1#126 又记录了 UL PAPR reduction 进展，材料未说明其与此前讨论限制的衔接依据。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-126"
+        ],
+        "text": "UL PAPR reduction 的适用 SE 范围和最终应用条件仍为 FFS；RAN1#126 将透明性和调制方式筛选目标设为 RAN1#126bis，材料未提供该后续会议结果，也未形成最终 waveform 方案选择。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "DFT size 选项 2（X=4）的支持决定计划在 RAN1#127 作出，其适用 RB 数量上限仍为 FFS，需要额外评估结果。"
+      },
+      {
+        "meetings": [
+          "RAN1-123"
+        ],
+        "text": "FR2-1 网络侧最大信道带宽仍待在 800MHz 与 400MHz 中确定，UE 侧支持及网络采用 400MHz 时的实现选项、规范影响、性能、能效、成本和复杂度仍需研究；后续材料未给出结论。"
+      },
+      {
+        "meetings": [
+          "RAN1-122"
+        ],
+        "text": "约 7 GHz 的 30/60 kHz SCS 可开展研究，其他所列 SCS 选项仍待 RANP 决定或保持 FFS；sensing numerologies 交由 sensing 议题决定。后续材料未说明这些事项的结果。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b"
+        ],
+        "text": "尚不能形成统一的 UL DFT-s-OFDM 系统级增益结论；后续评估报告被鼓励说明是否使用 transparent CFR，以补充评估条件信息。"
+      }
+    ],
+    "overview": "2025年8月至2026年8月，6GR 波形与帧结构研究从确立 NR 波形、normal CP 和 SCS 讨论基线，逐步推进到统一 UL low-PAPR 评估条件、优先研究 DFT-s-OFDM 增强，并形成 FDSS 候选范围及部分 DFT size 支持基线。最新材料仍未给出最终 waveform 选型或 UL PAPR reduction 应用条件；部分早期帧结构待决事项也未见后续结论。",
+    "source_hash": "de44d54ecbf25bf7eb0bb94d4d6e122a012e862184dbfeed169f77507830a129"
+  },
+  "wus": {
+    "developments": [
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL WUS 覆盖研究从以同频段 6G PDCCH 相同覆盖为目标，推进到参考 NR common PDCCH 的具体评估基线；8 月进一步以 reference PDCCH 在 -8.1 dB SNR 下达到 1% BLER 为设计起点，开展 OFDM sequence 的 basic coverage 和 extended coverage 研究。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "SCS 与同步评估逐步具体化：2 月提出同步信号与数据信道同 SCS 时的 DL WUS SCS 假设，4 月明确 FR2-1 下同样的条件并给出 700 MHz、3.5 GHz、7 GHz 评估参数；8 月明确 FR1 和约 7 GHz 的 timing error、frequency error 假设及分布，至少适用于与 SSB 同载波的情况。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL WUS 运行研究由 RRC connected 下有无 C-DRX 的 PDCCH monitoring 触发，扩展到 RRC idle 下 paging 唤醒的具体机制；8 月进一步研究 TDMed、FDMed 及组合式 monitoring occasions，并明确 UE 在给定时刻无需监测多于一个 MO。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "EE processing 测量研究从 RRC idle 的 serving cell 和 neighbouring cell RRM measurement，扩展到 RRC connected；8 月将 connected UE 节能评估分为有、无邻区 RRM measurement 两组案例，并认可统一结果收集模板，尚未提供节能收益结论。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "UL WUS 从 standalone cell 和 multi-cell/carrier 的可行性研究，推进到部分场景的同步与功率依据：4 月明确 DS#1b 和 DS#2b 部分情形可利用 always-on synchronization signals 与 PBCH；8 月明确 DS#2a 在同步且 UE 可维持定时，或 #1 为 #2 提供 underlay coverage 时，可使用 #1 的 SSB 作为定时参考。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "8 月为 DL-WUS 携带信息建立共同评估标准，涵盖复杂度、覆盖、资源开销、节能和时延等，并将已约定的 FAR/FDR/MDR 用作附加非唤醒信息及相关功能的门限。"
+      }
+    ],
+    "effort": "medium",
+    "model": "gpt-6-astra",
+    "open_issues": [
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "DL WUS sequence 设计尚未定型：4 月仍需比较 time domain 与 frequency domain 定义；8 月提出最迟在 RAN1#127 前选择 Zadoff-Chu 或 Gold sequence family，sequence candidates 数量和 extended coverage 设计仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN1-124",
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "FR2-1 中同步信号与数据信道不同 SCS 时的 DL WUS SCS 尚无解决依据。DL WUS reception 所需同步信号及额外同步方法仍需研究；8 月至少针对 RRC idle 继续研究 SSB 作为 QCL source、SSB 与 monitoring occasions 的关联和 QCL type。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "Paging 唤醒中的 PO/PF 关联、唤醒后行为及 connected 下 PDCCH monitoring 的 time offset、时长、停止方式和触发范围等尚未确定；8 月给出的 MO 约束不足以证明这些问题已解决，各 MO 复用方案的能耗与复杂度仍待评估。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "RRC connected 下 EE processing 支持 RRM measurement 的可行性、必要性及规范影响仍缺少定论；8 月另提出 serving cell RLM measurement 的研究，UE 节能收益结果仍待收集。"
+      },
+      {
+        "meetings": [
+          "RAN1-124b",
+          "RAN1-126"
+        ],
+        "text": "UL WUS 必要性及 idle、inactive、connected mode 候选用途仍待评估；配置获取机制、最小必要信息、payload size 和功率信息提供方式尚未确定。跨载波同步、DS#2a 非共址场景的功率与干扰、路径损耗和波束，以及非同步场景定时参考和可维持时长仍待研究。"
+      },
+      {
+        "meetings": [
+          "RAN1-126"
+        ],
+        "text": "RRC_IDLE / RRC_INACTIVE 下 DL-WUS 附加功能仍待研究，包括 SI-modification、ETWS-CMAS notification、按需或附加信号触发、PF/PO 或 RACH occasions 指示，以及如支持时在 inactive state 触发 DL SDT；共同评估标准不代表这些功能已获支持。"
+      }
+    ],
+    "overview": "2026 年 2 月至 8 月，6GR 唤醒信号与运行机制研究从覆盖目标、设计范围和应用场景，逐步推进到共同评估基线、OFDM sequence 方案、同步误差假设及 monitoring occasions 约束。UL WUS 明确了部分场景下同步和发射功率的依据，但必要性、配置及多项运行机制仍待研究，不能据此认定相关场景已获支持。",
+    "source_hash": "ab1075e19c0de1c89f7e7eecc52246e5b19e7f142b2ff1e1fe98d8154f0a8846"
+  }
+}

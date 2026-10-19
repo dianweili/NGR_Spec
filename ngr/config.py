@@ -54,6 +54,10 @@ class ExtractConfig:
     batch_size: int
     model_bulk: str
     model_digest: str
+    # Meeting-level digests are numerous, bounded summaries.  They can use a
+    # separately verified interactive-subscription model without changing the
+    # existing event and cross-meeting digest configuration.
+    model_meeting_digest: str = "gpt-6-astra"
 
 @dataclass(frozen=True)
 class SourcesConfig:
@@ -186,6 +190,7 @@ def load_sources(path: Path | None = None) -> SourcesConfig:
         batch_size=_to_int_min(e.get("batch_size", 40), "extract.batch_size", 1),
         model_bulk=e.get("model_bulk", "gpt-6-astra"),
         model_digest=e.get("model_digest", "gpt-6-astra"),
+        model_meeting_digest=e.get("model_meeting_digest", "gpt-6-astra"),
     )
     return SourcesConfig(wgs=wgs, http=http, extract=extract)
 

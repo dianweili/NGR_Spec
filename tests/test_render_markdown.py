@@ -97,6 +97,17 @@ def test_report_includes_source_link():
     assert "3gpp.org" in md
 
 
+def test_report_includes_meeting_feature_digest_when_available():
+    state = {"RAN1-126": {"waveform": {
+        "summary": "会议确认了波形方向。", "event_count": 1,
+        "key_points": ["采纳 X"], "open_issues": ["细节待定"],
+    }}}
+    md = render_report("RAN1", 126, [E()], {"waveform": "6GR 波形与帧结构"},
+                       meeting_feature_state=state)
+    assert "本会议特性进展（6G）" in md
+    assert "会议确认了波形方向。" in md and "关键结论" in md and "待决问题" in md
+
+
 def _live_pipes(line: str) -> int:
     r"""按 markdown 的转义语义数"活着的"列分隔符。
 

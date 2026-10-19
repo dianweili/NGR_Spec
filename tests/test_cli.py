@@ -43,3 +43,17 @@ def test_enrich_forwards_temporary_batch_overrides(monkeypatch):
     monkeypatch.setattr(cli, "run_enrich", lambda **kwargs: seen.update(kwargs) or PipelineResult())
     assert cli.main(["enrich", "--max-calls", "20", "--batch-size", "10"]) == EXIT_OK
     assert seen == {"max_calls": 20, "batch_size": 10}
+
+
+def test_meeting_digests_forwards_call_budget(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_meeting_digests", lambda **kwargs: seen.update(kwargs) or PipelineResult())
+    assert cli.main(["meeting-digests", "--max-calls", "20"]) == EXIT_OK
+    assert seen == {"max_calls": 20}
+
+
+def test_feature_evolution_forwards_call_budget(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cli, "run_pipeline_feature_evolution", lambda **kwargs: seen.update(kwargs) or PipelineResult())
+    assert cli.main(["feature-evolution", "--max-calls", "23"]) == EXIT_OK
+    assert seen == {"max_calls": 23}

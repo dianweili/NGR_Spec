@@ -13,6 +13,32 @@ RAN2 正在形成 6G 频谱聚合的分场景方案：理想或共址回传下�
 - FR1 与 FR2 间增强移动性和快速切换的流程，尤其是多厂商场景下的设计，尚未明确。
 - FR1-FR2 聚合的性能边界仍需评估，包括可聚合 FR2 小区数量、非对称速率导致的 TCP 性能影响，以及与仅使用 FR2 的表现比较。
 
+## 跨会议演进脉络（6G）
+
+材料仅包含 RAN2-134（2026年5月18日至22日），不能判断跨会议变化。该会议明确保留 Dual Connectivity framework 并采用简化 DC，同时研究增强 CA 与 distributed schedulers；针对最高 10ms backhaul delay 的非共址场景开展分阶段评估，具体架构、适用条件及性能结论尚未确定。
+
+### 关键进展
+
+- 6G-6G spectrum aggregation 将采用简化的 Dual Connectivity，同时保留 Dual Connectivity framework。（依据：RAN2-134）
+- 增强 CA framework 被列为研究方向，由各 distributed scheduler 独立处理 BSR、PHR、RACH、SCell activation 等 time-critical MAC functionalities；single MAC entity 内 separate schedulers 的 coordination 规范化仍被认为具有挑战且不理想。（依据：RAN2-134）
+- 最高 10ms backhaul delay 的研究安排为影响分析、协议层评估及方案比较两个阶段，覆盖 CA/DC、接口、性能和 UP/CP。材料识别出高 backhaul latency 下 single scheduler 的 HARQ RTT、缓冲需求、状态信息时效性及 MAC 操作性能问题。（依据：RAN2-134）
+- CONNECTED mode 多载波研究纳入 PCell/SCell 配置与操作分离、PCell failure recovery、角色切换、载波添加与激活速度，以及静态 UL/DL 载波组合的限制。（依据：RAN2-134）
+
+### 待决问题
+
+- 最高 10ms 非共址 FR1-FR2 场景可满足的需求、简化 DC 的可行性及增强 CA 与 DC 的方案比较仍待完成。（依据：RAN2-134）
+- PCarrier/PCell 与 SCarrier/SCell 的功能清单，以及通过专用信令显式配置功能的方式仍在讨论。（依据：RAN2-134）
+- 通过 SCell 报告 PCell failure、避免 RRC re-establishment 的恢复机制，以及多小区 RLM、额外恢复触发和 UE 动作仍待研究。（依据：RAN2-134）
+- 灵活 UL/DL carrier decoupling，以及快速载波/小区添加、修改、激活和去激活的信令与流程仍待研究。（依据：RAN2-134）
+- 10ms backhaul 下尚无统一性能结论，需核查仿真假设、FR1-FR1 范围及与单载波 FR2 的比较，并评估重排序和速率不对称造成的性能下降。（依据：RAN2-134）
+- 是否研究 aNB 可透明隐藏的 backhaul delay “X”，以及面向 inter-vendor 场景的 FR1/FR2 enhanced mobility 快速切换细节仍待确定。（依据：RAN2-134）
+
+### 会议时间线
+
+_目前只有一场会议的 6G 综述，尚无法判断跨会议变化。_
+
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 明确了 6G 频谱聚合的两条推进方向：保留 Dual Connectivity framework 并采用简化 DC，同时研究由 distributed schedulers 独立处理时延敏感 MAC 功能的增强 CA。会议安排分阶段研究 FR1+FR2 非共址场景中最高 10ms backhaul delay 对协议、接口、性能及 UP/CP 的影响，并将 5G CA 的恢复、角色切换和 UL/DL 配置限制纳入 CONNECTED mode 多载波研究。其协议含义是需进一步评估调度与协议功能的分工，以及非理想回传下 CA、简化 DC 等方案的适用条件，尚未统一确定具体架构和性能结论。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.2.5 Spectrum aggregation

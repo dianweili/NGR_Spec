@@ -16,12 +16,33 @@ class ExclusiveRunLock:
     def _pid_is_running(pid: object) -> bool:
         if not isinstance(pid, int) or pid <= 0:
             return False
+        if os.name == "nt":
+            # On Windows os.kill(pid, 0) can terminate the target process.
+            # Query its status instead; inaccessible processes count as alive.
+            import ctypes
+            from ctypes import wintypes
+
+            kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+            kernel.OpenProcess.restype = wintypes.HANDLE
+            kernel.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+            kernel.GetExitCodeProcess.restype = wintypes.BOOL
+            kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
+            kernel.CloseHandle.restype = wintypes.BOOL
+            handle = kernel.OpenProcess(0x1000, False, pid)
+            if not handle:
+                return ctypes.get_last_error() != 87  # ERROR_INVALID_PARAMETER: no such PID
+            try:
+                code = wintypes.DWORD()
+                return not kernel.GetExitCodeProcess(handle, ctypes.byref(code)) or code.value == 259
+            finally:
+                kernel.CloseHandle(handle)
         try:
             os.kill(pid, 0)
-        except (ProcessLookupError, OSError):
-            return False
         except PermissionError:
             return True
+        except OSError:
+            return False
         return True
 
     def acquire(self) -> bool:

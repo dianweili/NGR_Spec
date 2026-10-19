@@ -13,6 +13,38 @@
 - Cell DTX/DRX 与 UE DRX 的对齐和联合控制、网络休眠期间 UE 所需信息及信令方式仍未形成完整机制；还需研究 QoS、时延敏感业务和不同 UE 状态下的行为。
 - idle mode 多载波初始接入及 connected mode 跨载波操作的适用用例、部署条件和具体机制仍在研究。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年8月，6GR 能效研究从确立 UE DRX 节能方向，推进到 C-DRX 基线、可选 DL WUS、网络周期休眠及动态监测机制研究。RAN1 同期逐步完善能效评估功耗模型，并在8月明确多载波与带宽操作的部分基线。材料显示评估参数和协议框架持续细化，但尚不足以确认形成完整统一机制；同日期的不同工作组会议不构成先后承接关系。
+
+### 关键进展
+
+- UE 节能基线逐步明确：2025年11月采纳 UE DRX 为关键特性，以类似 C-DRX 的机制为研究起点；2026年4月明确不带 DL-WUS 的 C-DRX 为基线，优先研究其与 DL WUS 的结合；5月提出基于 C-DRX-like mechanism、将 DL WUS 作为可选功能的 single discontinuous monitoring framework。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+- WUS 与监测机制从组合探索走向研究优先级收敛：早期允许 WUS 触发特定 OnDuration window configurations；2月研究有无 C-DRX、DL WUS 的三种组合；4月优先研究结合 C-DRX 的 option 1-1/1-2，并将 DL WUS without C-DRX 推迟至由 RAN1 触发。5月进一步支持在有或无 DL WUS 时动态调整 CDRX timer(s)，减少不必要的 PDCCH monitoring。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- 网络休眠从联合设计方向细化为周期框架与显式指示：2月以5G Cell DTX/DRX 为起点，记录与 UE C-DRX 对齐且 active time 长度可不同的方向；4月明确 Active Duration/non-Active Duration 交替框架；5月支持向 RRC_CONNECTED UEs 提供显式 NW TX/RX sleeping pattern，并通过 RRC configuration 和 UE group common lower layer indication 动态激活/去激活，同时支持依据网络节能操作调整 UE 节能配置。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 能效评估模型由2月的 NES 基线配置、BS Set 4 转换参数及 UE 调度/带宽/天线功耗规则，扩展到4月的 UL CA、2Tx antennas、10 MHz EE processing 和 RRM measurement 功耗规则。CAT 2.1 的 Set 4 转换特性由待讨论推进为明确取值：Light sleep/Deep sleep 转换时间为100 ms/2 s，相对转换能量为210/6300。该评估基线用于候选6GR方案相对比较，不用于与5G/NR比较能效。（依据：RAN1-124、RAN1-124b）
+- CA reception 建模进一步细化：2月规定 one RF chain 按相同总带宽缩放；4月补充 PDCCH-only 的每新增 CC 附加项及 multiple RF chains 的附加缩放形式，部分系数仍未定。两次会议的相关模型均以 CC 已激活为前提，不涉及 carrier activation/deactivation delay。（依据：RAN1-124、RAN1-124b）
+- 8月将网络节能和 UE 省电纳入多载波初始接入及 connected mode 操作研究：确定一次 RACH procedure 尝试中每个链路方向使用一个选定 physical carrier，并明确 6GR-BW 至少包含 carrier 内频率位置和连续 PRB 数量。所列多载波候选场景仅纳入研究，未代表同意支持；材料仅有这一场涉及这些具体基线，无法判断其自身的跨会议变化。（依据：RAN1-126）
+
+### 待决问题
+
+- 统一 discontinuous monitoring framework 的细节仍未确定，包括未收到 WUS 时的 UE 行为、WUS 与 C-DRX 的 cycle/timer 是否相同或对齐，以及动态 timer adaptation 的适用定时器、发起方和操作。DCP 与 DL-WUS 的选择及不带 C-DRX 的 DL-WUS 是否支持，仍无解决证据。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- DRX 配置组织和联合节能机制仍待明确：multi-flow 使用多个配置还是单配置尚无一致结论，多个 DRX patterns、快速 switching、按 DRX group/serving cell 配置及 UE-specific monitoring configurations 继续研究。活动时段对齐已有方向，但高效对齐机制在4月未处理，后续材料未证明其已完成。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 网络休眠期间的具体 UE 行为和信令仍待讨论，包括 non-connected UEs 对 common reference signal、paging、system information 的监测，UL 休眠时能否发起 Random Access，以及静默信号范围和隐式机制。显式 pattern 的推进尚未解决全部动态控制问题，cell DTX non-active period 内通过 DL WUS 触发 on-demand PDCCH monitoring 仍待研究。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 功耗模型仍有未定参数和适用范围：CA reception 的 X=[0.2]、Y=[0.3] 仍为括号值，部分 CC 监测组合及非参考 CC 带宽的适用规则待讨论。较早提出的 BS TXRU 调整、窄带 UE reference configuration、8Rx 和部分 sleep scaling 问题，后续材料未提供全部解决证据；SBFD 公式缺失属于材料限制，无法据此确认模型表达式。（依据：RAN1-124、RAN1-124b）
+- 早期提出的跨 RRC states LP-WUS/WUR、用于 paging reception 的 day1 候选方案，以及 LR 上 RRM/RLM/BFD measurements 和测量卸载，后续所给摘要未明确报告结论，不能视为已解决。（依据：RAN2-132）
+- 多载波与带宽操作仍需明确候选初始接入场景的额外收益及部署条件、跨载波 UL/DL switching、additional carriers 快速启用/禁用、carrier states、跨载波资源分配与调度，以及 6GR-BW 其他关联参数和切换机制。（依据：RAN1-126）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：本会议将 UE DRX 采纳为 6G 支持 UE 和 network nodes 节能的关键特性，并以类似 C-DRX 的机制作为 UE sleeping opportunities 的研究起点。会议推进了 Cell DTX/DRX 与 UE DRX 的联合设计研究，重点关注睡眠机会对齐、灵活配置以及避免重复机制。WUS 方面，允许其触发特定的 OnDuration window configurations，同时继续研究与 C-DRX 的协同或解耦，以及跨 RRC states 的 LP-WUS/WUR；相关协议细节仍待后续明确。
+- **RAN1#124**（2026-02-09 至 2026-02-13）：RAN1#124 明确了用于 NES 评估及候选 6GR 节能方案相对比较的基线网络配置，并完善了 BS 与 UE 功耗模型。会议采纳了 BS Set 4 的转换参数、引入 CAT 2.1，并推进 UE 调度、带宽、天线、CA reception 和 UL 功耗缩放规则。这些结论为 6GR SI 能效评估提供了共同建模依据及评估假设报告要求；该基线评估不用于与 5G/NR 比较能效。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：本会议推进了6GR能效中UE discontinuous monitoring与Network sleeping opportunities的联合研究，目标是形成涵盖wake up signalling周期监测及后续PDCCH monitoring的统一框架。会议以5G Cell DTX/DRX机制作为网络休眠设计的起点，并记录了网络与UE活动时段对齐及灵活配合的方向。DRX配置组织、DL WUS与C-DRX组合及其timer行为仍处于研究阶段，尚未形成统一的详细协议机制。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议推进了 6GR 能效评估中的功耗与状态转换参数统一，明确了 DL/UL 带宽、UL CA、发射天线及 CAT 2.1 的多项取值，并纳入 EE processing 与 RRM measurement 功耗规则。这些结果为不同配置下的能效评估提供了共同计算依据；CA scaling 以所有 CC 已激活为前提，不涉及 carrier activation/deactivation delay。CA reception 的部分参数与适用情形仍待明确，SBFD 功耗模型的具体表达式无法从所给材料确认。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确以不带 DL-WUS 的 C-DRX 作为基线 UE power saving solution，优先研究其与 DL WUS 结合的方案，并推进单一 discontinuous monitoring framework 的研究，相关交互和定时细节尚待确定。网络侧明确 6GR Cell DTX/DRX 采用包含 Active Duration 的周期框架，并将研究与 UE discontinuous monitoring、DL WUS 及 clustered UL/DL data transmission 的协同，为网络与 UE 联合节能推进协议设计。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 推进了6G能效中 discontinuous PDCCH monitoring、网络睡眠及网络与UE节能协同的研究，提出以 C-DRX-like mechanism 为基础、配合可选 DL WUS 的 single discontinuous monitoring framework。会议支持研究动态调整 CDRX timer(s)，并支持为 RRC_CONNECTED UEs 提供显式 NW TX/RX sleeping pattern，通过配置与动态指示协调网络睡眠和UE行为。相关推进涉及PDCCH监测触发、定时器操作及睡眠期间收发行为，但定时器共用关系、部分睡眠行为和动态控制细节仍待研究。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：RAN1#126 明确了 6GR 能效相关多载波操作与带宽操作的研究范围，将网络节能和 UE 省电纳入初始接入及 connected mode 机制研究。本会议确定了 idle mode 多载波初始接入中一次 RACH procedure 尝试的载波使用基线，以及 single carrier bandwidth operation 中 6GR-BW 的最小参数组成；候选载波场景、切换和调度机制仍处于研究阶段，尚不代表同意支持。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.3.3 Energy efficiency

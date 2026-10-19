@@ -13,6 +13,36 @@
 - DL 4K QAM 是否采用尚无共识；UL 1K QAM 的 SLS 收益受场景、EVM、MPR、负载和 rank 等因素影响。
 - PS/GS 的复杂度、存储、时延与性能权衡，以及规范和功能链影响仍需进一步评估。
 
+## 跨会议演进脉络（6G）
+
+按所给五场会议的日期，6GR 信道编码与调制从 2025 年 8 月的 NR 调制研究基线，推进至 2026 年 8 月的最低调制支持范围、部分 BG3 结构及 UL 能力要求。LDPC、UCI 编码、PS/GS 和更高阶 uniform QAM 的评估逐步细化，但尚未形成全部最终设计。材料未包含 RAN1#125，不能确认此前计划的下选过程；最新材料中 constellation shaping 和 DL 4K QAM 仍无支持共识，UL 1K QAM 为 RAN1 建议采用。
+
+### 关键进展
+
+- 基础调制由研究基线转为最低支持要求：RAN1#122 以 NR 调制范围开展研究，RAN1#124b 明确 6G 至少支持 NR equal probability uniform QAM constellation；CP-OFDM 的 DL 为 QPSK、16QAM、64QAM、256QAM、1024QAM，UL 至 256QAM，DFT-s-OFDM 的 UL 另含 pi/2 BPSK。（依据：RAN1-122、RAN1-124b）
+- LDPC extension 从候选 BG(s)/PCM(s) 提交和性能、复杂度比较要求，推进至参数与结构约束。RAN1#124 研究 maximum code block size 为 8448 或 8448*2 等选项；RAN1#124b 将研究假设收敛为 8448，并细化 new BG 子矩阵结构及矩阵中 1 的总数上限。RAN1#126 明确 BG3 子矩阵 E 支持下三角 E2、不支持单位矩阵 E1，并规定 BG3 in UL 原则上为 UE 强制能力且需 capability signaling，所有支持频段最大 UL channel bandwidth 均不超过 20MHz 的 UE 可选支持。（依据：RAN1-123、RAN1-124、RAN1-124b、RAN1-126）
+- 大载荷 UCI Polar code 研究从将 more than 2 segments 纳入研究，推进至超过 NR 范围且大于 1706 bits 的 segmentation enhancement 评估假设：每段采用 11 bits CRC，rate matching、channel interleaver 和 code-block concatenation 沿用 NR；材料未给出最终设计结论。（依据：RAN1-123、RAN1-124）
+- 3–11 bits small UCI 研究由至少考虑 5G RM code、在发现可论证缺点时研究解决方案，推进至候选编码的统一评估框架：采用 AWGN，比较目标 BLER 下的 SNR、BER，以及收发机复杂度和时延影响。（依据：RAN1-123、RAN1-126）
+- PS/GS 研究从固定 MCS、目标 10% BLER 的性能与实现代价报告要求，扩展至 TX/RX chain 潜在影响及 fading channel 场景。RAN1#126 继续研究 GS（1D-NUC）和 PS（ESS-based PS、ECC-based PS），明确 DL 与 UL 不支持采用不同 shaping scheme，并设定 Q3/26 无共识则停止相关研究的条件。（依据：RAN1-123、RAN1-124、RAN1-124b、RAN1-126）
+- DL 4K uniform QAM、UL 1K uniform QAM 从聚焦 FWA 室内外部署、征询 RAN4 EVM/MPR 输入，推进至细化 SLS 参数与 rank/MCS 分布报告要求。RAN1#126 建议采用 UL 1K QAM；两种高阶调制若获支持，均须在规范中限定为 FWA use case，排除 eMBB。（依据：RAN1-124、RAN1-124b、RAN1-126）
+
+### 待决问题
+
+- BG3 子矩阵 E2 的参数 I 仍为 FFS；BG3 in UL 强制支持要求是否增加其他 UE 例外，待 RAN plenary 决定。此前 new BG 其他候选结构及参考码率 X 的最终处理，所给后续摘要未完整交代。（依据：RAN1-124b、RAN1-126）
+- 是否需要超过 NR 范围的 UCI 载荷仍需其他议题确认；NR 范围内大于 11 bits 的 UCI Polar code 扩展或增强动机尚无共识。大载荷 segmentation enhancement 的其他评估取值需公司报告，后续材料未给出这些事项的闭环结论。（依据：RAN1-123、RAN1-124）
+- 3–11 bits small UCI 候选仍需与 5G RM code 比较评估，尚未确定是否替换或增强 5G RM code。（依据：RAN1-126）
+- DL 或 UL 是否支持 constellation shaping 尚无共识；若支持，仍需在 PS（含 1-bit 或 2-bits）与 GS 之间选择。此前提出的规范与 TX/RX chain 影响、复杂度和存储相对性能收益的权衡，以及 DFT-s-OFDM Net Gain，材料未给出最终结论；也未提供 Q3/26 决策期限之后的结果。（依据：RAN1-123、RAN1-124、RAN1-124b、RAN1-126）
+- 同一 spectrum efficiency point 对应多个 MCS entries 的选择机制及可能需要的 UE feedback 仍需研究，所给后续摘要未说明其处理结果。（依据：RAN1-123）
+- DL 4K QAM 是否采用仍无共识；UL 1K QAM 虽获 RAN1 建议采用，材料未给出最终支持决定。此前所需 RAN4 EVM/MPR 输入及其他调制方案、低 PAPR 增强和 waveform 相关影响，也未见明确闭环。（依据：RAN1-124、RAN1-124b、RAN1-126）
+
+### 会议时间线
+
+- **RAN1#122**（2025-08-25 至 2025-08-29）：本会议明确了 6GR DL 和 UL 数据信道调制的研究基础，并区分了 UL 两种波形的基础调制范围。这为后续调制支持方案研究提供了基线，增强和其他调制方案仍为 FFS，尚未形成最终支持结论。
+- **RAN1#123**（2025-11-17 至 2025-11-21）：本会议推进了 6GR 信道编码与调制的候选方案研究及评估方法统一，明确了 LDPC 扩展的提交要求、性能与复杂度比较原则，以及不同 UCI 载荷范围的研究方向。PS/GS 研究进一步统一了固定 MCS 性能及实现代价的报告要求，并纳入同一 SE 对应多个 MCS entries 和 DFT-s-OFDM Net Gain 的研究。上述进展主要形成研究与比较依据，尚未确定最终编码或调制设计，相关规范影响仍需评估。
+- **RAN1#124**（2026-02-09 至 2026-02-13）：RAN1#124 明确了 6GR 超出 NR 范围的 LDPC extension 的候选参数、结构研究约束与性能比较要求，并建立了大 payload L1 uplink control information 的 Polar code segmentation enhancement 评估假设。调制方面，会议推进了 PS/GS 的性能权衡与 TX/RX chain 潜在影响研究，明确高阶 uniform QAM 的重点研究场景，并批准向 RAN4 征询 EVM 与 MPR 数值的 LS。这些进展为编码及调制方案的后续比较提供了评估基础，尚未形成最终方案选择。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议细化了超出 NR 范围的 LDPC extension 的 new BG 研究假设、结构约束和候选方案，为后续下选提供基础，但尚未确定最终编码结构。调制方面明确了 6G 至少支持的 NR uniform QAM 范围，并推进 PS/GS 及 FWA 更高阶 uniform QAM 的评估条件。相关进展明确了最低调制支持范围与研究比较基础，更高阶调制及 shaping 方案的支持仍需后续评估和讨论。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：本会议明确了 BG3 子矩阵 E 的结构选项及 UL 支持的 UE 要求，并建立了 3~11 bits small UCI 编码候选的统一评估框架。调制方面，constellation shaping 尚未形成支持共识，并明确了后续决策期限及 DL/UL 方案一致性要求。RAN1 建议采用 UL 1K QAM，但 DL 4K QAM 尚无采用共识；两者若获支持，均须在规范中限定用于 FWA，不适用于 eMBB。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.3.1 Channel coding

@@ -184,3 +184,6 @@ extract:
   batch_size: 12
   model_bulk: gpt-6-luna
   model_digest: gpt-6-luna
+  # 每场会议的短综述使用本机 ChatGPT CLI 已验证可快速返回的模型；
+  # 不改变既有逐条摘要和全局特性综述的模型配置。
+  model_meeting_digest: gpt-6-astra

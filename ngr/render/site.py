@@ -87,13 +87,17 @@ def _meeting_period(wg: str, meeting: int, suffix: str) -> str:
 
 
 def _payload(events: list[dict], features: list[Feature], feat_state: dict,
-             generated: str) -> dict:
+             meeting_feature_state: dict | None, generated: str,
+             evolution_sources: dict | None = None, evolution_state: dict | None = None) -> dict:
     """构建网页所需的自包含数据模型。
 
     Markdown 文件仍作为可 diff 的存档保留；这里额外提供按特性、会议和事件
     三种入口可交叉浏览的索引，避免用户需要在一堆文件间跳转。
     """
     ordered = _ordered(events)
+    meeting_feature_state = meeting_feature_state or {}
+    evolution_sources = evolution_sources or {}
+    evolution_state = evolution_state or {}
     by_feature: dict[str, list[dict]] = defaultdict(list)
     by_meeting: dict[tuple[str, int, str], list[dict]] = defaultdict(list)
     for event in ordered:
@@ -101,6 +105,8 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
         by_meeting[(str(event.get("wg") or ""), int(event["meeting"]), _suffix(event))].append(event)
 
     feature_names = {feature.slug: feature.name_zh for feature in features}
+    evolution_targets = {event.get("feature") for event in ordered if event.get("era") == "6G"
+                         and event.get("summary_zh") and event.get("feature") in feature_names}
     feature_rows = []
     for feature in features:
         mine = by_feature.get(feature.slug, [])
@@ -115,6 +121,9 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
             "summary": state.get("summary"),
             "open_issues": state.get("open_issues") or [],
             "legacy_summary": state.get("legacy_summary"),
+            "evolution": evolution_state.get(feature.slug),
+            "evolution_timeline": (evolution_sources.get(feature.slug) or {}).get("meetings", []),
+            "evolution_blocked": feature.slug in evolution_targets and feature.slug not in evolution_sources,
             "events": len(mine),
             "agreements": len(agreements),
             "six_events": sum(event.get("era") == "6G" for event in mine),
@@ -125,12 +134,34 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
         })
 
     meeting_rows = []
+    digest_target = 0
+    digest_completed = 0
     for (wg, meeting, suffix), mine in by_meeting.items():
         counts: dict[str, int] = defaultdict(int)
         for event in mine:
             counts[str(event.get("feature") or "")] += 1
+        key = f"{wg}-{meeting}{suffix}"
+        digests = meeting_feature_state.get(key) or {}
+        feature_rows_for_meeting = []
+        for slug, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
+            digest = digests.get(slug) if isinstance(digests, dict) else None
+            digest = digest if isinstance(digest, dict) else {}
+            six_summaries = [event for event in mine if event.get("feature") == slug
+                             and event.get("era") == "6G" and event.get("summary_zh")]
+            if six_summaries:
+                digest_target += 1
+                digest_completed += bool(digest.get("summary"))
+            feature_rows_for_meeting.append({
+                "slug": slug,
+                "name_zh": feature_names.get(slug, slug or "未归类"),
+                "events": count,
+                "digest_event_count": digest.get("event_count"),
+                "summary": digest.get("summary"),
+                "key_points": digest.get("key_points") or [],
+                "open_issues": digest.get("open_issues") or [],
+            })
         meeting_rows.append({
-            "key": f"{wg}-{meeting}{suffix}",
+            "key": key,
             "wg": wg,
             "meeting": meeting,
             "suffix": suffix,
@@ -140,11 +171,8 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
             "events": len(mine),
             "agreements": sum(event.get("kind") == "agreement" for event in mine),
             "summarized": sum(_is_summarized(event) for event in mine),
-            "features": [
-                {"slug": slug, "name_zh": feature_names.get(slug, slug or "未归类"),
-                 "events": count}
-                for slug, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
-            ],
+            "features": feature_rows_for_meeting,
+            "digests": sum(bool(feature.get("summary")) for feature in feature_rows_for_meeting),
         })
     meeting_rows.sort(key=lambda row: (-row["meeting"], row["wg"], row["suffix"]))
 
@@ -168,6 +196,10 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
             "six_events": sum(event.get("era") == "6G" for event in ordered),
             "full_events": len(full_events),
             "summarized": sum(_is_summarized(event) for event in full_events),
+            "meeting_feature_digests": digest_completed,
+            "meeting_feature_digest_target": digest_target,
+            "feature_evolutions": len(evolution_state),
+            "feature_evolution_target": len(evolution_targets),
         },
         "workgroups": sorted({str(event.get("wg") or "") for event in ordered if event.get("wg")}),
         "features": feature_rows,
@@ -177,8 +209,10 @@ def _payload(events: list[dict], features: list[Feature], feat_state: dict,
 
 
 def render_site(events: list[dict], features: list[Feature], feat_state: dict,
-                *, generated: str) -> str:
-    data = json.dumps(_payload(events, features, feat_state, generated),
+                *, meeting_feature_state: dict | None = None, generated: str,
+                evolution_sources: dict | None = None, evolution_state: dict | None = None) -> str:
+    data = json.dumps(_payload(events, features, feat_state, meeting_feature_state, generated,
+                               evolution_sources, evolution_state),
                       ensure_ascii=False, sort_keys=True)
     # JSON 放进 script 数据块时，任何字面 < 都会让 HTML parser 进入特殊状态。
     # 用合法 JSON 转义保留原值，同时保证自由文本不能逃出数据块。
@@ -330,25 +364,26 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp
 const cut = (value, length = 180) => { const text = String(value ?? '').replace(/\s+/g, ' ').trim(); return text.length <= length ? text : text.slice(0, length) + '…'; };
 const meetingKey = event => `${event.wg}-${event.meeting}${event.meeting_suffix || ''}`;
 const ready = event => ['ok', 'needs_review'].includes(event.llm_status);
-const state = { view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', page: 1, trail: [] };
+const state = { view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', meetingDetail: '', page: 1, trail: [] };
 const PAGE_SIZE = 30;
 function statCard(label, value, hint) { return `<article class="metric"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div><div class="hint">${esc(hint)}</div></article>`; }
 function badge(label, tone = '') { return `<span class="badge ${esc(tone)}">${esc(label)}</span>`; }
 function featureName(slug) { return DATA.features.find(feature => feature.slug === slug)?.name_zh || slug || '未归类'; }
-function currentRoute() { const {view, query, wg, feature, era, kind, status, meeting, detail, page} = state; return {view, query, wg, feature, era, kind, status, meeting, detail, page}; }
+function currentRoute() { const {view, query, wg, feature, era, kind, status, meeting, detail, meetingDetail, page} = state; return {view, query, wg, feature, era, kind, status, meeting, detail, meetingDetail, page}; }
 function persistRoute(mode = 'push') { try { window.history[mode + 'State']({ngr: true, route: currentRoute(), trail: state.trail}, ''); } catch (_) { /* file:// may restrict history */ } }
 function navigate(next) { state.trail.push(currentRoute()); Object.assign(state, next); persistRoute(); render(); }
 function goBack() { const previous = state.trail.pop(); if (!previous) return; Object.assign(state, previous); persistRoute('replace'); render(); }
 function backButton(fallback = '') { return state.trail.length ? '<button class="button" data-nav-back type="button">← 返回</button>' : (fallback ? `<button class="button" data-nav="${esc(fallback)}" type="button">← 返回</button>` : ''); }
-function showFeature(slug) { navigate({feature: slug, meeting: '', detail: '', page: 1, view: 'events'}); }
-function showFeatureOverview(slug) { navigate({detail: slug, view: 'feature-detail'}); }
-function showMeeting(key) { navigate({meeting: key, feature: '', detail: '', page: 1, view: 'events'}); }
+function showFeature(slug) { navigate({feature: slug, meeting: '', detail: '', meetingDetail: '', page: 1, view: 'events'}); }
+function showFeatureOverview(slug) { navigate({detail: slug, meetingDetail: '', view: 'feature-detail'}); }
+function showMeeting(key) { navigate({meetingDetail: key, meeting: '', feature: '', detail: '', page: 1, view: 'meeting-detail'}); }
+function showMeetingFeature(key, slug) { navigate({meeting: key, feature: slug, detail: '', meetingDetail: '', page: 1, view: 'events'}); }
 function renderOverview() {
   const stats = DATA.stats, latest = DATA.meetings.slice(0, 6), important = DATA.features.slice().sort((a, b) => b.events - a.events).slice(0, 8);
   const progress = stats.full_events ? `${stats.summarized} / ${stats.full_events}` : '—';
   return `<div class="section-heading"><div><h2>全局概览</h2><p class="section-note">从一处查看当前建模范围、会议变化和摘要进度。</p></div>${backButton()}</div>
-    <section class="metric-grid">${statCard('已归集事件', stats.events.toLocaleString(), `${stats.six_events.toLocaleString()} 条 6G 决议`)}${statCard('已建模特性', stats.features, '按配置优先级排列')}${statCard('会议简报', stats.meetings, '每个会议可独立浏览')}${statCard('中文摘要', progress, '完整事件的已增强数量')}</section>
-    <section class="panel"><div class="panel-head"><div><h2>最近会议</h2><p class="section-note">点击进入该会议的完整决议清单。</p></div><button class="button" data-nav="meetings" type="button">全部会议</button></div><div class="cards">${latest.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-filter="${esc(meeting.key)}" type="button">${esc(meeting.label)}</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">会期：${esc(meeting.period)} · ${meeting.agreements} 条 agreement · ${meeting.summarized} 条已有中文摘要</p><div class="feature-tags">${meeting.features.slice(0, 4).map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">3GPP 会议目录 ↗</a></div></article>`).join('')}</div></section>
+    <section class="metric-grid">${statCard('已归集事件', stats.events.toLocaleString(), `${stats.six_events.toLocaleString()} 条 6G 决议`)}${statCard('已建模特性', stats.features, '按配置优先级排列')}${statCard('会议简报', stats.meetings, `${stats.meeting_feature_digests} / ${stats.meeting_feature_digest_target} 份会议特性综述`)}${statCard('中文摘要', progress, '完整事件的已增强数量')}</section>
+    <section class="panel"><div class="panel-head"><div><h2>最近会议</h2><p class="section-note">点击查看会议内各特性的进展综述与完整决议。</p></div><button class="button" data-nav="meetings" type="button">全部会议</button></div><div class="cards">${latest.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-overview="${esc(meeting.key)}" type="button">${esc(meeting.label)}</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">会期：${esc(meeting.period)} · ${meeting.agreements} 条 agreement · ${meeting.digests} 份特性综述</p><div class="feature-tags">${meeting.features.slice(0, 4).map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">3GPP 会议目录 ↗</a></div></article>`).join('')}</div></section>
     <section class="panel"><div class="panel-head"><div><h2>事件量最高的特性</h2><p class="section-note">点击特性名称查看综述、阶段与未决问题；也可继续查看逐条决议。</p></div><button class="button" data-nav="features" type="button">特性目录</button></div><div class="cards">${important.map(feature => `<article class="card"><div class="card-top"><button class="card-title" data-feature-overview="${esc(feature.slug)}" type="button">${esc(feature.name_zh)}</button>${badge(feature.stage || '待综述')}</div><p class="card-copy">${feature.summary ? esc(cut(feature.summary, 118)) : '尚未生成特性综述；可先浏览逐条会议决议。'}</p><div class="card-meta"><button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${feature.events} 条事件</button> ${badge(`${feature.agreements} 条 agreement`)} ${feature.latest ? badge(`${feature.latest.wg}#${feature.latest.meeting}${feature.latest.suffix || ''}`) : ''}</div></article>`).join('')}</div></section>`;
 }
 function renderFeatures() {
@@ -364,14 +399,34 @@ function renderFeatureDetail() {
   const legacy = feature.legacy_summary
     ? `<section class="panel"><h3>5G-A 源头</h3><p>${esc(feature.legacy_summary)}</p></section>`
     : '';
+  const evo = feature.evolution;
+  const points = (items) => items.length ? `<ul>${items.map(item => `<li>${esc(item.text)} <span class="muted">（依据：${item.meetings.map(ref => `<button class="feature-tag" data-meeting-overview="${esc(ref)}" type="button">${esc(ref)}</button>`).join(' ')}）</span></li>`).join('')}</ul>` : '<p class="muted">暂无明确记录。</p>';
+  const timeline = feature.evolution_timeline.map(row => `<li><button class="table-button" data-meeting-overview="${esc(row.meeting)}" type="button">${esc(row.label)}</button> <span class="muted">${row.start ? `${esc(row.start)} 至 ${esc(row.end)}` : '日期待补'}</span><p>${esc(row.summary)}</p></li>`).join('');
+  const evolution = feature.evolution_timeline.length ? `<section class="panel"><h3>跨会议演进脉络（6G）</h3>${evo ? `<p>${esc(evo.overview)}</p><h4>关键进展</h4>${points(evo.developments)}<h4>待决问题</h4>${points(evo.open_issues)}` : '<p class="muted">跨会议综合尚未生成或源材料已更新，等待续跑。</p>'}${feature.evolution_timeline.length === 1 ? '<p class="muted">目前只有一场会议的 6G 综述，尚无法判断跨会议变化。</p>' : ''}<h4>会议时间线</h4><ol>${timeline}</ol></section>` : (feature.evolution_blocked ? '<section class="panel"><h3>跨会议演进脉络（6G）</h3><p class="muted">会议综述缺失或已过期，请先更新会议综述。</p></section>' : '');
   return `<div class="section-heading"><div><h2>${esc(feature.name_zh)}</h2><p class="section-note">${esc(feature.has_legacy ? '5G-A → 6G 血统' : '6G 原生特性')} · ${feature.events} 条事件 · ${feature.summarized} 条已有摘要</p></div><div>${backButton('features')} ${badge(feature.stage || '待综述')}</div></div>
     <section class="panel"><h3>当前进展</h3><p>${feature.summary ? esc(feature.summary) : '尚未生成特性综述。'}</p></section>
-    <section class="panel"><h3>未决问题</h3>${issues}</section>${legacy}
+    <section class="panel"><h3>未决问题</h3>${issues}</section>${legacy}${evolution}
     <section class="panel"><div class="panel-head"><div><h3>协议事件</h3><p class="section-note">浏览该特性的逐条中文摘要、英文原文与来源。</p></div><button class="button" data-feature-filter="${esc(feature.slug)}" type="button">查看 ${feature.events} 条事件</button></div></section>`;
 }
+function renderMeetingDetail() {
+  const meeting = DATA.meetings.find(item => item.key === state.meetingDetail);
+  if (!meeting) return '<div class="panel empty">未找到所选会议。</div>';
+  const digests = meeting.features.filter(feature => feature.summary);
+  const digestCards = digests.map(feature => {
+    const points = feature.key_points.length ? `<h4>关键结论</h4><ul>${feature.key_points.map(point => `<li>${esc(point)}</li>`).join('')}</ul>` : '';
+    const issues = feature.open_issues.length ? `<h4>待决问题</h4><ul>${feature.open_issues.map(issue => `<li>${esc(issue)}</li>`).join('')}</ul>` : '';
+    const count = feature.digest_event_count ? `基于 ${feature.digest_event_count} 条已摘要 6G 事件` : '6G 会议特性综述';
+    return `<details class="meeting-digest"><summary>${esc(feature.name_zh)} · ${esc(count)}</summary><p>${esc(feature.summary)}</p>${points}${issues}<button class="button" data-meeting-feature="${esc(meeting.key)}" data-feature="${esc(feature.slug)}" type="button">查看相关事件</button></details>`;
+  }).join('');
+  const unsummarized = meeting.features.filter(feature => !feature.summary);
+  const pending = unsummarized.length ? `<p class="muted">另有 ${unsummarized.length} 个特性尚无 6G 会议综述；可直接查看其事件。</p>` : '';
+  return `<div class="section-heading"><div><h2>${esc(meeting.label)} · 增量简报</h2><p class="section-note">会期：${esc(meeting.period)} · ${meeting.events} 条事件 · ${meeting.agreements} 条 agreement</p></div>${backButton('meetings')}</div>
+    <section class="panel"><div class="panel-head"><div><h3>本会议特性进展（6G）</h3><p class="section-note">每项综述仅依据该会议的已摘要 6G 事件生成，可展开查看结论与待决问题。</p></div><button class="button" data-meeting-filter="${esc(meeting.key)}" type="button">查看全部 ${meeting.events} 条事件</button></div>${digestCards || '<p class="muted">该会议尚无可用的 6G 特性综述。</p>'}${pending}</section>
+    <section class="panel"><h3>会议涉及特性</h3><div class="feature-tags">${meeting.features.map(feature => `<button class="feature-tag" data-meeting-feature="${esc(meeting.key)}" data-feature="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">打开 3GPP 会议目录 ↗</a></div></section>`;
+}
 function renderMeetings() {
-  const rows = DATA.meetings.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-filter="${esc(meeting.key)}" type="button">${esc(meeting.label)} · 增量简报</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">会期：${esc(meeting.period)} · ${meeting.agreements} 条 agreement · ${meeting.summarized} 条已有中文摘要</p><div class="feature-tags">${meeting.features.map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">打开 3GPP 会议目录 ↗</a></div></article>`).join('');
-  return `<div class="section-heading"><div><h2>会议简报</h2><p class="section-note">每张卡片是原先一个 Markdown 增量简报的 HTML 入口，可继续下钻到事件原文。</p></div>${backButton()}</div><section class="cards">${rows || '<div class="panel empty">暂无会议数据。</div>'}</section>`;
+  const rows = DATA.meetings.map(meeting => `<article class="card"><div class="card-top"><button class="card-title" data-meeting-overview="${esc(meeting.key)}" type="button">${esc(meeting.label)} · 增量简报</button>${badge(`${meeting.events} 条`)}</div><p class="card-copy">会期：${esc(meeting.period)} · ${meeting.agreements} 条 agreement · ${meeting.digests} 份特性综述</p><div class="feature-tags">${meeting.features.map(feature => `<button class="feature-tag" data-feature-filter="${esc(feature.slug)}" type="button">${esc(feature.name_zh)} · ${feature.events}</button>`).join('')}</div><div class="card-meta"><a href="${esc(meeting.source_url)}" target="_blank" rel="noopener noreferrer">打开 3GPP 会议目录 ↗</a></div></article>`).join('');
+  return `<div class="section-heading"><div><h2>会议简报</h2><p class="section-note">进入会议可展开查看其内各特性的 6G 进展综述，并继续下钻到逐条事件。</p></div>${backButton()}</div><section class="cards">${rows || '<div class="panel empty">暂无会议数据。</div>'}</section>`;
 }
 function option(value, label, selected) { return `<option value="${esc(value)}"${value === selected ? ' selected' : ''}>${esc(label)}</option>`; }
 function filteredEvents() {
@@ -396,11 +451,13 @@ function renderEvents() {
   const meetingOptions = DATA.meetings.map(meeting => option(meeting.key, `${meeting.label} · ${meeting.period}`, state.meeting)).join('');
   return `<div class="section-heading"><div><h2>事件检索</h2><p class="section-note">搜索中文摘要、英文原文、议程或 TDoc；只渲染当前页，适合长期持续回填。</p></div><button class="button" data-reset-filters type="button">清除筛选</button></div><section class="panel"><div class="toolbar"><input id="query" type="search" value="${esc(state.query)}" placeholder="搜索摘要、原文、议程、TDoc…" aria-label="搜索事件"><select id="wg-filter" aria-label="工作组">${option('', '全部工作组', state.wg)}${DATA.workgroups.map(wg => option(wg, wg, state.wg)).join('')}</select><select id="feature-filter" aria-label="特性">${option('', '全部特性', state.feature)}${DATA.features.map(feature => option(feature.slug, feature.name_zh, state.feature)).join('')}</select><select id="meeting-filter" aria-label="会议">${option('', '全部会议', state.meeting)}${meetingOptions}</select><select id="era-filter" aria-label="阶段">${option('', '全部阶段', state.era)}${option('6G', '6G / Rel-20', state.era)}${option('5G-A', '5G-A 血统', state.era)}</select><select id="status-filter" aria-label="摘要状态">${option('', '全部摘要状态', state.status)}${option('ready', '已有摘要', state.status)}${option('pending', '待摘要', state.status)}</select></div><p class="filter-summary">匹配 <strong>${results.length.toLocaleString()}</strong> 条事件 · 当前第 ${state.page} / ${pages} 页</p></section><section class="event-list">${page.map(eventCard).join('') || '<div class="panel empty">没有匹配的事件。请放宽筛选条件。</div>'}</section><nav class="pagination" aria-label="事件分页"><button class="button" data-page="prev" type="button" ${state.page <= 1 ? 'disabled' : ''}>← 上一页</button><span class="muted">${results.length ? `${start + 1}–${Math.min(start + PAGE_SIZE, results.length)} / ${results.length}` : '0 条'}</span><button class="button" data-page="next" type="button" ${state.page >= pages ? 'disabled' : ''}>下一页 →</button></nav>`;
 }
-function render() { const navView = state.view === 'feature-detail' ? 'features' : state.view; document.querySelectorAll('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === navView)); document.getElementById('app').innerHTML = state.view === 'overview' ? renderOverview() : state.view === 'features' ? renderFeatures() : state.view === 'feature-detail' ? renderFeatureDetail() : state.view === 'meetings' ? renderMeetings() : renderEvents(); const heading = document.querySelector('.section-heading'); if (heading && state.trail.length && !heading.querySelector('[data-nav-back]')) heading.insertAdjacentHTML('beforeend', backButton()); }
+function render() { const navView = state.view === 'feature-detail' ? 'features' : state.view === 'meeting-detail' ? 'meetings' : state.view; document.querySelectorAll('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === navView)); document.getElementById('app').innerHTML = state.view === 'overview' ? renderOverview() : state.view === 'features' ? renderFeatures() : state.view === 'feature-detail' ? renderFeatureDetail() : state.view === 'meeting-detail' ? renderMeetingDetail() : state.view === 'meetings' ? renderMeetings() : renderEvents(); const heading = document.querySelector('.section-heading'); if (heading && state.trail.length && !heading.querySelector('[data-nav-back]')) heading.insertAdjacentHTML('beforeend', backButton()); }
 document.addEventListener('click', event => {
   const back = event.target.closest('[data-nav-back]'); if (back) { goBack(); return; }
   const nav = event.target.closest('[data-nav]'); if (nav) { if (state.view !== nav.dataset.nav) navigate({view: nav.dataset.nav}); return; }
   const featureOverview = event.target.closest('[data-feature-overview]'); if (featureOverview) { showFeatureOverview(featureOverview.dataset.featureOverview); return; }
+  const meetingOverview = event.target.closest('[data-meeting-overview]'); if (meetingOverview) { showMeeting(meetingOverview.dataset.meetingOverview); return; }
+  const meetingFeature = event.target.closest('[data-meeting-feature]'); if (meetingFeature) { showMeetingFeature(meetingFeature.dataset.meetingFeature, meetingFeature.dataset.feature); return; }
   const feature = event.target.closest('[data-feature-filter]'); if (feature) { showFeature(feature.dataset.featureFilter); return; }
   const meeting = event.target.closest('[data-meeting-filter]'); if (meeting) { showMeeting(meeting.dataset.meetingFilter); return; }
   const page = event.target.closest('[data-page]'); if (page) { state.page += page.dataset.page === 'next' ? 1 : -1; render(); return; }
@@ -421,7 +478,7 @@ document.addEventListener('input', event => {
   }
 });
 document.addEventListener('change', event => { const fields = {'wg-filter': 'wg', 'feature-filter': 'feature', 'meeting-filter': 'meeting', 'era-filter': 'era', 'status-filter': 'status'}; if (fields[event.target.id]) { state[fields[event.target.id]] = event.target.value; state.page = 1; render(); } });
-window.addEventListener('popstate', event => { const saved = event.state; if (!saved?.ngr) { state.trail = []; Object.assign(state, {view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', page: 1}); render(); return; } state.trail = saved.trail || []; Object.assign(state, saved.route); render(); });
+window.addEventListener('popstate', event => { const saved = event.state; if (!saved?.ngr) { state.trail = []; Object.assign(state, {view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', meetingDetail: '', page: 1}); render(); return; } state.trail = saved.trail || []; Object.assign(state, saved.route); render(); });
 function setTheme(theme) { document.documentElement.dataset.theme = theme; try { localStorage.setItem('ngr-theme', theme); } catch (_) { /* file:// may disallow storage */ } }
 try { const saved = localStorage.getItem('ngr-theme'); if (saved) setTheme(saved); } catch (_) { /* no persistent storage */ }
 document.getElementById('theme-toggle').addEventListener('click', () => { setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); });

@@ -6,7 +6,10 @@ from ngr.config import ExtractConfig
 from ngr.extract.backend import CliResult
 from ngr.extract.budget import Budget
 from ngr.extract.cache import LlmCache
-from ngr.extract.digest import build_feature_prompt, build_legacy_chunks, digest_features, parse_feature_response
+from ngr.extract.digest import (build_feature_prompt, build_legacy_chunks,
+                                build_meeting_feature_prompt, digest_features,
+                                digest_meeting_features, parse_feature_response,
+                                parse_meeting_feature_response)
 from ngr.extract.tasks import SchemaError
 from ngr.models import Feature, LineageSegment
 
@@ -23,6 +26,8 @@ def segment(era, depth):
 ISAC = Feature(slug="isac", name_zh="ISAC 通感一体", lineage=[segment("5G-A", "origin"), segment("6G", "full")])
 WAVE = Feature(slug="waveform", name_zh="波形", lineage=[segment("6G", "full")])
 FEAT_REPLY = json.dumps({"stage": "收敛中", "summary": "正在收敛。", "open_issues": ["波形未定"]})
+MEETING_REPLY = json.dumps({"summary": "本次会议确认了波形方向。", "key_points": ["采纳 X"],
+                            "open_issues": ["实现细节待定"]})
 
 
 def event(index, era="6G", meeting=126, summary="摘要", text="Adopt X.", feature="isac"):
@@ -87,3 +92,41 @@ def test_digest_reuses_cached_legacy_and_skips_without_events(tmp_path):
     assert len(second.calls) == 0
     assert state["isac"]["legacy_summary"] == "历史归纳。"
     assert state["isac"]["stage"] == "收敛中"
+
+
+def test_meeting_feature_digest_uses_6g_summaries_and_reuses_cache(tmp_path):
+    cache = LlmCache(tmp_path)
+    six = [event(1, summary="确认 X。"), event(2, summary="保留 Y 供后续处理。")]
+    legacy = event(3, era="5G-A", meeting=120, summary=None, text="Legacy decision.")
+    cli = FakeCli([MEETING_REPLY])
+    state = digest_meeting_features([ISAC], six + [legacy], {}, CFG,
+                                    cli_factory=lambda model, effort: cli,
+                                    cache=cache, budget=Budget(10))
+    digest = state["RAN1-126"]["isac"]
+    assert digest["summary"] == "本次会议确认了波形方向。"
+    assert digest["event_ids"] == [six[0]["id"], six[1]["id"]]
+    assert "Legacy decision." not in cli.calls[0][0]
+    assert "RAN1#126" in cli.calls[0][0] and cli.calls[0][1] is not None
+
+    second = FakeCli([])
+    again = digest_meeting_features([ISAC], six, state, CFG,
+                                    cli_factory=lambda model, effort: second,
+                                    cache=cache, budget=Budget(10))
+    assert second.calls == [] and again["RAN1-126"]["isac"]["key_points"] == ["采纳 X"]
+
+
+def test_meeting_feature_response_requires_lists_and_prompt_uses_event_summaries():
+    assert parse_meeting_feature_response(MEETING_REPLY)["open_issues"] == ["实现细节待定"]
+    with pytest.raises(SchemaError, match="key_points"):
+        parse_meeting_feature_response(json.dumps({"summary": "s", "key_points": "x", "open_issues": []}))
+    prompt = build_meeting_feature_prompt(ISAC, [event(1, summary="采纳 X")])
+    assert "采纳 X" in prompt and "RAN1#126" in prompt and "ISAC 通感一体" in prompt
+
+
+def test_meeting_feature_digest_reports_a_failed_call(tmp_path):
+    problems = []
+    cli = FakeCli(["not json"])
+    state = digest_meeting_features([ISAC], [event(1)], {}, CFG,
+                                    cli_factory=lambda model, effort: cli,
+                                    cache=LlmCache(tmp_path), budget=Budget(10), problems=problems)
+    assert state == {} and len(problems) == 1 and isinstance(problems[0], SchemaError)

@@ -12,6 +12,31 @@ RAN1#124 已为 6GR 评估规定多类载频下的 UE、CPE 与 BS 天线配置�
 - 其他 UE 天线配置及 FTP3 Alt2 相关取值仍可由公司报告或在评估阶段决定。
 - TR38.914 中 RAN1 尚未讨论的场景仍属于候选评估场景。
 
+## 跨会议演进脉络（6G）
+
+材料仅包含 RAN1-124（2026-02-09 至 2026-02-13）一场会议，不能判断跨会议变化。本次会议细化了 6GR 空口评估的天线、功率、场景及业务模型假设，形成更具体的系统级仿真评估基线，但尚不构成空口协议机制的确定。
+
+### 关键进展
+
+- 明确低于 30 GHz 的 UE antenna modelling，覆盖 1、2、4、8、16 个 antenna elements 及对应 TXRU、Alt 1/Alt 2 和适用载频；Alt 1/Alt 2 的位置仅为性能校准示例，允许采用 TR 38.901 section 7.3 的其他阵列结构或位置。（依据：RAN1-124）
+- 约 30 GHz 的 UE antenna configuration 和 radiation pattern 分别遵循 Table 1 和 Table 2；每 panel 含 8 个 antenna elements，Config 0/1/2 分别对应 1/2/4 个 panels，规定每 panel 的 TXRU 配置及 GE,max 为 5 dBi，其他配置可由公司报告。（依据：RAN1-124）
+- 补充 FWA/CPE 天线评估选项：单天线单元方向图候选包括 Isotropic、Directional 和 Omnidirectional，CPE 可配置 1–3 个 panels 并优化方向；约 4 GHz 的室外 BS 新增 32 个 antenna elements、4 TXRU 的 Optional 配置。（依据：RAN1-124）
+- 细化功率假设：低于 30 GHz 时仅 CPE 假设 UE transmission power 为 35 dBm，并可考虑 EIRP limit；约 30 GHz 的 peak EIRP 为 23–43 dBm，CPE 为 35–55 dBm，具体功率由公司报告。BS Tx power 随带宽按比例增加，室外和室内上限分别为 56 dBm 和 33 dBm。（依据：RAN1-124）
+- 更新 Indoor Hotspot、Dense Urban、Rural、Urban Macro 和 Suburban Macro 的 UE distribution 与 UE speed 假设，限制每个 micro TRxP 的 UE 数量不超过对应 macro TRxP；采用相关 CPE antenna height、分布及速度假设，并将 TR38.914 已涵盖但 RAN1 尚未讨论的场景纳入候选评估场景。（依据：RAN1-124）
+- FTP3 extension 采用两种包大小，满足 S₁<S₂、λ₁=K·λ₂、K≥1，且到达服从 Poisson distribution；保留每 UE 一种包大小及每 UE 两种独立 Poisson Process 两种方案。Massive Communication (IoT) 除 32 bytes L2 PDU 外，也可评估如 320 bytes 的更高业务负载。（依据：RAN1-124）
+
+### 待决问题
+
+- UE distribution 和 UE speed 表对 FWA 的适用性仍为 FFS。（依据：RAN1-124）
+- 室内与室外 CPE 的预选标准或机制可在评估阶段进一步讨论。（依据：RAN1-124）
+- FTP3 extension 两种方案的相关参数取值留待评估阶段决定。（依据：RAN1-124）
+
+### 会议时间线
+
+_目前只有一场会议的 6G 综述，尚无法判断跨会议变化。_
+
+- **RAN1#124**（2026-02-09 至 2026-02-13）：本会议进一步明确了 6GR 空口评估的天线建模、发射功率、用户分布与速度以及业务模型假设，覆盖低于 30 GHz 和约 30 GHz 的 UE、BS 及 FWA/CPE 配置。这些约定细化了系统级仿真的共同评估基线，同时保留部分可选配置、公司报告参数和评估阶段待定事项；其含义是统一评估条件，尚不构成空口协议机制的确定。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#124] `agreement` 10.1 Evaluation assumptions for 6GR air interface

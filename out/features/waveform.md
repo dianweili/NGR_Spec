@@ -12,6 +12,35 @@
 - 应用频谱扩展或截断前的 DFT size 选项 2（X=4）是否支持、RB 数量上限及相关评估结果仍待确定。
 - 各波形方案的最终评估指标、适用场景与信号、兼容性及规范影响仍需进一步收敛。
 
+## 跨会议演进脉络（6G）
+
+2025年8月至2026年8月，6GR 波形与帧结构研究从确立 NR 波形、normal CP 和 SCS 讨论基线，逐步推进到统一 UL low-PAPR 评估条件、优先研究 DFT-s-OFDM 增强，并形成 FDSS 候选范围及部分 DFT size 支持基线。最新材料仍未给出最终 waveform 选型或 UL PAPR reduction 应用条件；部分早期帧结构待决事项也未见后续结论。
+
+### 关键进展
+
+- RAN1#122 确立上行以 CP-OFDM 和 DFT-s-OFDM、下行以 CP-OFDM 为基础，支持 NR normal CP，并以分频段 SCS 配置作为讨论起点。RAN1#123 随后明确 TN communication 的 Extended CP 不再继续研究；该结论仅覆盖所述范围。（依据：RAN1-122、RAN1-123）
+- UL waveform 评估从 RAN1#123 的 Net gain@10% BLER、ACLR、EVM、IBE、通用仿真假设和报告要求，推进到 RAN1#124 明确 NR Rel-15 DFT-s-OFDM 基线、接收端知识披露及多层研究的 SLS/LLS 指标、功率模式和 precoder 假设。RAN1#126 进一步统一结果收集模板并认可更新后的 observations。（依据：RAN1-123、RAN1-124、RAN1-126）
+- RAN1#124 将 DFT-s-OFDM low UL PAPR enhancement 和多 rank UL MIMO 列为高优先级研究，同时将 Downlink DFT-s-OFDM waveform 及相关增强移出 AI 10.2.1；DL signal 仍可能在相应 AI 单独讨论，不能据此推断所有下行相关研究终止。（依据：RAN1-124）
+- RAN1#124b 优先研究含 π/2 BPSK、QPSK、16QAM 及 spectral extension/truncation 变体的 FDSS cases，并区分由 RAN4 定义要求的 transparent filter 与由 RAN1 指定系数的 non-transparent filter。RAN1#126 将候选范围列为无频谱扩展或截断、频谱扩展、频谱截断三类，供后续筛选。（依据：RAN1-124b、RAN1-126）
+- DFT size 从 RAN1#124 保留两种处理前子载波数选项，推进到 RAN1#126 明确 SE/ST 前至少支持 12 × 2^x3^y5^z 个子载波；另一候选在后者中表述为 X × 2^x3^y5^z（X=4），尚未决定支持。（依据：RAN1-124、RAN1-126）
+- RAN1#124b 汇总评估显示系统级收益随场景与设置而异；所列公司均建议考虑将相关提案纳入 6GR TR，但不等于已正式纳入。该会还表示，除非后续 RAN 会议下达任务，否则 waveform 议题下不计划继续讨论所列提案；RAN1#126 又记录了 UL PAPR reduction 进展，材料未说明其与此前讨论限制的衔接依据。（依据：RAN1-124b、RAN1-126）
+
+### 待决问题
+
+- UL PAPR reduction 的适用 SE 范围和最终应用条件仍为 FFS；RAN1#126 将透明性和调制方式筛选目标设为 RAN1#126bis，材料未提供该后续会议结果，也未形成最终 waveform 方案选择。（依据：RAN1-124、RAN1-126）
+- DFT size 选项 2（X=4）的支持决定计划在 RAN1#127 作出，其适用 RB 数量上限仍为 FFS，需要额外评估结果。（依据：RAN1-126）
+- FR2-1 网络侧最大信道带宽仍待在 800MHz 与 400MHz 中确定，UE 侧支持及网络采用 400MHz 时的实现选项、规范影响、性能、能效、成本和复杂度仍需研究；后续材料未给出结论。（依据：RAN1-123）
+- 约 7 GHz 的 30/60 kHz SCS 可开展研究，其他所列 SCS 选项仍待 RANP 决定或保持 FFS；sensing numerologies 交由 sensing 议题决定。后续材料未说明这些事项的结果。（依据：RAN1-122）
+- 尚不能形成统一的 UL DFT-s-OFDM 系统级增益结论；后续评估报告被鼓励说明是否使用 transparent CFR，以补充评估条件信息。（依据：RAN1-124b）
+
+### 会议时间线
+
+- **RAN1#122**（2025-08-25 至 2025-08-29）：RAN1#122 明确了 6GR 上下行波形的基础方向：上行以 NR 定义的 CP-OFDM 和 DFT-s-OFDM 为基础，下行以 NR 定义的 CP-OFDM 为基础，同时保留补充波形研究空间。帧结构方面，以除 PRACH 外所有信号和信道的 SCS 配置作为讨论起点，并明确支持与 NR 定义相同的 normal CP。上述进展确定了波形与 numerology 的基础方向，其他 SCS、CP 及补充波形仍需后续决定或研究。
+- **RAN1#123**（2025-11-17 至 2025-11-21）：本会议细化了 6GR UL low-PAPR 波形提案的评估指标、仿真假设和报告要求，并明确通过 link level 与 system level simulation 评估性能收益，为提案比较提供统一依据，尚未形成波形选型结论。帧结构方面，FR2-1 网络侧最大信道带宽仍保留 800MHz 和 400MHz 两种假设，继续研究网络与 UE 支持 400MHz 的实现选项及规范影响；TN communication 的 Extended CP 不再继续研究。
+- **RAN1#124**（2026-02-09 至 2026-02-13）：RAN1#124 明确将 DFT-s-OFDM 的 low UL PAPR enhancement 和多 rank UL MIMO 研究列为 AI 10.2.1 的高优先级，并将 6GR Downlink DFT-s-OFDM waveform 及相关增强移出该议题讨论范围。本会议进一步统一了 UL waveform 研究的基线、评估指标、功率模式和 precoder 假设，并扩展提案特征表以记录潜在规范影响及收发处理要求。这些进展细化了后续方案比较的共同条件，尚未形成最终 waveform 方案选择。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议明确了以 DFT-s-OFDM 的 low UL PAPR enhancement 改善 UL coverage 的优先研究范围，涵盖多种 FDSS 调制及频谱处理变体，并区分 transparent filter 与 non-transparent filter 的定义路径。会议汇总了 UL DFT-s-OFDM 和相关 waveform 提案的评估情况，但系统级收益随场景与设置而异，尚不能据此形成统一增益结论。所列公司反馈均建议考虑将相关提案纳入 6GR TR；除非 RAN#112 或之后的 RAN 会议下达任务，RAN1 waveform 议题下不计划进一步讨论这些提案。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：本会议推进了 6GR 波形与帧结构中 UL PAPR reduction 的评估与候选技术筛选，认可更新后的 observations，并统一结果收集模板。会议明确了应用 SE/ST 之前 DFT size 至少支持的选项，为相关参数支持范围建立了基线；UL PAPR reduction 的最终应用条件及另一 DFT size 选项的支持仍待后续确定。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.2.1 Waveform

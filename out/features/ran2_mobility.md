@@ -13,6 +13,35 @@
 - 切换命令处理、目标配置应用、数据转发和 path switch 对整体时延的影响，以及不同切换场景的时延要求仍待协调。
 - NTN 的多轨道与 TN–NTN 移动性、GNSS-free 操作及不同网络集成模式下的具体机制仍待研究。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR 移动性从确定 NR 框架基线和研究范围，推进到 TN mobility baseline、candidate RRC configuration 组织原则及 network-triggered early UL/DL synchronization 的具体方案。NTN 移动性逐步明确 baseline 和支持范围。总体仍处于研究与部分原则达成阶段，完整 mobility framework、时延优化、资源预留效率及测量机制尚未定案。
+
+### 关键进展
+
+- RAN2#132 以 NR cell (re)selection framework 为基线，并将无预配置、预配置及 UE-triggered mobility 纳入研究；RAN2#133 明确 mobility without pre-configuration 为 6G TN baseline；RAN2#133bis 进一步支持 candidate RRC configuration 预配置和 common candidate RRC configuration，配套 fast RRC processing 并非所有 UE 必须支持。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- 测量研究从 L1/L3 measurement 的 common RS configuration 和动态 measurement gap 请求目标，推进到先明确需求与方案、再判断配置或流程能否统一；RAN2#133 暂定框架覆盖 serving/non-serving cells、多种测量目的、频率及 RAT、gap-assisted/non-gap-assisted measurement，以及周期和事件触发报告。（依据：RAN2-132、RAN2-133）
+- Early synchronization 从研究范围逐步形成具体流程：RAN2#133bis 同意研究有无预配置及 spectrum aggregation 场景；RAN2#134 支持 NW-triggered early UL synchronization，由 source cell 触发、target cell 计算 TA 并经 source cell 交付 UE，有效 TA 支持 RACH-less mobility；early DL sync 以 source cell 触发 candidate cell 的 TCI-state activation 为基线，也支持仅预配置 DL RS 和 TCI-state configuration。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+- 切换时延研究从减少配置更新和处理开销，推进到明确由 RAN4 定义不同 HO 场景的 Tprocessing、RAN2 研究 HO command。RAN2#134 明确 Tprocessing 主要取决于实际执行操作，与参数数量或命令大小无直接相关性，并同意通过 LS 请 RAN4 评估 RF/BB configuration 不变场景的时延要求。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 预配置资源效率从候选资源预留问题推进到 initial access 资源指示原则：RAN2#134 明确 source cell 可与 target cell 协调后，通过 cell switch command 指示 CFRA、CG 或用于 RACH-less 的 SR 资源，并要求 UE 每次 cell switch/change 后通知 network。针对 delay-sensitive、bursty traffic，wake-up mechanism 与基于预配置的 UE-based mobility 被作为独立功能研究。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- Inter-RAT mobility 起步支持 RRC_CONNECTED 下的 handover、re-direction 及提供 reselection information；随后 NTN 研究明确 time/location-based conditional handover baseline，并以 single connectivity 为范围、暂以 5G 机制作为各状态 GNSS-based mobility baseline。RAN2#133bis 进一步明确支持 6G TN–5G NTN Inter-RAT mobility，以及 IDLE、INACTIVE、CONNECTED 下 Intra-6G NTN–TN 双向移动性。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+
+### 待决问题
+
+- 覆盖 6G Day1 handover schemes 的完整 mobility framework 尚待完善，包括可选 Pre-configuration、Early processing 和 Cell switch triggering/execution；统一 L3 HO 与 LTM 的流程及信令、subsequent mobility 的支持与简化方式，材料未显示已定案。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- 时延优化仍待落实：RAN4 需评估 RF/BB-impacting parameters 不变时更低的 T_RRC/T_processing 要求；RAN2 继续研究 small-size HO command、应用 target configuration 前保持 source cell 通信，以及预配置与 fast RRC processing 的结合。Data forwarding 和 path switch 时延还需与 RAN3、SA2 协调。（依据：RAN2-133bis、RAN2-134）
+- 候选配置细节和资源预留效率仍待研究，涉及 CFRA、Configured grant、SR 资源、关键与后续配置的拆分，以及 shared resource pool、基于 NW coordination 或 UE assistance info 的 dynamic resource allocation/activation。（依据：RAN2-133bis、RAN2-134）
+- UE-triggered early UL/DL sync 尚未定案；UL 方向需评估 UE-based TA acquisition、CFRA/CBRA 使用、避免不必要同步及 asynchronous network 的 timing assistance。Early DL sync 和 early CSI acquisition 的可行性依赖 RAN1 进展，简化方案及 UE 功耗、复杂度和资源开销权衡仍需研究。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 统一 measurement configuration/reporting、cell/beam level 与 L1/L3 measurements，以及 measurement gap procedure、signaling 和参数要求仍缺乏定案证据。RAN2#134 还提出 connected mode measurement/reporting relaxation、UL-based mobility，以及针对 ping-pongs、unnecessary HOs 和 RLFs 的增强研究。（依据：RAN2-132、RAN2-133、RAN2-134）
+- NTN 仍需落实 time/location-based 触发与测量、TN 测量跳过或放宽、RACH-less handover 与 CHO 的组合、不同 TN–NTN 集成模式及 multi-orbit mobility；GNSS-free/GNSS-less 下的移动性和 timings 被列为优先研究，GNSS-degraded 的 position fix/accuracy 尚待 RAN1 结论。Inter-RAT 进一步增强也未见定案证据。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132 明确以 NR cell (re)selection framework 作为 6G 小区重选框架基线，并确定 5G/6G inter-RAT mobility 的起步支持范围。会议明确了 mobility schemes 的研究范围，推进统一测量与 measurement gap signaling framework 的研究，旨在减少移动性流程及测量配置、上报的复杂性。统一 handover 的具体信令与流程及 inter-RAT 增强尚未定案，仍需后续研究和跨工作组协调。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133推进了6G mobility在切换中断、配置处理、资源预留、测量框架及NTN移动性方面的研究，明确mobility without pre-configuration为6G TN baseline。协议设计将进一步研究减少切换时的配置更新与处理开销，并协调解决pre-configuration带来的资源预留问题。NTN方面明确了time-based和location-based conditional handover的baseline方向，但具体信令、测量机制及多项支持能力仍待研究。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议推进了6GR mobility framework、预配置与快速处理、早期同步及TN–NTN移动性的研究，并明确了部分配置组织和功能支持原则。协议层面，可预配置candidate RRC configuration，配套fast RRC processing为可选能力；降低移动性时延还需同时处理空口中断、data forwarding和path switch。NTN研究范围覆盖6G TN–5G NTN inter-RAT mobility、位置与时间触发条件、多轨道及GNSS-free/GNSS-less操作，具体机制仍需后续研究和跨工作组协调。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 推进了 6GR 移动性在降低切换中断、提前同步、资源预留效率和 connected mode 节能方面的研究，明确了 network-controlled early UL synchronization 的基线流程，并支持 network-triggered early DL sync。协议层面明确了预配置移动性中的 initial access 资源协调方式，以及 UE 每次切换后通知网络的要求；同时将 RF/BB 参数不变场景的时延要求交由 RAN4 进一步评估。small-size HO command、UE-triggered 同步和 UL-based mobility 等仍处于研究阶段。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.4 Mobility

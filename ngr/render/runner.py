@@ -4,6 +4,8 @@ from pathlib import Path
 from ngr.models import Feature
 from ngr.render.markdown import render_dashboard, render_feature_page, render_report
 from ngr.render.site import render_site
+from ngr.render.site import MEETING_PERIODS
+from ngr.extract.evolution import evolution_inputs, current_evolutions
 
 
 def _report_date(events: list[dict], wg: str, meeting: int, suffix: str,
@@ -25,7 +27,9 @@ def _report_date(events: list[dict], wg: str, meeting: int, suffix: str,
 
 
 def render_all(events: list[dict], features: list[Feature], feat_state: dict,
-               out_dir: Path, *, banner: str | None = None,
+               out_dir: Path, *, meeting_feature_state: dict | None = None,
+               feature_evolution_state: dict | None = None,
+               banner: str | None = None,
                unmapped: list[str] | None = None,
                generated: str | None = None) -> list[Path]:
     generated = generated or time.strftime("%Y-%m-%d")
@@ -34,6 +38,8 @@ def render_all(events: list[dict], features: list[Feature], feat_state: dict,
     (out_dir / "reports").mkdir(parents=True, exist_ok=True)
     (out_dir / "site").mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
+    sources = evolution_inputs(features, events, meeting_feature_state or {}, MEETING_PERIODS)
+    evolutions = current_evolutions(sources, feature_evolution_state or {})
 
     def write(rel: str, text: str) -> None:
         p = out_dir / rel
@@ -59,13 +65,18 @@ def render_all(events: list[dict], features: list[Feature], feat_state: dict,
 
     for feat in features:
         write(f"features/{feat.slug}.md",
-              render_feature_page(feat.slug, events, feat, feat_state.get(feat.slug, {})))
+              render_feature_page(feat.slug, events, feat, feat_state.get(feat.slug, {}),
+                                  evolution=evolutions.get(feat.slug), evolution_source=sources.get(feat.slug)))
 
     names = {f.slug: f.name_zh for f in features}
     for wg, meeting, suffix in sorted({(e["wg"], e["meeting"], e.get("meeting_suffix", "")) for e in events}):
         date = _report_date(events, wg, meeting, suffix, generated)
         write(f"reports/{date}-{wg}-{meeting}{suffix}.md",
-              render_report(wg, meeting, events, names, suffix))
+              render_report(wg, meeting, events, names, suffix,
+                            meeting_feature_state=meeting_feature_state))
 
-    write("site/index.html", render_site(events, features, feat_state, generated=generated))
+    write("site/index.html", render_site(events, features, feat_state,
+                                          meeting_feature_state=meeting_feature_state,
+                                          evolution_sources=sources, evolution_state=evolutions,
+                                          generated=generated))
     return written

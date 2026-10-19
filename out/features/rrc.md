@@ -13,6 +13,35 @@
 - 配置失败处理在简化重建、partial success、fallback 和失败信息报告等方案间尚未收敛，具体流程及报告粒度待定。
 - stored/reference configuration、delta signalling 和模块化 ASN.1 的具体结构、释放规则及兼容性仍待研究。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR RRC 从状态模型与配置机制的广泛研究，逐步推进到业务适用范围、RRC structure 规则和失败处理方向的明确。Inactive 的研究逐渐聚焦低频、时延容忍度高的流量，但确切状态建模和 SDT 是否引入仍未确定。配置方面明确了 ID-based linking、delta signalling 释放能力及失败原因报告要求；最新会议明确不推进 UE 部分应用 (re)configuration 的规范方案，转向简化失败处理。配置复用和恢复流程仍在研究。
+
+### 关键进展
+
+- RAN2#132 明确当前采用 single RRC sublayer（no upper/lower split），RRC layer split 讨论推迟至 RAN3 或 RAN 就 CU-DU split 作出决定；后续材料未提供该方向变化的证据。（依据：RAN2-132）
+- 状态研究由三态模型与 sub-states 的选择，发展为按业务场景区分研究方向：RAN2#133bis 对 delay-insensitive/bursty traffic 聚焦“Inactive”state，对 delay-sensitive and bursty traffic 继续研究 connected mode mobility 省电；RAN2#134 进一步指出低频且高时延容忍度的 IoT cases 适合 inactive operation，Smartphone/eMBB/FWA foreground traffic 不适合。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2#133 明确 Inactive/sub-state 的 UE AS context 保存、identifier 定位和 UE based mobility 能力，并要求从 network-controlled mobility 转入 UE-controlled mobility 使用受安全保护的显式网络信令。RAN2#134 进一步指出 inactive 与 idle 存在上下文、标识、安全和数据传输要求上的根本区别，应采用不同的 CONNECTED 转换流程；两端保存 AS context 的 resume-like procedure 可支持满足 CP latency requirement 的快速转换。（依据：RAN2-133、RAN2-134）
+- RRC structure 从 delta configuration 和 modularization 研究，推进到以 Rel-19 为基线的模块化可行性研究，并在 RAN2#133bis 明确一致使用 additional parameterized types、采用 ID-based linking、除 mandatory features 外允许 UE 无需理解整个 ASN.1 configuration，以及支持 delta signalling 的非逻辑必选字段必须具备释放手段。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- 失败处理方向发生明确收敛：RAN2#132 提出保留或应用可用配置部分，RAN2#133 将仅应用有效配置列为候选方案，RAN2#133bis 明确 UE 应报告失败原因；RAN2#134 明确不推进 UE 部分应用 (re)configuration 的规范方案，转向研究跳过部分操作以简化失败处理、减少 UE service interruption。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- stored configurations 从跨状态存储复用的总体方向，推进到具体研究范围：RAN2#134 至少涵盖 INACTIVE 到 CONNECTED、CONNECTED 内 reconfiguration 及 UE 留在同一小区的情况，暂不考虑 IDLE 状态下使用。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+
+### 待决问题
+
+- inactive 的确切建模仍未确定，最新讨论包括独立 RRC state 或 IDLE 的“IDLE with suspend”子状态，以及 CN-RAN connection 的 established/suspended 语义；connected mode 下 mobility 省电所用 pre-configuration 的收益、安全影响和可行性也仍待研究。（依据：RAN2-133bis、RAN2-134）
+- inactive 的 paging 定义、与 idle 共用 paging 和 cell (re)selection 的机制、转入 CONNECTED 是否仅由 RRC signaling 启动仍待明确。UE identification、RNA、context transfer 和 context 存储位置涉及 RAN2、RAN3、SA2 协调，材料未显示已完成解决。（依据：RAN2-132、RAN2-133、RAN2-134）
+- 是否规范 inactive 下的 SDT 尚未决定，需比较其与转入 CONNECTED 的能耗，并评估 signaling overhead、mobility、coverage、maximum TBS size、突发大小及持续时间；agentic AI 和部分 Smartphone/eMBB/FWA background traffic 的适用性仍不明确。（依据：RAN2-134）
+- modular RRC structure 是否支持及具体 ASN.1 设计仍待确定，包括 parameterized delta-signalling lists、configuration constraints、extensible ID 和列表扩展；“partial full config”与“release by default + signal to keep”的稳健性和信令开销比较尚无定论。（依据：RAN2-133、RAN2-133bis）
+- 简化 (re)configuration failure handling 应跳过哪些操作、采用何种 RRC procedure，以及 erroneous/inapplicable configurations 的报告范围、粒度和细节仍待研究；不推进部分应用配置并不意味着恢复流程已经确定。（依据：RAN2-133bis、RAN2-134）
+- stored/reference configuration 的获取、ID/Index 引用、相对 baseline 的 delta signaling、按需激活及激活时修改机制仍待细化；standardized UE-initiated/request RRC connection release 的用例及对 UE、NW 的影响也尚待研究。（依据：RAN2-133bis、RAN2-134）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132 推进了 6GR RRC 连接管理、状态建模及配置机制研究，明确当前设计采用 single RRC sublayer，并研究 inactive mode 或 sub-state 对快速进入 data exchange 和 network controlled transitions 的支持。配置方面，会议认可 delta configuration 降低信令开销的价值，同时推进实现复杂度、兼容性及部分配置无法应用问题的处理。协议设计方向包括配置存储与复用、减少不必要的 re-establishment，并保持 UE 与 NW 配置同步；具体状态模型和相关机制仍需后续研究。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 推进了 6GR RRC 的状态与数据传输、RRC structure 及 (re)configuration failure handling 研究，明确先澄清业务场景，再讨论 sub-state 或 (enhanced) INACTIVE 的方案细节。会议明确了 Inactive/sub-state 的上下文保存与 UE based mobility 能力，并形成 UE-controlled mobility 下小数据交换的上下文和安全要求，为减少信令及支持快速数据恢复提供研究基础。RRC structure 方面确定以 Rel-19 为基线开展模块化可行性研究，失败处理方面明确了根因分类及候选方案，具体协议设计仍待后续确定。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议推进了 6G RRC 状态与省电机制研究：面向 delay-insensitive/bursty traffic 聚焦“Inactive”state，面向 delay-sensitive and bursty traffic 继续研究 connected mode 下与 mobility 相关的 UE power saving，具体状态建模尚未确定。RRC structure 方面明确了参数化类型、ID-based linking、配置理解范围和 delta signalling 释放能力的方向，为配置模块间引用及配置更新提供协议设计依据。会议还明确 UE 应报告 (re-)configuration failure 原因，但报告细节及恢复流程仍待研究。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 明确不推进 UE 部分应用 (re)configuration 的规范方案，转向研究通过简化失败处理减少 UE service interruption，并划定 stored configurations 的研究范围。本会议还讨论了 inactive operation 的状态建模、恢复流程、适用流量及 SDT，但独立状态或 IDLE 子状态、SDT 是否引入等仍未确定。协议设计的后续重点包括减少配置与状态转换的信令开销，以及明确失败恢复、配置复用和 inactive 数据传输机制。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.2.1 RRC Modelling and connection management

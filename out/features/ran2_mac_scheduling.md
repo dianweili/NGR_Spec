@@ -12,6 +12,35 @@ RAN2#132 至 #134 已形成 6GR MAC 与调度的若干基线：支持 dedicated 
 - CG 的配置更新、动态激活与资源回收机制，以及其相对 dynamic grant 的适用性仍待进一步明确。
 - 2-step/4-step RA 的统一方式、CB-PUSCH 与 RACH 的关系、fallback 条件、RACH partitioning 及动态资源分配细节仍有待解决。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR MAC 与调度从研究方向逐步推进到评估假设和基本协议行为的确定：CB-PUSCH 明确了 BSR 评估起点，调度信息逐步形成 reporting 与 triggering 基线，RA 和 CG 明确了支持范围及部分操作规则。更细粒度调度、LCP、资源效率增强及跨 RAN1/RAN2 的设计仍待研究，材料未表明整体方案已定型。
+
+### 关键进展
+
+- CB UL 从以 normal SR/BSR 为比较基线的探索，推进到 RAN2 牵头评估，并在 RAN2-133bis 明确从 TN scenario 下共享资源承载多 UE BSR 开始；KPI 覆盖 UL PRB utilization、data burst latency 和/或 BSR latency，并考虑 collision ratio。评估假设 payload 包含 UE ID，timer 内收到 positive NW response 表示 contention resolution 成功，失败重试采用 HARQ new transmission。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- 调度信息从研究 buffer status 与 delay status 的统一 framework，推进到明确支持两类信息、采用 legacy per-LCG reporting 基线；RAN2-134 进一步以 NR BSR/DSR triggering events 作为 unified uplink data status procedure 的触发基线，支持 data importance reporting，并至少将 PHR reporting 与 BSR/DSR 分开。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2-132 确立 DL SPS 基线并继续研究 UL CG like mechanisms；RAN2-133bis 明确 CG 研究涵盖立即激活、动态激活/去激活及资源调整。RAN2-134 进一步支持一个或多个 CG configurations，通过 RRC 和/或 DCI 激活或去激活，允许多个 CG 同时激活，但每个 cell 同一时刻 UE 仅在一个 CG 上发送，并批准向 RAN1 发送相关 L1 scheduling 需求 LS。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+- RA 从 RAN2-133bis 支持 CBRA/CFRA、限定 Msg1/Msg3 indication 适用范围并研究流程统一，推进到 RAN2-134 明确支持 2-step/4-step RA、要求 4-step RA 可独立工作，并支持在 preamble 解码成功但 msgA-PUSCH payload 解码失败时 fallback 到 4-step RA 的 msg3 transmission。MAC 共性设计仍在推进。（依据：RAN2-133bis、RAN2-134）
+- LCP 研究从动态参数以及 delay、importance、跨 flow/packet correlation，扩展到新 LCP design、多种 performance objectives、application context awareness 和 dynamic QoS，并结合 per-LCG/per-LCH UL grant 探索更细粒度调度；截至 RAN2-134 尚未形成具体增强设计。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2-132 明确支持 sequence number-based L2 recovery 和基于 STATUS reporting 的 ARQ retransmission，保留 ARQ 独立于 HARQ、实现最高 100% reliability 的要求，并研究利用 HARQ process status 加快重传。后续材料未给出该机制定型或要求变更的证据。（依据：RAN2-132）
+
+### 待决问题
+
+- CB-PUSCH 用于 general purposes 还是仅用于 BSR 尚未确定；共享资源 blind decoding complexity、碰撞时 UE 区分与 payload 解码能力及 DMRS/RNTI 假设仍需 RAN1 输入。基于 CG 的增强、复用 RACH framework，以及 valid TA 下仅发送 MSGA payload 的机制仍待研究。（依据：RAN2-133bis、RAN2-134）
+- 调度信息的统一格式、粒度和新增触发条件仍待明确；early reporting 的内容、触发与约束未见后续定论。data importance 粒度、BSR 指示待处理 MAC CE 及其大小、更细粒度 SR 和 SR resources 效率增强仍待研究；PHR 细节需等待 CA framework 与 RAN1 MIMO 要求更明确。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- LCP 动态参数、信道选择、优先级灵活性及 delay、importance、QoS flow/packet dependency 的处理尚待设计；更细粒度 UL allocation/grant 的场景、粒度、DCI 开销及对 LCP/BSR 的影响仍不明确。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- RA 统一的参数、MAC PDU、恢复机制和窗口长度仍待确定；RACH partitioning、2-step RA preamble/PUSCH 对应关系、负载管理和节能设计需与 RAN1 协调。UL CCCH segmentation 的可行性及 preamble partition 方案仍需结合大小需求、复杂度和 contention resolution delay 评估。（依据：RAN2-133bis、RAN2-134）
+- CG 资源使用/未使用指示、UE 发起的 advance indication 及资源效率机制仍待研究；是否以 NR UTO-UCI 为基线存在不同意见，多 CG 操作细节可在 stage 3 继续讨论。此前提出的 CG recycling 和 UE 请求更新 CG configuration 未见明确结论。（依据：RAN2-133bis、RAN2-134）
+- 显式 UL HARQ process status 及利用 HARQ status、feedback 或 network indications 加快 ARQ/RLC 重传的细节仍缺乏定论；更细粒度 HARQ、通过不同 HARQ processes 调度不同 logical channels 的提议也未见后续处理结果。（依据：RAN2-132、RAN2-133）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132 明确了 6GR MAC 与调度的研究方向，重点是降低 scheduling 时延并提升 UL resource efficiency，基线支持 DL SPS，UL 继续研究 CG like mechanisms。会议明确研究至少包含 buffer status reporting 和 delay status reporting 的 scheduling information 机制，并在详细功能取得进展后争取统一 framework。L2 recovery 支持 sequence number-based ARQ，并研究利用 HARQ process status 加快重传；CB UL、CG、报告机制及 LCP 的具体增强设计仍需后续讨论。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 推进了 6GR MAC 与调度中 contention-based UL 方案的评估，并明确将支持 buffer status 和 delay status information、研究用于 UL scheduling 的 early reporting。RAN2 继续牵头 CB based schemes 评估，Dedicated SR mechanism 在 RAN1 已定义的前提下被假定为请求 UL resource 的基线。上述进展明确了评估方向和调度信息支持范围，但 CB 的协议机制、报告细节以及 HARQ、LCP 增强仍需后续研究。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确了 CB-PUSCH 承载 BSR 的评估起点、指标及 contention resolution 假设，并以 legacy per-LCG scheduling information reporting 为调度信息上报基线。随机接入方面，明确了 Msg1/Msg3 indication 的适用原则，支持 CBRA 和 CFRA，并继续研究 2-step/4-step RA 的统一与简化。会议还推进了更细粒度 UL grant、新 LCP design 和动态 CG 的研究，但具体协议设计及部分物理层可行性仍待后续确定。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议推进了 6GR MAC 与调度的基线确定，明确了 scheduling information reporting、随机接入和 configured grant 的若干基本行为，并继续研究面向多样化业务的 LCP 与 UL 资源分配增强。协议层面保留 legacy per-LCG reporting 和 NR BSR/DSR 触发事件作为基线，支持报告 data importance，并推动 2-step RA 与 4-step RA 的 MAC 共性设计。更细粒度调度、低时延状态报告及资源效率增强仍需进一步明确机制和跨 RAN1/RAN2 的接口要求。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.3.1.3.1 Scheduling

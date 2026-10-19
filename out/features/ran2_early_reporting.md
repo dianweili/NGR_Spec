@@ -12,6 +12,32 @@ RAN2 已确认 6GR 可针对尚未进入 L2、暂不可用于传输的上行数�
 - 预测准确性的监测需求与实现方式，以及是否需要 UE capability、confidence、轻量级 LCM 或失败回退机制。
 - 基于预测提前触发 RRC 状态转换的适用范围，以及由网络还是 UE 决定状态转换。
 
+## 跨会议演进脉络（6G）
+
+2026年4月至5月，6GR 提前报告从支持对尚未进入L2的UL data提供early scheduling information，推进到明确短期预测报告形式、MAC CE承载及network启用或禁用控制。长期预测的应用方向进一步聚焦，但统一反馈框架、报告粒度、监测和预测失败处理等机制仍待研究。
+
+### 关键进展
+
+- RAN2-133bis明确支持对L2中尚不可用的UL data提前提供调度信息；RAN2-134进一步明确三种predictive reporting形式：仅报告timing information、报告特定时间窗口内的predicted data size，或报告预期到达时间点及数据量，推进了此前未明确的信息组合方式。（依据：RAN2-133bis、RAN2-134）
+- RAN2-134明确Uplink early scheduling information通过MAC CE承载burst arrival prediction和/或burst size prediction；predictive timing information可将Rel-19 XR为DL定义的TTNB复用于6G UL。（依据：RAN2-134）
+- 报告控制由早期对触发方式的探索，推进到要求为predictive SR/BSR定义并配置适当触发条件，以控制额外开销；短期和长期traffic reporting均应允许network启用或禁用。（依据：RAN2-133bis、RAN2-134）
+- 与现有BSR共存的研究进一步发展为将short-term early reporting纳入包含BSR和DSR的unified scheduling information feedback framework的目标，具体整合机制尚未确定。（依据：RAN2-133bis、RAN2-134）
+- 预测辅助RRC状态转换的讨论进一步明确了范围：提前发起UE与CN间的service flow establishment及early service flow modification procedure不属于RAN2范围；RRC_IDLE到RRC_CONNECTED的转换决定依赖UE implementation，无规范影响。长期预测研究则聚焦辅助aNB配置、重配置及因data inactivity释放UE。（依据：RAN2-133bis、RAN2-134）
+
+### 待决问题
+
+- timing information的具体语义、粒度及报告条件仍需细化；长期UL/DL traffic prediction的报告参数，以及采用QFI、LC、LCG或UE粒度仍未确定。（依据：RAN2-133bis、RAN2-134）
+- short-term early reporting如何整合进包含BSR和DSR的unified scheduling information feedback framework，以及predictive SR/BSR的具体触发条件仍待推进。（依据：RAN2-134）
+- long-term traffic prediction对aNB有用的报告内容、提供时机及在初始RRC (re)configuration、connected UE reconfiguration和提前释放中的应用仍待研究；辅助提前释放的UL control signaling及通过RRC state transition message或UAI报告的机制尚未明确。（依据：RAN2-134）
+- performance monitoring的必要性和标准化范围尚无一致意见，包括UP监测、NW implementation监测和轻量级CP监测的取舍；AI-based prediction的LCM procedures、CP用例的UE capability reporting、security、trust requirement及prediction failure的fallback/mitigation mechanisms仍待研究。（依据：RAN2-133bis、RAN2-134）
+- RAN2-133bis提出的不同流优先级、delay-critical bursts支持，以及AI与非AI预测的标准处理方式、网络是否需要知晓预测方法和confidence机制，后续摘要未明确给出结论。（依据：RAN2-133bis）
+- predicted traffic load用于SCell activation/deactivation等carrier aggregation management是否产生额外规范影响，RAN2-133bis列为待明确事项，后续摘要未报告结论。（依据：RAN2-133bis）
+
+### 会议时间线
+
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确支持6GR为报告时尚未进入L2、不可用于传输的UL data提供early scheduling information，将调度信息扩展至数据进入L2之前。上行信息至少可包含timing information和data volume estimates，但字段组合、报告条件、时序语义及粒度尚未确定。会议还讨论了通用预测报告框架、与BSR共存及预测辅助RRC状态转换等方向，相关提案尚不能视为已确定的协议机制。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议推进了 6GR 提前报告的短期预测信息形式及 MAC CE 承载方向，并以将 short-term early reporting 纳入包含 BSR 和 DSR 的 unified scheduling information feedback framework 为目标。长期 traffic prediction 的研究聚焦于辅助 aNB 进行 UE 配置、重配置及因 data inactivity 释放 UE，具体内容与报告时机尚待明确。短期和长期 traffic reporting 均应允许 network 启用或禁用；performance monitoring、CP 相关 LCM 功能及预测失败处理仍需后续讨论。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.3.4 Early reporting

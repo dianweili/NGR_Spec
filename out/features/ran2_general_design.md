@@ -13,6 +13,35 @@ RAN2 已明确 6GR Day 1 优先支持移动宽带与 Voice，并满足 emergency
 - MAC CE 安全处理的复杂度、开销和时延，以及 SIB 保护的开销、覆盖范围、认证信息大小与更新频率仍未确定。
 - 潜在攻击后的恢复机制及部分 MAC CE 的时效性和安全需求仍需进一步分析。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，讨论从6GR业务优先级、Day 1需求和通用设计，推进到MAC CE与system information安全协调，并扩展至256-bit AEAD的PDCP适配分析。MAC CE保护的目标范围逐步明确，但具体安全机制仍待SA3协调决定；早期业务和设备设计待决事项在后续材料中未见明确结论。
+
+### 关键进展
+
+- 明确mobile broadband的高优先级及6G standalone architecture支持Voice的要求，提出eMBB（含immersive communication）、Voice、ISAC和IoT的Day 1需求；其他服务支持需有market needs和use cases依据，并以Day 1满足emergency calls、相关positioning及PWS监管要求为假设。（依据：RAN2-132）
+- 移动AI流量特征纳入研究，记录token arrival rate/interval与source file traffic pattern相关、不同tokens可具有不同可靠性要求；但尚未确定是否研究tokenized AI traffic。（依据：RAN2-132）
+- 安全跨组协调由批准发往SA3的LS，推进到同意以“Noted”回复SA3 LS并继续审查TR 33.801-01 Annex-B；审查聚焦RAN2相关方面，不预计覆盖SA3全部方案。（依据：RAN2-133、RAN2-133bis）
+- MAC CE安全讨论先梳理无Sequence Number、无in-sequence delivery、部分消息需在security establishment前发送及BSR/DSR/PHR的时效性，随后记录符合UE资源配置才处理MAC CEs的约束；至2026年5月，保护目标拟限于RRC_CONNECTED，排除初始接入及连接失败过程，并确认信令侧支持可配置保护可行。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- system information保护从RAN2角度聚焦接入所需信息的integrity protection，以检测false base station；dedicated delivery of SIBs宜由connected mode security覆盖。（依据：RAN2-133）
+- 新增256-bit AEAD的PDCP适配分析，涵盖Confidentiality、Integrity和Combined模式；在COUNT和MAC-I保持5G长度的条件下，AEAD不影响PDCP PDU format。RAN2提出PDCP SDU作为plaintext、整个PDCP header作为associated data的理解。（依据：RAN2-134）
+
+### 待决问题
+
+- Voice fallback、common minimum functional capability及相关参数仍需RAN plenary指导；设备能力表达、scalable design及device types与requirements/features/signalling的研究顺序未见后续定论。（依据：RAN2-132）
+- tokenized AI traffic的研究范围及与SA4的协调、RAN/CN计算资源部署选项、Digital twin traffic model及规范影响仍待研究；vertical services协议条目未处理，UE based sensing signalling被提出待RAN1 initial design稳定后推进。（依据：RAN2-132）
+- MAC CE最终保护方案仍待SA3决定，包括是否仅保护essential MAC CEs、SN和MAC-I等参数及开销与时延权衡；Annex-B审查、潜在攻击恢复机制及“group of UEs”威胁分类仍需推进。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- system information认证范围、SIB认证粒度、signature或authentication token大小、传输更新频率及可接受开销未定；后续SIB携带signature后校验和temporary/provisional connection验证方案仍待SA3评估。（依据：RAN2-133）
+- RRC connection期间仅依赖symmetric security algorithms是否足够，以及PQC是否适用于UE air interface，仍需确认，后续材料未给出结论。（依据：RAN2-133）
+- AEAD模式、算法共存、输入配置、Cipher-only/Integrity-only配置及48-bit EXTRA_IV同步方式需SA3澄清；MAC-I长度未定，4-byte MAC_BYTES仅为RAN2倾向。（依据：RAN2-134）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：本会议明确了 6GR 对 mobile broadband 的高优先级，以及在 6G standalone architecture 中支持 Voice 的要求，并确定 eMBB（包括 immersive communication）、Voice、ISAC 和 IoT 的需求需从 Day 1 得到满足和支持。通用协议设计讨论围绕 common minimum functionality、设备能力表达和 scalable design 展开，相关参数及协议影响仍需依据 RAN plenary 的决定推进。移动 AI 流量特征已纳入研究，但 tokenized traffic 是否纳入 RAN2 研究及其具体规范影响尚未确定。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：本会议推进了 6G MAC CE 与 system information 安全的跨组协调，批准发往 SA3 的 LS（R2-2601383），明确需传递的 MAC 协议约束与待澄清的安全问题。MAC CE 安全设计需兼顾时效性、security establishment 前的发送需求及信令开销；system information 保护讨论则聚焦接入所需信息的 integrity protection 及其无线侧开销。具体安全机制和参数仍需 RAN2 与 SA3 联合评估，尚未定案。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确继续审查 TR 33.801-01 Annex-B 的 security analysis，识别 RAN2 相关方面，并在形成结果后向 SA3 提供进一步输入。审查范围不覆盖 SA3 的全部方案，SA3 可按需提出问题；对 SA3 LS 的回复文本同意采用“Noted”。会议记录了 MAC CEs 的处理约束，但潜在攻击恢复机制仍需进一步研究。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议推进了 6G AS-layer 引入 256-bit AEAD 的 PDCP 适配分析，以及 MAC CE 安全保护范围和信令可行性的讨论。RAN2 明确了保持 5G COUNT 和 MAC-I 长度时 AEAD 不影响 PDCP PDU format，并向 SA3 提交了输入映射、模式配置及同步等澄清事项。MAC CE 保护拟限于 RRC_CONNECTED 状态，信令侧支持可配置保护具有可行性，但最终安全方案仍取决于 SA3。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `observation` 9.2.2 Others

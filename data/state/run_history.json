@@ -254,5 +254,85 @@
     "llm_calls": 0,
     "exit_code": 0,
     "message": ""
+  },
+  {
+    "started": "2026-10-12T17:15:40",
+    "duration_s": 130.3,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T17:19:30",
+    "duration_s": 0.5,
+    "new_events": 0,
+    "llm_calls": 0,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T17:47:57",
+    "duration_s": 130.3,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 3,
+    "message": "Codex 调用超时，会议特性综述未完成；请检查 CLI 登录与连通性"
+  },
+  {
+    "started": "2026-10-12T17:53:12",
+    "duration_s": 130.3,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 3,
+    "message": "Codex 调用超时，会议特性综述未完成；请检查 CLI 登录与连通性"
+  },
+  {
+    "started": "2026-10-12T18:04:32",
+    "duration_s": 60.4,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-12T18:21:25",
+    "duration_s": 908.7,
+    "new_events": 0,
+    "llm_calls": 23,
+    "exit_code": 3,
+    "message": "Codex 用量受限，会议特性综述将于下次继续"
+  },
+  {
+    "started": "2026-10-13T14:51:14",
+    "duration_s": 2672.3,
+    "new_events": 0,
+    "llm_calls": 53,
+    "exit_code": 3,
+    "message": "Codex 调用超时，会议特性综述未完成；请检查 CLI 登录与连通性"
+  },
+  {
+    "started": "2026-10-19T09:19:46",
+    "duration_s": 28.8,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-19T09:27:02",
+    "duration_s": 45.6,
+    "new_events": 0,
+    "llm_calls": 1,
+    "exit_code": 0,
+    "message": ""
+  },
+  {
+    "started": "2026-10-19T09:42:29",
+    "duration_s": 912.8,
+    "new_events": 0,
+    "llm_calls": 22,
+    "exit_code": 0,
+    "message": ""
   }
 ]

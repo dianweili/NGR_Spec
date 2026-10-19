@@ -13,6 +13,35 @@ RAN2 已从 AI/ML、感知、SON/MDT、QoE 等用例着手建立数据类型、�
 - 移动性期间的传输连续性与无损要求虽已被提出为需考虑方面，但早期提议曾标记为未处理，具体机制尚未说明。
 - UE 侧模型交付要求、RAN 生成模型向 UE 传输的支持需求，以及网络侧模型交付的职责划分仍待确认或跨工作组协调。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR 数据与模型传输研究从数据特性基线、模型传输范围和职责划分，推进到用例范围、终止点职责及传输需求的明确。RAN2-134 明确 RAN 不是 AI/ML UE-side data collection 的终止点，但需了解数据类型以支持控制和转发，并提出按用例区分 priority、QoS 以及 mobility 期间 continuity 和 lossless transfer 的要求。具体承载架构、网络侧终止位置和实现机制仍未确定。
+
+### 关键进展
+
+- 数据研究基线由记录 data type、endpoint pairs、data size、transmission interval 和 QoS requirement，推进到采纳 Table 1 用于分析，并明确框架至少支持时延宽松的 Large、Small 两类用例，按 UE 累积数据量与最小 UE AS buffer 的比较分类。（依据：RAN2-132、RAN2-133）
+- 用例范围逐步收敛：RAN2-133bis 目前不将 performance monitoring and inference 视为 data transfer，Immediate MDT 暂归 measurement reporting framework；RAN2-134 明确 standardized UE-side data collection 的标准化范围包括数据类型/格式及传输过程。（依据：RAN2-133bis、RAN2-134）
+- 终止职责从暂定 data consumer、termination point 定义及一般性 RAN 解码能力讨论，推进到具体用例划分。RAN2-133bis 至少考虑 SON、NW-side data collection 和 logged MDT 的 RAN 侧终止点，并为标准化 UE-side data collection 设置位置待定的 MNO 可见性终止点；RAN2-134 明确 RAN 不是 AI/ML UE-side data collection 的终止点，且 6G 不支持 UE 经 gNB、OAM 到 server 的 Option 3，并决定向相关工作组发送 LS。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2-134 明确区分 visibility 与 decodability：前者用于判断如何处理收到的数据，后者用于解码和解释内容。对 UE-side data collection，RAN 不解码或解释内容，但应了解数据类型，以支持 controllability 和 forwarding。（依据：RAN2-134）
+- 传输需求由待细化的 QoS 和尚未处理的 mobility 提议，推进到 RAN2-134 要求支持按 use case 设置不同 priority levels 和 QoS parameters，并将 handover 期间保持传输、无需重启 data transfer procedure 且不得丢失数据作为必要方面考虑。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- 模型方面，RAN2-132 区分 training data collection 与 model transfer/delivery，并以 5G UE-sided model LCM procedure 为研究起点；RAN2-133 延续 UE-side OTT server 向 UE 交付已训练模型不属于 3GPP 范围的边界，同时明确 model transfer 的 MNO awareness 和 controllability 要求，包括启动、暂停、恢复和停止控制。（依据：RAN2-132、RAN2-133）
+
+### 待决问题
+
+- 传输架构和承载选择持续未决，增强 CP、增强 UP、new plane/DP、新协议层或实体、新 radio bearer 及相关 logical channels 和 scheduling framework 尚未形成最终方案；是否采用统一数据收集框架也未见定论。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- standardized data 的 decodability 位于 CN 还是 OAM，以及具体终止点安排，仍需与 SA2、SA5 协调；RAN 如何识别数据类型并实现 awareness、传输控制和 forwarding 仍待研究。（依据：RAN2-134）
+- 用例和数据范围仍有缺口：Sensing 的数据特征依赖 RAN1 输入，讨论已延期；continuous learning、QoE 是否纳入框架尚未明确；non-standardized/vendor-specific data 的支持范围及是否需要标准化传输方案仍存在不同意见。（依据：RAN2-132、RAN2-133bis、RAN2-134）
+- 各用例的具体 QoS parameters、避免 duplicated data collection/reporting/transfer 的机制，以及 UE 侧采集数据能否跨所有用例复用仍待研究。mobility continuity 和 lossless transfer 已成为需求，但材料未给出实现方案。（依据：RAN2-134）
+- 网络控制 UE-side training server 到 UE 的模型传输或交付，其实现方式需跨工作组协调；是否需要支持 RAN-generated model 从 RAN 传到 UE，仍等待 RAN1 的用例研究。后续材料未报告这些问题的结论。（依据：RAN2-133）
+- 统一 LCM procedure、two-sided model 的 Day1 LCM 影响，以及 AI/ML 用例的性能、benchmark、复杂度和能耗评估指标仍缺乏确定结论；RAN2-132 指出详细 LCM 讨论需等待 R20 AI-PHY WI 充分进展，后续材料未报告更新。（依据：RAN2-132）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132 推进了 6GR 数据与模型传输的研究基线整理，以非实时数据类型为起点，拟在 TR 中记录数据特性、端点及 QoS 需求，支撑后续 unified data transfer study。会议指出现有 5G CP/UP 框架的局限，但尚未选定增强 CP、增强 UP 或新方案，具体协议仍待研究。模型方面明确了 training data collection 与 model transfer/delivery 的边界及相关职责，并同意以 5G UE-sided model 的 LCM procedure 作为 6G 研究起点。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：本会议明确了 data transfer framework 至少支持大、小两类累积数据量且时延宽松的用例，并推进了数据消费者、传输终止点及 RAN 解码能力的界定。这为区分数据消费与传输协议终止职责提供了基础，但相关定义仍属暂定，承载方案尚待研究。model transfer 方面明确了 MNO 的 awareness 和 controllability 要求，具体实现及部分用例范围仍需跨工作组协调。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议推进了 6GR data transfer framework 的范围界定和终止点讨论：目前不将 performance monitoring and inference 视为 data transfer，Immediate MDT 暂按 measurement reporting framework 处理。会议明确至少考虑 SON、NW-side data collection 和 logged MDT 的 RAN 侧终止点，并确定标准化 UE-side data collection 将在 MNO 设置用于可见性的终止点，但具体位置待定。这些进展为后续协议范围和终止职责划分提供了基础，尚未确定统一的传输承载或解码方案。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 推进了 6G UE-side data collection 的职责边界和数据传输需求，明确区分 visibility 与 decodability，并决定通过 LS 向相关工作组说明 RAN 不是 AI/ML UE-side data collection 的终止点。协议层面，RAN 仍需了解数据类型以支持 controllability 和 forwarding，传输方案需考虑按用例区分 priority 和 QoS，以及 mobility 期间的 continuity 和 lossless transfer。具体终止位置、RAN awareness 机制及承载方案仍待研究，CP、UP、new plane 和新 radio bearer 等讨论尚未形成最终方案。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.3.1 Data transfer

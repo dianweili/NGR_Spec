@@ -13,6 +13,33 @@ RAN2 已形成若干研究基线：SIB1 至少承载通用驻留、接入及 SI 
 - 跨小区共享系统信息、area-specific SI 的部署与协调简化，以及 SI 变更通知粒度，仍需进一步研究。
 - 多小区/载波协调接入、碎片化频谱的 cell 建模及 IDLE/INACTIVE 多载波需求尚待讨论，并需与 RAN1/RAN4 协调。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR 初始接入与系统信息研究从设计基线和总体方向，推进到 SIB1 最低信息范围及 SI-window 配置机制。SIB1 splitting 在明确最低内容后，因仍需明确6G内容或新需求而暂缓讨论；SI scheduling 则逐步细化到 per-SI-message SI-window width 和显式或隐式 window start positions。on-demand SI 请求、窗口分配及节能收益仍在研究，尚未形成统一协议设计。
+
+### 关键进展
+
+- RAN2-132 以假设支持 on-demand SI 和 area specific SI 为研究方向；RAN2-133 随后明确 SIB1 至少保留 camping suitability 判断所需的 cell basic camping information、cell barring information，以及接收下一个 SIB 所需的 scheduling information。（依据：RAN2-132、RAN2-133）
+- SIB1 splitting 从先明确内容、大小再评估，推进到研究将其他内容移出 SIB1；RAN2-133bis 进一步梳理配置开销与 two-step acquisition 时延，并暂缓拆分讨论，待6G SIB1内容或新需求明确后恢复。尚未确定拆分结构。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- SI scheduling 从灵活调度与缩短 SI 传输时间的研究，逐步细化为可配置窗口宽度和起始位置；RAN2-134 明确研究 per-SI-message SI-window width 及显式或隐式 window start positions，同时考虑 UE impacts、UE calculations 和避免频繁 SI updates。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- RAN2-132 确立 CA、BWP 及基于5G机制的 cell access control 设计基线，并同意研究 IDLE/INACTIVE（如支持）下用于 paging、system information 和/或 random access 的 multicarrier operation。后续所给材料未提供这些方向的进一步结论。（依据：RAN2-132）
+
+### 待决问题
+
+- SIB1 splitting 的必要性、字段范围、fixed 或 flexible split，以及附加获取时延是否可接受仍未确定；primary SIB1/SIB1x 划分和不同 device types/features 的承载方式仍属提案。（依据：RAN2-133、RAN2-133bis）
+- on-demand SIB1 的 UE request mechanism 和新到达小区 UE 获取 uplink configuration 的方式仍待确定；standalone OD-SIB1 的可行性与收益待 RAN1 进展后再考虑，首先关注 non-standalone OD-SIB1 的方向尚未形成最终机制。（依据：RAN2-132、RAN2-133）
+- 跨小区共用 SI 的内容、cell-specific 或 area-specific SIB1 的选择，以及 identical SI identification 和 update synchronization 的简化方式仍缺少定案证据。（依据：RAN2-132、RAN2-133）
+- per-SI-message SI-window width 的具体方案仍存在分歧；显式与隐式 window start positions 的结合、起始粒度、窗口重叠处理，以及未广播 SI 的窗口预留、前移或请求后动态分配方式均待确定。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- Other SI 请求尚未确定采用 Msg1-based 还是 Msg3-based 机制；以 NR Msg3-based OD-SI design 为起点、将 Msg3-based UE request 作为 baseline 和 UE mandatory feature，以及 dedicated OD SI 等仍属于研究或提议。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 不同 periodicities 的 SIB 合并传输、同一 SI-window 内多个 SI messages 的 TDM/FDM，以及与其他 common broadcast signalling 聚集的收益仍需评估网络节能、UE功耗、复杂度和 SI modification 影响；更细粒度 SI change notification 及 Paging DCI 携带 SIB 级更新信息也未定案。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132 推进了 6GR 初始接入与系统信息的研究框架，以假设支持 on-demand SI 和 area specific SI 为方向，继续研究 SIB1 的内容、按需获取、结构及调度，具体机制尚未定案。会议明确了 CA、BWP 及 cell access control 的设计基线，并同意研究 IDLE/INACTIVE（如支持）状态下的 multicarrier operation，为后续确定跨载波接入、SI 获取及接入控制的协议机制提供依据。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 明确了 SIB1 的最低信息范围，并推进进一步拆分 SIB1 与增强 SI scheduling 的研究，目标是缩短 SI 传输时间，同时权衡系统性能、节能收益和实现复杂度。协议层面，SIB1 需保留 camping suitability 判断、cell barring 及接收下一个 SIB 所需的信息；基于 SI-window 的灵活调度仍属研究方向，需覆盖 low end devices。OD-SIB1、OD-SI 及更细粒度 SI change notification 的具体机制尚未形成最终结论。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议围绕6GR初始接入与系统信息，梳理了SIB1开销、拆分带来的获取时延，以及SI scheduling和on-demand SI的研究方向。SIB1 splitting讨论暂缓，待6G SIB1内容或新需求进一步明确后继续，尚未确定拆分结构。协议研究重点包括可配置SI window、OD-SI动态窗口分配及请求机制，以权衡广播开销、网络与UE功耗、复杂度和接入时延。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议推进了 6GR SI scheduling 与 on-demand SI 的方案研究，明确将研究按每条 SI message 配置 SI-window width，并考虑显式或隐式 window start positions。相关研究涉及 SI 配置灵活性、UE calculations、避免频繁 SI updates，以及与其他 common broadcast signalling 的聚集；具体调度机制和节能收益仍待评估。会议材料还提出了 Other SI 请求、临时接收窗口和 SI 更新指示方案，但未形成统一的协议设计结论。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.2.3 System Information

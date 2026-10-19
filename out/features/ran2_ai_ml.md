@@ -13,6 +13,33 @@ RAN2 已将多类 AI/ML 用例纳入 6G 研究，包括 RRM 与波束预测、LT
 - AI/ML-assisted LTM 的 TA prediction 结论仍为 FFS；其他预测用例的仿真与规范影响也待研究。
 - 低时延双向 fallback、performance monitoring 方案及 applicability reporting 的具体机制仍需研究。
 
+## 跨会议演进脉络（6G）
+
+2026年2月至5月，6GR AI/ML 协议支持从 mobility、traffic prediction 和 LCM 的研究范围及控制原则，推进到 functionality-based LCM、UE-side model transfer 的基线和 applicability reporting 要求。4月明确 functionality-based LCM 为 baseline，5月进一步明确 transparent/OTT transfer 基线及 NW-sided model 的标准化边界。统一 procedures、决策权限、切换和 monitoring 仍未定案；后续材料未说明早期预测用例的待决事项已解决。
+
+### 关键进展
+
+- 2月明确以 Rel-20 AI Mobility 用例为起点适配 6G mobility framework，部分已验证的 RRM、Measurement Event 和限定范围的 L3 beam level prediction 无需重复 simulation；同时支持研究 AI/ML-assisted LTM 和采用 UE-side model 的 UL traffic prediction。（依据：RAN2-133）
+- LCM 从2月提出支持 functionality-based 和 model ID-based LCM，推进到4月明确 functionality-based LCM 为 baseline、model-based LCM 为 FFS；5月再次确认 functionality-based baseline，不能据此认定 model-based LCM 已获支持。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- UE-side model transfer 从4月 awareness、visibility 和 controllability 尚未明确、OTT 提议 Not treated，推进到5月采用 transparent/OTT approach 为基线。MNO 应能识别经 3GPP 进行的 model transfer traffic 并调整优先级，无需了解模型内容，也无意禁止 UE transfer；具体实现不在 RAN2 范围内，已批准向 SA2 发送 LS。（依据：RAN2-133bis、RAN2-134）
+- NW-sided model 的 LCM 边界得到延续和明确：2月将 network-side data collection 之外的 LCM functions 留给网络实现，5月明确不规定这些其他功能。（依据：RAN2-133、RAN2-134）
+- 5月明确 applicability reporting 要求：避免 NW 在缺少先验适用性信息时盲目下发 formal inference configuration，并支持报告单个 inference configuration 的适用性变化。（依据：RAN2-134）
+
+### 待决问题
+
+- model-based LCM 是否支持仍为 FFS；是否以 Rel-19 AI/ML PHY common procedures 为 unified LCM framework 基线，以及各用例的 signaling messages 和 parameters，仍待研究。online training 对 AI/ML procedures 的影响及跨工作组协调也未见后续结论。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- transparent/OTT baseline 未解决全部 transfer 控制问题：其他基于 UP 的方案，以及 UE server 到 UE 的 transfer 是否需要受 RAN2 影响的 network controllability mechanism 及其功能，仍待研究。（依据：RAN2-134）
+- 网络控制 AI/ML functionality 的原则尚未落实为完整机制。UE-based 与 NW-based management 的安排、LCM decision 的发起方和决策方、请求与报告方式，以及 UE 自主切换权限仍未明确；AI/ML 与 non-AI/ML configuration 双向切换的低时延 one signalling step fallback 可行性仍待研究。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- Performance monitoring 的职责划分仍待明确，包括 NW-sided model 的 UE assisted monitoring，以及 UE-sided model 的监测执行方、management decision 决策方和 decision 报告或 alignment 方式。（依据：RAN2-134）
+- Mobility prediction 仍依赖 6G measurement 与 mobility framework 的明确，部分扩展 RRM prediction 需等待 RAN4 prediction accuracy evaluation；AI/ML-assisted LTM 仿真、early synchronization、target cell prediction 和 TA prediction 尚待研究，RLF prediction 的研究范围仍需协调。后续材料未提供解决证据。（依据：RAN2-133）
+- UL traffic prediction 的预测内容、confidence、粒度、收益、评估数据及规范影响仍待研究，BSR 和 LCP 之外的 L2 features 为 FFS；用于节能的 DL traffic prediction 仍需明确执行位置、评估方法和功耗模型，并考虑推理能耗。后续材料未提供解决证据。（依据：RAN2-133）
+
+### 会议时间线
+
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 推进了 6G AI/ML mobility、traffic prediction 和 LCM framework 的研究范围及协议支持原则，明确部分已验证的 mobility prediction 用例可免于重复仿真并直接研究潜在方案。会议将 AI/ML-assisted LTM 和用于 L2 scheduling enhancement 的 UL traffic prediction 纳入研究，并明确网络对 AI/ML functionality 的控制、性能评估及停用能力要求。具体协议方案仍依赖 6G measurement 与 mobility framework 的明确、相关预测评估及跨工作组协调。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确支持 functionality-based LCM 作为 6G AI/ML LCM 的 baseline，是否支持 model-based LCM 仍待进一步研究（FFS）。会议材料提出了 model transfer 的 awareness、controllability，以及 network 对 UE AI/ML functionality 应用和切换的控制需求，但尚未形成明确结论，因此相关协议控制范围仍未确定。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议明确了 6G UE-side model transfer 的 transparent/OTT 基线，以及 functionality-based LCM 基线，并限定了 NW-sided model 的标准化范围。对于经 3GPP 进行的 UE-sided model transfer，共识聚焦于 MNO 区分模型流量并调整优先级，无需了解模型内容，具体实现不在 RAN2 范围内，已批准向 SA2 发送 LS。会议还明确了 applicability reporting 的要求，并将统一 LCM procedures、决策机制、快速 fallback 和 performance monitoring 留待进一步研究。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `proposal` 9.3.3.2 AI/ML

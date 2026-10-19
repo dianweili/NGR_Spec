@@ -12,6 +12,29 @@ RAN2 正在研究 UE 在网络监督或有限网络控制范围内，依据环�
 - UE 智能调整网络参数的适用场景、网络监督方式、性能指标及报告需求尚待研究。
 - 网络控制下 UE 可调整参数或配置的范围，以及具体特性的收益和系统性能影响尚待后续分析。
 
+## 跨会议演进脉络（6G）
+
+材料仅包含 RAN2-132（2025-11-17 至 2025-11-21），不能判断跨会议变化。本次会议推进了“flexible” protocols 与 system information（SI）安全保护的研究方向，具体机制及技术方案仍待研究。
+
+### 关键进展
+
+- 研究在 Control Plane 和 User Plane 层级启用“flexible” protocols，允许 UE 利用内部算法，在网络监督及网络控制的有限范围内调整 RRC configured parameters 或配置，例如 RLC timer 和 LCH priority；该研究不依赖 AI/ML model management framework。（依据：RAN2-132）
+- 启动承载 mobility-related data 的 SI 安全保护研究，以防御 false base stations 攻击；研究需考虑 TS 22.268 的 PWS messages 要求并保持 PWS reachability，具体安全保护方式由 SA3 讨论决定。（依据：RAN2-132）
+
+### 待决问题
+
+- UE 智能调整参数的具体机制、适用场景、收益及对 system performance 的影响尚待研究，后续可按具体 feature 提交提案。（依据：RAN2-132）
+- 网络监测 UE 性能所需的 KPIs、其他 metrics，以及是否需要 reporting 和 reporting 级别尚未确定。（依据：RAN2-132）
+- SI 安全威胁及新增潜在风险仍需确认，具体技术方案有待 SA3 threat analysis 的后续进展。（依据：RAN2-132）
+- PWS 安全保护仍需解决跨运营商 base stations 的可达性问题，以及 UE 缺少对应 security key、无法解码所导致的可达性下降风险。（依据：RAN2-132）
+- SI 安全机制引入的 SIB Overhead，以及哪些 SI 需要或不需要保护，仍需评估。（依据：RAN2-132）
+
+### 会议时间线
+
+_目前只有一场会议的 6G 综述，尚无法判断跨会议变化。_
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：RAN2#132 围绕“flexible” protocols 和 system information（SI）安全保护推进了研究方向。前者研究在网络监督和有限控制范围内允许 UE 利用内部算法调整配置参数，并评估性能监测需求，不依赖 AI/ML model management framework；后者聚焦 mobility-related SI 的保护，同时要求考虑 PWS requirements 且不降低 PWS reachability。具体 SI 安全保护方式由 SA3 讨论决定，讨论支持等待 SA3 threat analysis 后再考虑技术方案。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#132] `observation` 10.3.3.3 Others

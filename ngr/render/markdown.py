@@ -213,7 +213,8 @@ def render_dashboard(events: list[dict], features: list[Feature],
 
 
 def render_feature_page(slug: str, events: list[dict], feature: Feature,
-                        state: dict) -> str:
+                        state: dict, *, evolution: dict | None = None,
+                        evolution_source: dict | None = None) -> str:
     """单个特性的详情页。对给定输入是确定性的，不要求 `events` 预排序。"""
     mine = [e for e in events if e.get("feature") == slug]
     six = _ordered([e for e in mine if e.get("era") == "6G"])
@@ -231,6 +232,27 @@ def render_feature_page(slug: str, events: list[dict], feature: Feature,
 
     if feature.has_legacy and state.get("legacy_summary"):
         lines += ["## 5G-A 源头", "", state["legacy_summary"], ""]
+
+    if evolution_source:
+        lines += ["## 跨会议演进脉络（6G）", ""]
+        if evolution:
+            lines += [_inline(evolution["overview"]), ""]
+            for title, field in (("关键进展", "developments"), ("待决问题", "open_issues")):
+                if evolution.get(field):
+                    lines += [f"### {title}", ""]
+                    for item in evolution[field]:
+                        refs = "、".join(_inline(ref) for ref in item["meetings"])
+                        lines.append(f"- {_inline(item['text'])}（依据：{refs}）")
+                    lines.append("")
+        else:
+            lines += ["_跨会议综合尚未生成或源材料已更新，等待续跑。_", ""]
+        lines += ["### 会议时间线", ""]
+        if len(evolution_source["meetings"]) == 1:
+            lines += ["_目前只有一场会议的 6G 综述，尚无法判断跨会议变化。_", ""]
+        for row in evolution_source["meetings"]:
+            period = f"{row['start']} 至 {row['end']}" if row.get("start") else "日期待补"
+            lines += [f"- **{_inline(row['label'])}**（{_inline(period)}）：{_inline(row['summary'])}"]
+        lines.append("")
 
     lines += ["## 6GR 演进", ""]
     lines += _render_events(six, with_summary=True) or ["_暂无_", ""]
@@ -261,13 +283,33 @@ def _render_events(events: list[dict], *, with_summary: bool) -> list[str]:
 
 
 def render_report(wg: str, meeting: int, events: list[dict],
-                  feature_names: dict[str, str], suffix: str = "") -> str:
+                  feature_names: dict[str, str], suffix: str = "",
+                  *, meeting_feature_state: dict | None = None) -> str:
     """单次会议的增量简报。对给定输入是确定性的，不要求 `events` 预排序。"""
     mine = [e for e in events if e["wg"] == wg and e["meeting"] == meeting
             and _meeting_suffix(e) == suffix]
     grouped = _by_feature(mine)
     lines = [f"# {wg} #{meeting}{suffix} 增量简报", "",
              f"> 共 {len(mine)} 条事件 · [会议目录]({meeting_url(wg, meeting, suffix)})", ""]
+    key = f"{wg}-{meeting}{suffix}"
+    digests = (meeting_feature_state or {}).get(key) or {}
+    rendered_digests = []
+    for slug, evs in sorted(grouped.items(), key=lambda item: item[0] or ""):
+        digest = digests.get(slug) if isinstance(digests, dict) else None
+        if not isinstance(digest, dict) or not digest.get("summary"):
+            continue
+        event_count = digest.get("event_count")
+        count_label = f"基于 {event_count} 条已摘要 6G 事件" if isinstance(event_count, int) else "6G 会议特性综述"
+        rendered_digests += [f"### {_inline(feature_names.get(slug, slug))}（{count_label}）", "",
+                             str(digest["summary"]), ""]
+        points = digest.get("key_points") or []
+        if points:
+            rendered_digests += ["**关键结论**", ""] + [f"- {_inline(item)}" for item in points] + [""]
+        issues = digest.get("open_issues") or []
+        if issues:
+            rendered_digests += ["**待决问题**", ""] + [f"- {_inline(item)}" for item in issues] + [""]
+    if rendered_digests:
+        lines += ["## 本会议特性进展（6G）", "", *rendered_digests]
     for slug, evs in sorted(grouped.items(), key=lambda kv: kv[0] or ""):
         lines += [f"## {_inline(feature_names.get(slug, slug))}（{len(evs)} 条）", ""]
         for e in _ordered(evs):

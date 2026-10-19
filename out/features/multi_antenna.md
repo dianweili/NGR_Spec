@@ -13,6 +13,34 @@ RAN1#124至#126已为6GR多天线相关研究建立多项评估基线，并就�
 - SRS序列、跳频、稀疏图样、端口复用及动态参数适配仍有多项候选方案待评估。
 - 多TRP传输方案及UE透明性、以及部分跨载波/跨小区波束和CSI协作方式仍待明确。
 
+## 跨会议演进脉络（6G）
+
+2026年2月至8月，6GR 多天线系统研究从 RAN1-124 的评估假设与指标建立，推进到 RAN1-124b 的参考信号和传输能力基线，再到 RAN1-126 的部分 DMRS 结构、QCL 参数及 CSI 设计方向明确。整体仍处于方案研究与筛选阶段；暂定设计和评估基线不能视为最终协议，最大层数、CSI-RS 最大端口数及多项流程和信令尚未定案。
+
+### 关键进展
+
+- CSI 评估逐步细化：2月建立 DL/UL CSI acquisition 的 LLS/SLS 假设、CSI prediction 指标及 AI-based CSI compression 开销和复杂度报告要求；4月明确空间域 Linear interpolation 与时域 Sample & Hold 预测基线；8月将 low-resolution 和 high-resolution CSI codebook 分别按 W1W2 only、W1W2Wf 结构开展研究，并考虑 UE implementation complexity。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- DL CSI 测量能力由评估框架推进到参考信号基线：4月支持 NZP CSI-RS、以 CSI-IM 为干扰测量资源基线，至少支持周期和非周期 CSI-RS，并将 pattern 定义为 CDM groups 的聚合；8月 CSI-RS 和 CSI 设计暂按最大 256 ports 推进，最终端口上限仍未确定。（依据：RAN1-124b、RAN1-126）
+- DMRS 从2月的 PDSCH 最大正交端口数多候选研究，推进到8月明确 DL DMRS 在 X=2 时支持 Nmax=48，UL DMRS 至少对 CP-OFDM 支持相同配置；CDM group structure 采用 comb-based，至少包括 comb-2。PDSCH DMRS 支持 Gold sequence，PT-RS 至少在 PDSCH 的 FDRA/TDRA 内发送且不出现在 DMRS symbol 中。（依据：RAN1-124、RAN1-126）
+- UL MIMO 在4月明确支持 codebook based PUSCH transmission，UE antenna ports 为 {1, 2, 3, 4, 8}，CP-OFDM 下 SU-MIMO 最大层数假设与端口数相同，UL CSI 获取以 SRS 为基线。8月 coherent UL MIMO 评估至少采用 TS38.101-1/2 RF coherence requirements，并批准向 RAN4 请求确认 amplitude/phase errors 及建模建议的 final LS。（依据：RAN1-124b、RAN1-126）
+- SRS 从2月明确 CSI acquisition 和 beam management 用途，推进到4月支持 {1, 2, 3, 4, 8} 个 antenna ports、以 P/AP-SRS 为基线，并以 NR ZC/CGS sequences 和 comb {2, 4, 8} 为研究起点；8月进一步支持 cyclic-shift 和/或 comb-offset，以及至少用于连续 S+U slots 的 cross-slot SRS transmission。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- Beam management 从2月的机制研究范围，推进到4月 network-initiated beam reporting 在适用时至少支持由测量或预测获得的 L1-RSRP；8月明确 DL QCL framework 至少支持五类参数，并明确部分空间、时间和 cross-frequency beam prediction 支持场景。Tracking RS 从2月仿真假设与指标，推进到8月 connected mode 以除 SSB 外的 single-port RS 为精细时间和频率跟踪 baseline。（依据：RAN1-124、RAN1-124b、RAN1-126）
+
+### 待决问题
+
+- CSI-RS 最大端口数仍需在 128、256、512 中决定，8月材料计划于 RAN1#127 决定，但未提供结果；pattern、CDM、sharing、PAPR 和 overhead reduction 仍待评估。（依据：RAN1-124b、RAN1-126）
+- CSI codebook、reporting 层级与时序、可变 payload、prediction 辅助信息、AI 模型泛化与可扩展性及 explicit feedback 尚未完成设计；joint DL/UL CSI acquisition 的具体操作、误差建模与 UE reciprocity 可行性也未见定案证据。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- PDSCH 每 UE 最大层数仍需从 8、12、16 layers 中选择，PDSCH/PUSCH 的 CW 数量及 codeword-to-layer mapping 尚待确定；DMRS 的 X=1 最大正交端口数、OCC、时频位置和指示、DFT-s-OFDM UL DMRS、PT-RS 细节及 AI based receiver 降低 DMRS overhead 的方案仍待研究。（依据：RAN1-126）
+- UL precoder 的 coherency types、full-coherent fixed codebook 及 downloadable/uploadable configurable codebook 的适用性、开销、复杂度和功率约束仍待评估；已批准向 RAN4 发出协调 LS，但材料未提供 RAN4 对 RF coherence requirements 的反馈。（依据：RAN1-124b、RAN1-126）
+- multi-TRP PDSCH 的方案范围、TRP 集合数量和 UE 透明性尚未确定；SRS 的 sparse patterns、TD-OCC multiplexing、precoding、frequency hopping 和更大带宽支持仍待研究，4月提出的 SP-SRS 支持问题未见后续结论。（依据：RAN1-124b、RAN1-126）
+- UE initiated beam management 的事件、上报流程及相关 UE/网络行为仍待明确；TCI framework 细节和 refined analog beam 的必要性、可行性仍待推进。Tracking RS 的 periodic/aperiodic 支持与配置尚未确定，早期 idle mode 跟踪设计问题未见明确解决证据。（依据：RAN1-124、RAN1-124b、RAN1-126）
+
+### 会议时间线
+
+- **RAN1#124**（2026-02-09 至 2026-02-13）：RAN1#124 推进了 6GR 多天线系统的研究范围与评估框架，重点涵盖 beam management、DL/UL CSI acquisition、DMRS 扩展及 tracking RS。本会议采纳了多项链路级和系统级评估假设，并明确 CSI prediction、AI-based CSI compression 等方案的指标与基线，为后续比较性能、反馈开销和复杂度提供依据。协议层面主要明确了待研究的机制和接口要素，具体波束管理流程、DMRS 端口规模及联合 CSI acquisition 设计尚未定案。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议推进了 6GR 多天线系统的波束管理、上下行 CSI acquisition 及多天线传输研究，明确了部分参考信号、端口数量和传输基线，并细化性能、开销与复杂度评估框架。协议层面已支持 codebook based PUSCH transmission，并确定部分 CSI-RS、SRS 和波束报告基础能力；具体码本、参考信号映射、预测辅助信息及多 TRP 流程仍处于研究阶段，beam management 评估假设也仅部分稳定。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：RAN1#126 推进了 6GR 多天线系统的上下行 DMRS、CSI acquisition、SRS 和波束管理设计，明确部分基本结构、支持能力及评估基线。会议同时扩展了 UL MIMO codebook、multi-TRP、AI based receiver 和 CSI feedback 的候选方案与评估要求，并通过 LS 推进与 RAN4 的 RF coherence requirements 协调。这些协议为后续方案比较和筛选提供了共同依据，但最大层数、CSI-RS 最大端口数及多项信令和映射机制尚未定案。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN1#126] `agreement` 10.5.1.1 Synchronization acquisition and beam measurement

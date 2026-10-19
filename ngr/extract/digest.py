@@ -14,7 +14,13 @@ from ngr.models import Feature
 
 log = logging.getLogger(__name__)
 EFFORT_DIGEST = "high"
+# A meeting digest only consolidates already-validated event summaries from a
+# single meeting.  It does not need the slower, cross-meeting reasoning used
+# by the global feature and legacy overviews; low effort keeps the 82-item
+# backfill responsive for a ChatGPT subscription session.
+EFFORT_MEETING_DIGEST = "low"
 MEETINGS_PER_CHUNK = 4
+MEETING_FEATURE_PROMPT_VERSION = "meeting-feature-v1"
 
 FEATURE_SCHEMA = {
     "type": "object",
@@ -24,6 +30,17 @@ FEATURE_SCHEMA = {
         "open_issues": {"type": "array", "items": {"type": "string"}},
     },
     "required": ["stage", "summary", "open_issues"],
+    "additionalProperties": False,
+}
+
+MEETING_FEATURE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "key_points": {"type": "array", "items": {"type": "string"}},
+        "open_issues": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["summary", "key_points", "open_issues"],
     "additionalProperties": False,
 }
 
@@ -48,6 +65,17 @@ FEATURE_SYSTEM = f"""你在为一个 3GPP 6G 特性写“当前进展”综述�
 {{"stage": "<{'|'.join(VALID_STAGE)}>", "summary": "<3-5 句中文综述>", "open_issues": ["<尚未解决的争议点>", "..."]}}
 
 stage 只能取给定的四个值之一。open_issues 取 0–6 条，没有就给空数组。只依据给出的材料，不要编造。"""
+
+MEETING_FEATURE_SYSTEM = """你在为一次 3GPP RAN 会议中的一个 6G（Rel-20）特性写进展综述。
+
+输入是该会议已核验的逐条中文事件摘要。只归纳这一次会议中的材料；不得把会议外的历史、行业常识或推测写入。
+
+只输出 JSON，不要任何解释文字：
+{"summary": "<2-4 句中文综述，说明本会议推进了什么以及其协议含义>",
+ "key_points": ["<本会议已明确的关键技术结论>", "..."],
+ "open_issues": ["<本会议仍待后续处理的问题>", "..."]}
+
+key_points 和 open_issues 各取 0–6 条。没有明确结论或未决问题时输出空数组。保留关键英文技术术语；不确定的内容宁可不写。"""
 
 
 def build_legacy_chunks(legacy_events: list[dict], meetings_per_chunk: int = MEETINGS_PER_CHUNK) -> list[list[dict]]:
@@ -91,6 +119,53 @@ def parse_feature_response(text: str) -> dict:
     if not isinstance(issues, list):
         raise SchemaError("open_issues 不是数组")
     return {"stage": stage, "summary": summary.strip(), "open_issues": [str(item) for item in issues][:6]}
+
+
+def meeting_state_key(wg: str, meeting: int, suffix: str = "") -> str:
+    """The stable key shared by persisted meeting digests and the web UI."""
+    return f"{wg}-{meeting}{suffix}"
+
+
+def build_meeting_feature_prompt(feature: Feature, events: list[dict]) -> str:
+    """Build one bounded, source-traceable meeting-feature prompt.
+
+    Only completed 6G event summaries are admitted by the caller.  This keeps
+    the prompt much smaller than re-sending raw minutes and avoids blending
+    intentional 5G-A ``origin`` records into a Rel-20 meeting update.
+    """
+    if not events:
+        raise ValueError("会议特性综述需要至少一条已摘要事件")
+    first = events[0]
+    parts = [
+        MEETING_FEATURE_SYSTEM,
+        "",
+        f"会议：{first['wg']}#{_meeting_label(first)}",
+        f"特性：{feature.name_zh}",
+        "",
+        "本会议事件摘要：",
+    ]
+    for event in sorted(events, key=lambda item: item["id"]):
+        parts.append(f"- [{event['id']}] {_one_line(event['summary_zh'])}")
+    return "\n".join(parts)
+
+
+def parse_meeting_feature_response(text: str) -> dict:
+    try:
+        data = json.loads(strip_fence(text))
+    except json.JSONDecodeError as exc:
+        raise SchemaError(f"会议特性综述不是合法 JSON: {text[:160]}") from exc
+    if not isinstance(data, dict):
+        raise SchemaError("会议特性综述 JSON 根节点必须是对象")
+    summary = data.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        raise SchemaError("会议特性综述缺少 summary")
+    output = {"summary": summary.strip()}
+    for field in ("key_points", "open_issues"):
+        items = data.get(field)
+        if not isinstance(items, list):
+            raise SchemaError(f"会议特性综述 {field} 不是数组")
+        output[field] = [str(item).strip() for item in items if str(item).strip()][:6]
+    return output
 
 
 def _legacy_summary(feature: Feature, legacy: list[dict], cli, cache, budget) -> str | None:
@@ -195,4 +270,89 @@ def digest_features(features: list[Feature], events: list[dict], feat_state: dic
             log.warning("%s 的综述失败: %s", feature.slug, exc)
         if entry:
             output[feature.slug] = entry
+    return output
+
+
+def digest_meeting_features(features: list[Feature], events: list[dict], meeting_state: dict,
+                            cfg: ExtractConfig, *, cli_factory, cache, budget,
+                            problems: list[Exception] | None = None,
+                            checkpoint=None) -> dict:
+    """Write one digest for each populated 6G meeting-feature combination.
+
+    The input is deliberately restricted to events that already have a Chinese
+    summary.  ``origin`` records have no event-level translation by design;
+    feeding their often very large English minutes here would silently turn a
+    small, incremental digest task into a costly historical reprocessing job.
+    """
+    feature_by_slug = {feature.slug: feature for feature in features}
+    groups: dict[tuple[str, int, str, str], list[dict]] = {}
+    for event in events:
+        slug = str(event.get("feature") or "")
+        if (event.get("era") != "6G" or not event.get("summary_zh")
+                or slug not in feature_by_slug):
+            continue
+        wg, meeting = str(event.get("wg") or ""), event.get("meeting")
+        if not isinstance(meeting, int) or not wg:
+            continue
+        suffix = str(event.get("meeting_suffix") or "")
+        groups.setdefault((wg, meeting, suffix, slug), []).append(event)
+
+    output = {str(key): dict(value) for key, value in (meeting_state or {}).items()
+              if isinstance(value, dict)}
+    cli = cli_factory(cfg.model_meeting_digest, EFFORT_MEETING_DIGEST)
+    # Prioritize the most recent meeting.  Within one meeting, features retain
+    # the order supplied in features.yaml rather than accidental slug ordering.
+    priority = {feature.slug: index for index, feature in enumerate(features)}
+    ordered_groups = sorted(
+        groups.items(),
+        key=lambda item: (-item[0][1], item[0][0], item[0][2], priority[item[0][3]], item[0][3]),
+    )
+    for (wg, meeting, suffix, slug), group in ordered_groups:
+        key = meeting_state_key(wg, meeting, suffix)
+        per_meeting = dict(output.get(key) or {})
+        event_ids = [event["id"] for event in sorted(group, key=lambda item: item["id"])]
+        blob = "\n".join(
+            f"{event['id']}:{_one_line(event['summary_zh'])}"
+            for event in sorted(group, key=lambda item: item["id"])
+        )
+        cache_id = cache_key(f"meeting-feature:{key}:{slug}", MEETING_FEATURE_PROMPT_VERSION,
+                             EFFORT_MEETING_DIGEST, blob)
+        try:
+            hit = cache.get(cache_id)
+            if hit is None:
+                budget_entry = budget.reserve(task="meeting_feature_digest")
+                try:
+                    response = cli.call(build_meeting_feature_prompt(feature_by_slug[slug], group),
+                                        output_schema=MEETING_FEATURE_SCHEMA)
+                except (LlmError, LlmRateLimited) as exc:
+                    budget.record_failure(budget_entry, exc)
+                    raise
+                budget.record_result(budget_entry, response)
+                try:
+                    hit = parse_meeting_feature_response(response.text)
+                except SchemaError as exc:
+                    budget.record_failure(budget_entry, exc)
+                    raise
+                cache.put(cache_id, hit)
+            entry = dict(hit)
+            entry["event_ids"] = event_ids
+            entry["event_count"] = len(event_ids)
+            per_meeting[slug] = entry
+            output[key] = per_meeting
+            if checkpoint is not None:
+                checkpoint(output)
+        except BudgetExhausted as exc:
+            log.info("%s#%s%s / %s 的会议综述未完成（%s），下次继续", wg, meeting,
+                     suffix, slug, type(exc).__name__)
+            break
+        except LlmRateLimited as exc:
+            if problems is not None:
+                problems.append(exc)
+            log.info("%s#%s%s / %s 的会议综述未完成（%s），下次继续", wg, meeting,
+                     suffix, slug, type(exc).__name__)
+            break
+        except (SchemaError, LlmError) as exc:
+            if problems is not None:
+                problems.append(exc)
+            log.warning("%s#%s%s / %s 的会议综述失败: %s", wg, meeting, suffix, slug, exc)
     return output

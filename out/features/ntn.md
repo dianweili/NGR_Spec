@@ -13,6 +13,36 @@
 - 多卫星干扰管理、层级波束结构及 beam footprint 覆盖比例的具体参数和适用性仍待研究。
 - 移动性、测量触发、GNSS-independent RTT 与相关计时器机制仍在研究，部分议题依赖 RAN1、RANP 或后续讨论。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年8月，6GR NTN从部署假设、TN/NTN共同设计范围及移动性研究优先级，逐步推进到GNSS operation支持目标、物理层评估基线和具体机制的可行性判断。RAN1细化同步、调度、接入、链路预算和多卫星干扰研究，RAN2推进GNSS-free移动性、重选及测量设计。现有材料体现研究范围与评估假设逐步明确，但尚不能认定完整协议方案或Day-1支持范围已定案。
+
+### 关键进展
+
+- 研究框架从沿用5G NTN的LEO、MEO、GSO部署场景和payload type假设，推进到优先识别NTN specific requirements：可采用common/extended design，无法满足要求时引入NTN specific solutions；common design优先考虑TN performance。后续PRACH研究进一步落实了这一原则。（依据：RAN2-132、RAN1-124、RAN1-126）
+- GNSS研究由早期依赖跨组讨论，推进到明确支持GNSS-based、GNSS-degraded及GNSS-less/GNSS-free operation的目标。RAN2随后将GNSS-free移动性优先方向设为non UE-location-based solutions，并支持time-based和beam-level RSRP-based替代触发条件；RAN1进一步明确GNSS-less/free/degraded PRACH的误差研究目标及新增LEO-300场景。（依据：RAN2-132、RAN1-124、RAN2-134、RAN1-126）
+- 大RTT调度从明确支持large scheduling offsets、比较不同实现路径，推进到原则上以NR k_offset概念为基线并允许修改，且至少支持广播k_offset。上行时频同步以NR NTN为基线，至少支持GNSS-based UE预补偿，satellite assistance information的参数研究进一步以NR NTN SIB19为起点。（依据：RAN1-124、RAN1-124b）
+- Link budget从以TN template为基线，推进到采用具体NTN template、补充S-band轨道与天线模型，再扩展并细化S-band、Ka-band和Ku-band评估假设。研究至少考虑FD-FDD和UE侧HD-FDD；后续还明确SSB LLS检测指标及参数报告要求。这些评估场景不等同于部署或覆盖缺口补偿承诺。（依据：RAN1-124、RAN1-124b、RAN1-126）
+- 移动性从Time-based和Location-based CHO等机制的研究优先级，细化到multi-orbit的inter-frequency service-based reselection、TN/NTN测量启动基线及复用5G NTN的SMTC/measurement gap机制。多卫星物理层研究则从mobility与inter-satellite interference management范围，推进到星间同频干扰、大且时变Doppler/timing offsets及至少LEO同轨场景，持续假设UE同时仅连接一颗卫星。（依据：RAN2-132、RAN1-124b、RAN2-134、RAN1-126）
+- HARQ从动态启停retransmission mechanisms及多种HARQ stalling缓解方案的研究，推进到认为HARQ feedback disabling和收到前次HARQ-ACK前复用同一HARQ process两种方案均可行；后者受UE out-of-order rules限制。可行性判断尚未形成最终采用决定。（依据：RAN2-132、RAN1-124b、RAN1-126）
+
+### 待决问题
+
+- Common essential、NTN specific essential/optional features、Day-1支持范围及后续release安排仍缺乏定案依据。早期提出的TN/NTN统一grant-free initial access、network energy savings control plane signaling及discontinuous coverage等研究，后续材料未给出完整结论。（依据：RAN2-132）
+- GNSS相关定位条件仍待明确，包括位置fix频率及同等精度非GNSS定位方式。RAN2对无GNSS capability UE暂按无法在NTN获取自身位置处理，等待RAN plenary进展；GNSS-degraded operation仍需结合RAN1研究。新增PRACH场景的差分时间和频率误差细节仍为FFS，GNSS-independent RTT estimation相关议题仅为Noted。（依据：RAN1-124、RAN2-134、RAN1-126）
+- 是否支持UE-specific k_offset及其与6GR整体调度设计的衔接仍待定；TA report收益和satellite assistance information参数仍需研究。HARQ两种可行方案是否最终规定、如何选择尚未决定，仍涉及信令开销、UE功耗、重传恢复、链路自适应及RAN2 out-of-order rules约束。（依据：RAN1-124b、RAN1-126）
+- 移动性仍需研究non-location-based及不依赖GNSS等non-3GPP systems的location-based solutions、各状态下measurement relaxation/initiation triggers、beam-based SMTC和跨卫星测量定时。Multi-orbit方案收益及NTN特定顾虑尚待讨论；QoS-based cell reselection相关议题仅为Noted，L2 timer影响也未定案。（依据：RAN2-134）
+- Beam footprints多于同时激活beams时的default SSB periodicity、hierarchical beam structure、覆盖比例及适用性仍待研究。Inter-satellite interference management尚缺具体技术结论，后续明确研究方向后，elevation angle等参数仍待定。（依据：RAN1-124b、RAN1-126）
+- 评估参数仍未全部收敛：S-band UE antenna组合、TXRU及device type适用性缺少后续定案依据；Ka/Ku-band更大UE天线参数待讨论。S-band APC的other losses暂设6–15 dB，具体值仍待确定，且APC仅评估下行广播信道/信号。（依据：RAN1-124b、RAN1-126）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：本会议明确了6G NTN可沿用的5G NTN部署场景与payload type假设，并推进了TN/NTN共同设计及NTN特定功能的研究范围。协议研究涉及接入、重传、移动性、同步与覆盖适配，并给出了mobility mechanisms的考虑优先级；具体机制及Day-1支持范围尚未定案。
+- **RAN1#124**（2026-02-09 至 2026-02-13）：RAN1#124 明确了 6GR NTN 的研究原则、GNSS operation 支持目标，以及链路预算和评估参数的工作基线。上行时频同步以 NR NTN 为基线，至少在 GNSS-based operation 下支持 UE 利用自身位置与 satellite assistance information 进行预补偿，并明确支持适应卫星 RTT 的 large scheduling offsets。上述进展确立了后续物理层设计与评估方向，但具体调度实现、部分评估配置及位置使用条件仍待讨论。
+- **RAN1#124b**（2026-04-13 至 2026-04-17）：本会议明确了6GR NTN的link budget评估基线、最低双工研究范围及multi-satellite operation的物理层研究边界，并补充轨道和天线模型假设。针对大RTT下的调度，原则上支持以NR的k_offset概念为基线并至少支持广播，同时继续研究HARQ stalling缓解方案、TA report和GNSS-based UL time-frequency pre-compensation。上述进展为NTN评估与协议设计提供了基线，但部分机制及其与6GR整体调度设计的衔接仍待确定。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议明确了6GR NTN面向GNSS-free的移动性研究方向，优先采用non UE-location-based solutions，以支持TN/NTN harmonization，并明确GNSS-less/degraded operation的替代移动性触发条件。会议还推进了multi-orbit重选、TN/NTN测量启动及测量定时设计，明确复用部分5G NTN的SMTC和measurement gap机制。GNSS-degraded operation及L2 timer影响仍需结合RAN1进展继续讨论，GNSS-independent RTT estimation相关议题仅记为Noted。
+- **RAN1#126**（2026-08-24 至 2026-08-28）：RAN1#126 推进了 6GR NTN 的 PRACH、SSB、多卫星干扰研究及 link budget template，明确了研究分工、评估假设和部分场景参数，为后续方案评估提供共同基准。GNSS-less/free/degraded PRACH 将在 common agenda item 中考虑 NTN requirements，必要时可在 NTN specific agenda item 下制定调整。会议认为两种 HARQ 方案均可行，但尚未决定最终是否规定及采用哪种方案。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.6 NTN

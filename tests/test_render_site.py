@@ -126,14 +126,49 @@ def test_site_embeds_meeting_report_index_and_summary_progress():
     data = json.loads(re.search(r'id="ngr-data"[^>]*>(.*?)</script>', html, re.S).group(1))
     assert data["stats"]["meetings"] == 1
     assert data["stats"]["summarized"] == 1
-    assert data["meetings"] == [{
-        "agreements": 1, "events": 1,
-        "features": [{"events": 1, "name_zh": "6GR 波形", "slug": "waveform"}],
-        "key": "RAN1-126", "label": "RAN1#126", "meeting": 126,
-        "period": "2026-08-24 至 2026-08-28",
-        "source_url": "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_126/",
-        "suffix": "", "summarized": 1, "wg": "RAN1",
+    assert data["stats"]["meeting_feature_digests"] == 0
+    assert data["stats"]["meeting_feature_digest_target"] == 1
+    meeting = data["meetings"][0]
+    assert meeting["key"] == "RAN1-126" and meeting["digests"] == 0
+    assert meeting["features"] == [{
+        "digest_event_count": None, "events": 1, "key_points": [],
+        "name_zh": "6GR 波形", "open_issues": [], "slug": "waveform", "summary": None,
     }]
+
+
+def test_site_embeds_meeting_feature_digests_and_detail_route():
+    digest = {"RAN1-126": {"waveform": {
+        "summary": "本会议推进了波形方向。", "event_count": 1,
+        "key_points": ["确认 X"], "open_issues": ["细节待定"],
+    }}}
+    html = render_site([E()], [WAVE], FS, meeting_feature_state=digest, generated="2026-09-20")
+    data = json.loads(re.search(r'id="ngr-data"[^>]*>(.*?)</script>', html, re.S).group(1))
+    assert data["stats"]["meeting_feature_digests"] == 1
+    assert data["meetings"][0]["features"][0]["summary"] == "本会议推进了波形方向。"
+    for fragment in ("renderMeetingDetail()", "data-meeting-overview=", "data-meeting-feature=",
+                     "本会议特性进展（6G）", "meetingDetail"):
+        assert fragment in html
+
+
+def test_render_all_presents_current_evolution_and_chronological_meeting_links(tmp_path):
+    from ngr.extract.evolution import evolution_inputs, source_hash
+    from ngr.render.site import MEETING_PERIODS
+    event = E()
+    meetings = {"RAN1-126": {"waveform": {"summary": "本会确认方向。", "event_ids": [event["id"]]}}}
+    sources = evolution_inputs([WAVE], [event], meetings, MEETING_PERIODS)
+    evolution = {"waveform": {"source_hash": source_hash(sources["waveform"]),
+                               "overview": "会议已确认方向。", "developments": [
+                                   {"text": "确认方向", "meetings": ["RAN1-126"]}], "open_issues": []}}
+    render_all([event], [WAVE], FS, tmp_path, meeting_feature_state=meetings,
+               feature_evolution_state=evolution, generated="2026-09-20")
+    html = (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
+    data = json.loads(re.search(r'id="ngr-data"[^>]*>(.*?)</script>', html, re.S).group(1))
+    assert data["stats"]["feature_evolutions"] == data["stats"]["feature_evolution_target"] == 1
+    assert data["features"][0]["evolution"]["overview"] == "会议已确认方向。"
+    assert data["features"][0]["evolution_timeline"][0]["start"] == "2026-08-24"
+    assert 'data-meeting-overview=' in html and "尚无法判断跨会议变化" in html
+    md = (tmp_path / "features" / "waveform.md").read_text(encoding="utf-8")
+    assert "跨会议演进脉络" in md and "会议已确认方向" in md and "RAN1-126" in md
 
 
 def test_site_has_navigation_meeting_filter_and_paged_event_browser():

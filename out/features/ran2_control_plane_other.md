@@ -13,6 +13,30 @@ RAN2 已确认 6G 多载波部署中聚合 always-on common signalling、支持 
 - 统一 carrier-level aggregation 方案纳入哪些增强仍待研究；cross-carrier HARQ 属于 RAN1 讨论范围。
 - SCell 支持更多功能及 PCell failure recovery、RLF 韧性工具和相关测量方法仍处于研究或提案讨论中。
 
+## 跨会议演进脉络（6G）
+
+2026年2月至4月，6GR 多载波研究从公共信令聚合、cross-CC initial access 和以 5G CA 为基线的统一载波资源聚合方向，推进到 RRC_CONNECTED 多 serving cells 的 L2/L3 功能、连接转换时快速重定向，以及非共址聚合的研究边界。研究范围更具体，但 cell 定义、协议架构和增强功能仍未定案；后续材料未表明此前 cross-CC initial access 待决项已解决。
+
+### 关键进展
+
+- 2月确认 always-on common signalling aggregation mechanism 的节能收益：由 reference carrier frequency 广播 SSB/SIB1，并提供其他载波的同步参考及初始接入相关配置；同时同意非连接态 UE 无需在多个载波监测 paging。（依据：RAN2-133）
+- 接入研究从2月支持覆盖驻留 coverage layer、跨载波初始接入及在 capacity layer 保持连接的 cross-CC initial access 三阶段研究，推进到4月明确支持 UE 从 IDLE/INACTIVE 转换时更快重定向至合适的 carrier(s)/cell(s)，并在 RRC_CONNECTED 建立 aggregation；后者不代表跨载波初始接入方案已确定。（依据：RAN2-133、RAN2-133bis）
+- CONNECTED mode 聚合从2月提出以 5G CA 为基线的统一 carrier level resource aggregation，推进到4月明确 6G 支持 carrier aggregation、UE 可配置不同载波上的多个 serving cells，且 primary cell 至少承担 system information reception、RLM 等功能；RAN2 聚焦 L2/L3 功能。（依据：RAN2-133、RAN2-133bis）
+- 4月明确非共址聚合的研究起点为 FR1-FR2 synchronous deployments，latency 上限为 10 ms，并要求覆盖 single/dual scheduler、调度器可协调或不可协调的情况，以及 PUCCH 假设、性能和可行性。（依据：RAN2-133bis）
+
+### 待决问题
+
+- 初始接入采用驻留载波还是不同载波仍为 FFS，需等待 RAN1 进展；cross-CC initial access 三阶段的 UE 和网络具体操作仍待研究，4月材料未提供这些问题已解决的证据。（依据：RAN2-133、RAN2-133bis）
+- cell、primary/secondary serving cells 的定义及其与 physical carrier(s) 的映射仍需澄清；哪些功能必须关联特定 serving cell、主辅 serving cells 功能差异及 5G CA framework 改进点仍待研究，6G 术语待 RRC 结构确定。（依据：RAN2-133bis）
+- 2月提出的 SCell 功能扩展、经 SCell 的 PCell failure recovery 及相关测量方案尚未确定；4月仍需研究 flexible aggregation 的 RRM measurement architecture、fast cell change、RLF handling，以及额外韧性触发条件和 UE 动作。（依据：RAN2-133、RAN2-133bis）
+- 非理想回传对调度、HARQ、PDCP/RLC 和额外 UP 时延的影响，以及节点间接口需交换的信息仍待评估；以 NR-DC framework 支持非共址聚合的可行性及 CP/UP 简化方案也未确定。（依据：RAN2-133bis）
+- 具体 CA 增强功能尚未确定：2月的 UL/DL decoupling、PCell/SCell 快速角色变更，以及4月的单一 MAC entity、multiple TAGs、无需 RRC 参与的载波动态激活/去激活、CA-based duplication、LCH/carrier 灵活映射和 early measurement reporting，仍处于提案或研究阶段。（依据：RAN2-133、RAN2-133bis）
+
+### 会议时间线
+
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 推进了 6GR 多载波部署下公共信令聚合、cross-CC initial access 和 CONNECTED mode 载波资源聚合的研究方向。会议确认 always-on common signalling aggregation mechanism 的收益，并明确非连接态 UE 无需在多个载波监测 paging，但初始接入是否跨载波仍待研究。CONNECTED mode 以 5G CA 为统一 carrier level resource aggregation 方案的基线，同时将 SCell 功能扩展和经 SCell 的 PCell failure recovery 纳入研究。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议将非共址频谱聚合的研究起点聚焦于 FR1-FR2 synchronous non-collocated deployments，latency 上限为 10 ms，并明确需评估调度器配置、回传时延对 UP protocol 的影响及可行性。围绕 6GR 多载波操作，讨论推进了 serving cells 的 L2/L3 功能、carrier aggregation 和连接转换时快速重定向的方向。cell 定义、载波映射及协议架构仍待澄清，具体 MAC、移动性与韧性增强方案尚处于提案或研究阶段。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#133bis] `agreement` 9.3.2.5 Others

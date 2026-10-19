@@ -12,6 +12,35 @@ RAN2#132至#134已识别6GR UE能力框架的主要问题，包括信令量大�
 - coarse granularity、band combination优化及可复用FeatureSet结构需结合后续RAN1/RAN4 feature list和实际容器评估。
 - 商业化与IODT相关根因、mandatory feature支持的跟踪方式及跨工作组职责仍有未决事项。
 
+## 跨会议演进脉络（6G）
+
+2025年11月至2026年5月，6GR UE 能力框架从识别NR能力信令开销、可选特性复杂度及动态更新痛点，推进到baseline/delta模块化设计方向、优化方案纳入TR及动态更新部分流程行为的明确。最新会议已明确报告范围、RRC connected mode发送及fallback timer到期后的基线行为，但能力编码、跨状态处理、网络响应和异常处理仍未形成完整协议方案。
+
+### 关键进展
+
+- 能力报告以保留网络请求流程、支持显式报告及UE Capability ID报告为起点，随后提出minimum baseline capability set、按device type区分的mandatory capability sets，并支持基于delta和reference profiles的module-based reporting/configuration；最新会议仍在研究具体模块化信令与复用机制。（依据：RAN2-132、RAN2-133、RAN2-134）
+- 信令优化从识别band/BC重复上报、filtering粒度过粗及FeatureSetCombination复用不足，推进到将Solution 4（Coarse granularity）和Solution 5（Band combination signalling optimization）纳入TR。FeatureSet ID及FSC List保留候选方案，细节移交WI stage-3决定。（依据：RAN2-132、RAN2-133、RAN2-133bis）
+- 动态更新从既有NR UAI及NeedForGap用例出发，进一步明确UAI不足以报告UE capability change，并确立统一UE capability change signalling procedure的目标，覆盖UE envelope及特定RF/hardware-related capabilities。最新会议明确仅报告相关能力，由各use case标准定义可更新参数，并复用5G已定义参数。（依据：RAN2-132、RAN2-133、RAN2-133bis、RAN2-134）
+- 动态更新用例从优先研究overheating和MUSIM，扩展至power saving、foldable phones及IDC，再纳入UE internal resource availability（computational power/APU、memory、storage），并研究UE battery level等更广泛用例；纳入研究不代表各用例处理方案已确定。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 动态更新流程从提出网络处理时限及transition period配置同步要求，推进到明确capability change message在RRC connected mode发送、预期在mobility时转发给target aNB，以及fallback timer到期后以RRC re-establishment procedure作为UE基线行为。（依据：RAN2-132、RAN2-134）
+- RACS从收益、可行性及ID机制研究，经是否继续使用尚无共识，推进到将表示完整UE capabilities的CN based RACS ID后续讨论交由SA2，RAN2无需继续讨论该项；RAN-centric ID仍属研究方向。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+
+### 待决问题
+
+- 信令优化的具体选择和收益仍待验证：FeatureSet ID/FSC List细节留待WI stage-3，需基于真实NR capability container评估候选方案及compression，并在WI阶段结合6G RAN1/4 feature list重新评估coarse granularity。（依据：RAN2-133bis）
+- capability container划分、同一container内的delta signaling、partial capability sets复用、RAN-centric ID分配与使用、避免分段、progressive/iterative enquiries及统一technical specification组织方式仍待确定，需兼顾signaling overhead与future extensibility。（依据：RAN2-134）
+- 动态更新进入Idle/Inactive后的处理及最新信息存储仍未确定；mobility时的信息转发虽有预期，跨状态整体流程尚待完善。（依据：RAN2-134）
+- 无需网络预配置或许可即可报告的适用用例、触发条件、更新频率和network control仍待明确；自主更新相关提案仅为Noted，foldable phones是否需要capability update及其处理方式也未见收敛证据。（依据：RAN2-133bis、RAN2-134）
+- 网络响应能否reject、supervisory timer是否由网络配置、无响应/NACK/ACK后未适当处理时的统一UE behavior、配置不匹配处理，以及如何避免更新网络不支持的capability field仍待完善。fallback timer到期后的基线行为已明确，但不足以说明全部异常流程已解决。（依据：RAN2-134）
+- 减少optional capabilities、basic feature groups及部署跟踪机制尚未定案；UE与网络mandatory feature支持一致性和IODT处理未见后续收敛证据。Commercialization challenges的处理路径及部分根因是否纳入讨论仍待决定。（依据：RAN2-132、RAN2-133）
+
+### 会议时间线
+
+- **RAN2#132**（2025-11-17 至 2025-11-21）：本会议梳理了6GR UE能力框架的信令开销、动态能力变化及UE与网络功能支持一致性问题，明确初期优先识别NR UE capabilities的痛点，待6G feature studies充分进展后再讨论增强。报告框架保留基于网络请求的基本流程，并支持显式UE Capability report及基于UE Capability ID的报告；细粒度筛选、信息复用和增量报告仍属研究方向。动态更新讨论推进到用例、处理时限及过渡期配置同步要求，同时保留“mandatory with capability signalling”类型，相关增强方案尚未收敛。
+- **RAN2#133**（2026-02-09 至 2026-02-13）：RAN2#133 明确了 6GR UE 能力框架在信令规模、冗余上报和可选特性复杂度方面的问题及部分根因，并推进了基于 baseline、delta 和 reference profiles 的能力上报设计方向。会议明确现有 UAI 不足以报告 UE capability change，并将 overheating 和 MUSIM 作为 Dynamic capability update 的首批研究用例。相关协议设计将进一步研究能力信息复用、容器大小控制及动态更新时的网络与 UE 行为，具体信令和流程仍待确定。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议推进了6GR UE能力信令优化与capability change framework研究，明确将Solution 4/5纳入TR，并将FeatureSet ID及FSC List相关方案的细节留至WI stage-3决定。会议确立了统一UE capability change signalling procedure的目标，并确认现有NR UAI在网络支持、请求反馈及UE自主行为可见性方面的问题；capability update的触发条件、更新内容和响应机制仍需研究。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：RAN2#134 推进了 6GR UE 能力框架中的 dynamic capability update，明确动态报告仅考虑相关 UE capabilities，并继续研究报告容器和 delta signaling，以兼顾信令开销与未来扩展性。会议明确 capability change message 在 RRC connected mode 发送，并预期在 mobility 时转发给 target aNB，但跨状态处理、网络响应及异常恢复流程仍需完善。能力框架的研究还涉及模块化报告、RAN-centric capability ID 和可扩展查询机制，尚未形成完整协议方案。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.2.1 UE capability framework

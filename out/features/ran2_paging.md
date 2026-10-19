@@ -12,6 +12,32 @@ RAN2 已形成方向性共识：6G 倾向以 CN 触发寻呼统一支持 Idle �
 - 支持所有 DRX 周期的 bundling、更多或更密集的 PO/cluster 配置时，信令开销、最低周期与配置延迟如何处理。
 - 基于 UE paging capabilities 分配 PO 的机制及其与现有基于 UE-ID 的基线关系。
 
+## 跨会议演进脉络（6G）
+
+2026年2月至5月，6GR 寻呼从统一 IDLE/INACTIVE 的 CN-triggered paging 方向，推进到明确 single paging area、single paging ID 的偏好及 last aNB 存储 AS context 的安排；无线侧逐步明确每个 UE paging cycle 监测一个 PO、以统一公式支持 clustered 和 uniform PF/PO，并增加 cluster 内 PO 密度与数量。跨组 context retrieval 和 CN procedures 仍待研究，具体 paging formula 留待 WI phase，尚无完整机制定案的证据。
+
+### 关键进展
+
+- 2月倾向于为 IDLE/INACTIVE 采用 single CN-triggered paging，并假设使用 single paging ID；4月进一步明确 CN-triggered mechanisms、single paging area（no RNA）及 single paging ID 的偏好，其中 idle 使用的 TA-like list 同样适用于 inactive，且 paging LS 已获批准。（依据：RAN2-133、RAN2-133bis）
+- Context 存储从2月假设至少保存在 last RAN node，推进到4月同意 UE AS context 存储在 last aNB；新 aNB 有直接 Xa interface 时，可经 Xa 获取 context。（依据：RAN2-133、RAN2-133bis）
+- 2月提出按 paging load 调整 UE 监测 PO 数量的研究方向；4月明确 UE 每个 paging cycle 监测一个 PO，5月以每个 UE paging cycle 监测一个 PO 再次明确。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- PF/PO 设计从2月支持 non-uniform PO distribution、distributed/bundled PF/PO 的方向，推进到4月以一个 distribution formula 支持所有 paging cycles 下的 clustered 和 uniform PF/PO；5月进一步明确 cluster 内 POs 应更密集，且数量多于 NR Rel-19。（依据：RAN2-133、RAN2-133bis、RAN2-134）
+- 2月提出 paging periodicities 可配置为 SSB periodicities 的倍数，并通过 offsets 调整 PO；支持 paging 的 Cell DTX 要求 PF/PO 位于 on duration 内，同时假设 single DL wake-up scheme，尽量统一 PEI 与 LP-WUS 的 upper layer procedure 和参数。后续材料未报告这些方向的进一步变化。（依据：RAN2-133）
+
+### 待决问题
+
+- 统一 CN-triggered paging 和共用 paging area 的跨组可行性仍缺乏确认结果；4月明确偏好并批准 LS，不足以证明2月提出的 paging area 大小、是否适用于 connected 子状态等问题已解决。（依据：RAN2-133、RAN2-133bis）
+- 无 Xa interface 时，由 CN 存储 AS context 或经 CN 转移 context 的影响与实现仍需 SA2、RAN3 决定，并考虑安全信息及验证；context fetch 和用于识别 context storage 的 UE ID 也仍待研究。（依据：RAN2-133bis）
+- Inactive UE 的 CN paging 触发及恢复 procedures 尚未确定；4月进一步列明 CN 缓冲 MT DL data/signaling、触发 paging 和通过 RRC resume 响应等内容仍需 SA2、RAN3 研究。（依据：RAN2-133、RAN2-133bis）
+- 4月和5月均将 paging formula 的 requirements 及 shortcoming/limitations 整理留至下次会议，详细公式设计留待 WI phase；5月的全部 DRX cycle lengths 下 PF/PO bundling、更小 N、多个 clusters/Paging Possibility 等提案仅获 Noted，signaling overhead、最低周期及配置延迟仍待处理。（依据：RAN2-133bis、RAN2-134）
+- 支持 idle/inactive UE paging、通知 system information change 与 ETWS/CMAS，以及 paging capacity（含 paging records）至少达到5G水平，在5月材料中仍为提出的要求；基于 UE paging-related capabilities 分配 PO 也尚无明确结论。（依据：RAN2-134）
+
+### 会议时间线
+
+- **RAN2#133**（2026-02-09 至 2026-02-13）：本会议推进了以 CN-triggered paging 统一 IDLE 和 INACTIVE 寻呼的设计方向，并倾向于共用 paging area，但其可行性仍需向 SA2 确认。为支持 fast resume，RAN2 假设 RAN context 至少可保存在 last RAN node，跨节点 context transfer 仍需与 SA2、RAN3 协调。寻呼无线侧设计明确面向灵活 PO 分布和网络节能，使网络能够在 paging delay 与 network energy savings 之间进行选择。
+- **RAN2#133bis**（2026-04-13 至 2026-04-17）：本会议明确了 6G 寻呼对 CN-triggered mechanisms、single paging area（no RNA）及 single paging ID 的偏好，并同意 AS context 存储在 last aNB，批准了 paging LS。这为 idle/inactive 统一寻呼及恢复时的 context retrieval 确立了方向，但无 Xa 时通过 CN 获取或转发 context 的影响与实现仍需 SA2、RAN3 研究。PF/PO 方面明确 UE 每个 paging cycle 监测一个 paging occasion，并以单一 distribution formula 支持所有 paging cycles 下的 clustered 和 uniform PF/PO 为设计目标，具体公式留待 WI 阶段。
+- **RAN2#134**（2026-05-18 至 2026-05-22）：本会议明确了 6G 寻呼中 UE 每个 UE paging cycle 监测一个 paging occasion，并以统一的 PF/PO distribution formula 支持 clustered 和 uniform PF/PO 为设计目标。会议明确 paging cluster 内需更密集地排列 POs，且每个 cluster 的 PO 数量应多于 NR Rel-19，为后续寻呼时机分布设计确定方向。具体 paging formula 的 requirements 和局限将于下次会议整理，详细公式设计留待 WI phase；部分配置与信令开销提案仅获 Noted。
+
 ## 6GR 演进
 
 ### [6G/Rel-20 RAN2#134] `agreement` 9.3.2.4 Paging
