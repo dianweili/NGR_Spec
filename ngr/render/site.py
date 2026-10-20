@@ -363,6 +363,19 @@ const DATA = JSON.parse(document.getElementById('ngr-data').textContent);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 const cut = (value, length = 180) => { const text = String(value ?? '').replace(/\s+/g, ' ').trim(); return text.length <= length ? text : text.slice(0, length) + '…'; };
 const meetingKey = event => `${event.wg}-${event.meeting}${event.meeting_suffix || ''}`;
+// The page contains the full English source text.  Keep a client-only index so
+// typing does not lowercase and concatenate megabytes of text on every key.
+const SEARCH_TEXT = new WeakMap();
+const eventSearchText = event => {
+  let text = SEARCH_TEXT.get(event);
+  if (text === undefined) {
+    text = [event.id, event.wg, event.agenda_item, event.agenda_title,
+            event.text_en, event.summary_zh, ...(event.tags || [])]
+      .join(' ').toLocaleLowerCase();
+    SEARCH_TEXT.set(event, text);
+  }
+  return text;
+};
 const ready = event => ['ok', 'needs_review'].includes(event.llm_status);
 const state = { view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', meetingDetail: '', page: 1, trail: [] };
 const PAGE_SIZE = 30;
@@ -436,7 +449,7 @@ function filteredEvents() {
     if (state.era && event.era !== state.era) return false; if (state.kind && event.kind !== state.kind) return false;
     if (state.status === 'ready' && !ready(event)) return false; if (state.status === 'pending' && ready(event)) return false;
     if (state.meeting && meetingKey(event) !== state.meeting) return false; if (!query) return true;
-    return [event.id, event.wg, event.agenda_item, event.agenda_title, event.text_en, event.summary_zh, ...(event.tags || [])].join(' ').toLocaleLowerCase().includes(query);
+    return eventSearchText(event).includes(query);
   });
 }
 function eventCard(e) {
@@ -463,19 +476,33 @@ document.addEventListener('click', event => {
   const page = event.target.closest('[data-page]'); if (page) { state.page += page.dataset.page === 'next' ? 1 : -1; render(); return; }
   if (event.target.closest('[data-reset-filters]')) { Object.assign(state, {query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', page: 1}); render(); }
 });
+let queryRenderTimer = null;
+let pendingQuerySelection = null;
+function scheduleQueryRender(input) {
+  state.query = input.value;
+  state.page = 1;
+  pendingQuerySelection = [input.selectionStart ?? input.value.length, input.selectionEnd ?? input.value.length];
+  if (queryRenderTimer !== null) window.clearTimeout(queryRenderTimer);
+  // Replacing the toolbar is expensive and can otherwise repeatedly steal
+  // focus while an IME is still composing a character.
+  queryRenderTimer = window.setTimeout(() => {
+    queryRenderTimer = null;
+    if (state.view !== 'events') return;
+    render();
+    const query = document.getElementById('query');
+    if (query && pendingQuerySelection) {
+      const [start, end] = pendingQuerySelection;
+      query.focus({preventScroll: true});
+      query.setSelectionRange(Math.min(start, query.value.length), Math.min(end, query.value.length));
+    }
+  }, 180);
+}
 document.addEventListener('input', event => {
-  if (event.target.id !== 'query') return;
-  // `render()` replaces the toolbar markup so the original <input> is removed.
-  // Restore focus and the caret on its replacement to keep incremental search usable.
-  const value = event.target.value;
-  const start = event.target.selectionStart ?? value.length;
-  const end = event.target.selectionEnd ?? start;
-  state.query = value; state.page = 1; render();
-  const query = document.getElementById('query');
-  if (query) {
-    query.focus({preventScroll: true});
-    query.setSelectionRange(Math.min(start, query.value.length), Math.min(end, query.value.length));
-  }
+  if (event.target.id !== 'query' || event.isComposing || event.target.value === state.query) return;
+  scheduleQueryRender(event.target);
+});
+document.addEventListener('compositionend', event => {
+  if (event.target.id === 'query') scheduleQueryRender(event.target);
 });
 document.addEventListener('change', event => { const fields = {'wg-filter': 'wg', 'feature-filter': 'feature', 'meeting-filter': 'meeting', 'era-filter': 'era', 'status-filter': 'status'}; if (fields[event.target.id]) { state[fields[event.target.id]] = event.target.value; state.page = 1; render(); } });
 window.addEventListener('popstate', event => { const saved = event.state; if (!saved?.ngr) { state.trail = []; Object.assign(state, {view: 'overview', query: '', wg: '', feature: '', era: '', kind: '', status: '', meeting: '', detail: '', meetingDetail: '', page: 1}); render(); return; } state.trail = saved.trail || []; Object.assign(state, saved.route); render(); });

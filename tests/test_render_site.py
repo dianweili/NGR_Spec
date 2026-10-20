@@ -201,8 +201,13 @@ def test_site_includes_verified_meeting_period_in_cards_and_events():
     assert "${meeting.label} · ${meeting.period}" in html
 
 
-def test_event_search_restores_focus_after_live_rerender():
-    """筛选会重建工具栏；输入框不能因此在首字符后失焦。"""
+def test_event_search_is_debounced_and_restores_focus_after_rerender():
+    """检索不得在每次按键或中文输入法组合态重建整个页面。"""
     html = render_site([E()], [WAVE], FS, generated="2026-09-20")
+    assert "const SEARCH_TEXT = new WeakMap()" in html
+    assert "eventSearchText(event).includes(query)" in html
+    assert "window.setTimeout(() =>" in html and "}, 180)" in html
+    assert "event.isComposing" in html and "event.target.value === state.query" in html
+    assert "compositionend" in html
     assert "query.focus({preventScroll: true})" in html
     assert "query.setSelectionRange(" in html
